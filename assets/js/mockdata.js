@@ -90,22 +90,51 @@
       // Simuler nettverk
       setTimeout(() => {
         const ref = "2GM-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-        // eslint-disable-next-line no-console
-        console.log("[MOCK] Bestilling sendt:", payload, "→ ref", ref);
+        const customer = getCustomer(payload.customer);
+        const customerName = (customer && customer.name) || payload.customer;
 
-        // Simuler e-postvarsel til Frank. Bestillingen er alltid skrevet
-        // som Upcoming + Pending_Confirmation i SharePoint; advarselen
-        // forteller hvor han må prioritere manuell bekreftelse.
+        // Hver gjest blir én SharePoint-rad. Referansen skrives både som
+        // eget felt (Reference) og inn i Notes-kolonnen, slik at hver
+        // rad er sporbar tilbake til samme bestilling både for filtre
+        // og for menneskelig lesing.
+        const sharepointRows = (payload.guests || []).map((g) => {
+          const noteParts = [
+            `Ref: ${ref}`,
+            customerName,
+            g.hasOwnDates ? "Avvikende datoer" : "Fellesperiode",
+            g.openEnded ? "Open-ended (estimert " + (payload.estimatedDays || 90) + " d.)" : null
+          ].filter(Boolean);
+
+          return {
+            Reference: ref,
+            Customer: payload.customer,
+            CustomerName: customerName,
+            Location: payload.location,
+            Guest: g.name,
+            Check_In: g.from,
+            Check_Out: g.openEnded ? null : g.to,
+            Status: payload.status,
+            Pending_Confirmation: payload.pendingConfirmation,
+            Notes: noteParts.join(" · ")
+          };
+        });
+
+        // eslint-disable-next-line no-console
+        console.log(
+          `[MOCK SHAREPOINT] Bestilling ${ref}: opprettet ${sharepointRows.length} rad(er)`,
+          sharepointRows
+        );
+
+        // Simuler e-postvarsel til Frank.
         const headline = payload.warning
           ? "har KAPASITETSKONFLIKT — manuell bekreftelse kreves"
           : "venter på bekreftelse";
 
-        const guestLines = (payload.guests || []).map((g) => {
-          const period = g.openEnded
-            ? `${g.from} → open-ended`
-            : `${g.from} → ${g.to}`;
-          const tag = g.hasOwnDates ? " (avvikende)" : "";
-          return `  · Rom ${g.index} ${g.name}: ${period}${tag}`;
+        const guestLines = sharepointRows.map((r, i) => {
+          const period = r.Check_Out
+            ? `${r.Check_In} → ${r.Check_Out}`
+            : `${r.Check_In} → open-ended`;
+          return `  · Rom ${i + 1} ${r.Guest}: ${period}\n    Notes: ${r.Notes}`;
         }).join("\n");
 
         // eslint-disable-next-line no-console
@@ -115,10 +144,10 @@
           (payload.hasMixedDates ? " · Blandede gjeste-datoer" : ""),
           "\nGjester:\n" + guestLines,
           payload.warning ? "\n" + payload.warning : "",
-          "\nDetaljer:", payload
+          "\nPayload:", payload
         );
 
-        resolve({ ok: true, reference: ref });
+        resolve({ ok: true, reference: ref, sharepointRows });
       }, 600);
     });
   }
