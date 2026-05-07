@@ -99,10 +99,21 @@
         const headline = payload.warning
           ? "har KAPASITETSKONFLIKT — manuell bekreftelse kreves"
           : "venter på bekreftelse";
+
+        const guestLines = (payload.guests || []).map((g) => {
+          const period = g.openEnded
+            ? `${g.from} → open-ended`
+            : `${g.from} → ${g.to}`;
+          const tag = g.hasOwnDates ? " (avvikende)" : "";
+          return `  · Rom ${g.index} ${g.name}: ${period}${tag}`;
+        }).join("\n");
+
         // eslint-disable-next-line no-console
         console.warn(
           `[MOCK EMAIL → frankhaugan@gmail.com] Bestilling ${ref} ${headline}.`,
-          "\nStatus: Upcoming · Pending_Confirmation: true",
+          "\nStatus: Upcoming · Pending_Confirmation: true" +
+          (payload.hasMixedDates ? " · Blandede gjeste-datoer" : ""),
+          "\nGjester:\n" + guestLines,
           payload.warning ? "\n" + payload.warning : "",
           "\nDetaljer:", payload
         );

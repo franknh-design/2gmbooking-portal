@@ -43,6 +43,7 @@
     },
 
     _emitDateChange() {
+      this._refreshGuestSummaries();
       if (typeof this.onDateChange === "function") {
         this.onDateChange(this.getDateRange());
       }
@@ -86,6 +87,7 @@
       // Hold til-dato sin min-attributt i synk slik at manuell redigering oppfører seg likt
       toEl.min = fromEl.value || "";
       this._refreshAvailabilityBadge();
+      this._refreshGuestSummaries();
     },
 
     getDateRange() {
@@ -172,31 +174,181 @@
 
     _renderGuests(count) {
       const list = document.getElementById("guests-list");
+
+      // Behold tidligere data per gjest når antallet endrer seg
       const existing = {};
-      list.querySelectorAll("input[data-guest-idx]").forEach((inp) => {
-        existing[inp.dataset.guestIdx] = inp.value;
+      list.querySelectorAll(".guest-row").forEach((row) => {
+        const idx = row.dataset.guestIdx;
+        existing[idx] = {
+          name: row.querySelector("[data-field='name']").value,
+          hasOwnDates: row.classList.contains("has-own-dates"),
+          from: row.querySelector("[data-field='from']").value,
+          to: row.querySelector("[data-field='to']").value,
+          openEnded: row.querySelector("[data-field='openEnded']").checked
+        };
       });
 
       list.innerHTML = "";
       for (let i = 1; i <= count; i++) {
-        const row = document.createElement("div");
-        row.className = "guest-row";
-
-        const label = document.createElement("span");
-        label.className = "guest-num";
-        label.textContent = `Rom ${i}`;
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "Navn på gjest";
-        input.dataset.guestIdx = String(i);
-        input.value = existing[String(i)] || "";
-        input.required = true;
-
-        row.appendChild(label);
-        row.appendChild(input);
-        list.appendChild(row);
+        list.appendChild(this._buildGuestRow(i, existing[String(i)] || {}));
       }
+      this._refreshGuestSummaries();
+    },
+
+    _buildGuestRow(idx, prev) {
+      const row = document.createElement("div");
+      row.className = "guest-row";
+      row.dataset.guestIdx = String(idx);
+      if (prev.hasOwnDates) row.classList.add("has-own-dates");
+
+      // Hovedlinje: nummer + navn + toggle
+      const main = document.createElement("div");
+      main.className = "guest-row-main";
+
+      const numEl = document.createElement("span");
+      numEl.className = "guest-num";
+      numEl.textContent = `Rom ${idx}`;
+
+      const nameEl = document.createElement("input");
+      nameEl.type = "text";
+      nameEl.placeholder = "Navn på gjest";
+      nameEl.dataset.field = "name";
+      nameEl.value = prev.name || "";
+      nameEl.required = true;
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "guest-toggle";
+      toggle.textContent = prev.hasOwnDates ? "Avvikende datoer ✓" : "Avvikende datoer";
+
+      main.append(numEl, nameEl, toggle);
+
+      // Sammendrag (vises når gjesten bruker fellesperioden, eller egne datoer)
+      const summary = document.createElement("p");
+      summary.className = "guest-summary";
+      summary.dataset.role = "summary";
+
+      // Datopanel
+      const dates = document.createElement("div");
+      dates.className = "guest-dates";
+      dates.hidden = !prev.hasOwnDates;
+
+      const fromLabel = document.createElement("label");
+      fromLabel.className = "field";
+      fromLabel.innerHTML = '<span class="field-label">Fra dato</span>';
+      const fromInp = document.createElement("input");
+      fromInp.type = "date";
+      fromInp.dataset.field = "from";
+      fromInp.value = prev.from || "";
+      fromLabel.appendChild(fromInp);
+
+      const toLabel = document.createElement("label");
+      toLabel.className = "field";
+      toLabel.innerHTML = '<span class="field-label">Til dato</span>';
+      const toInp = document.createElement("input");
+      toInp.type = "date";
+      toInp.dataset.field = "to";
+      toInp.value = prev.to || "";
+      toLabel.appendChild(toInp);
+
+      const openLabel = document.createElement("label");
+      openLabel.className = "checkbox";
+      const openInp = document.createElement("input");
+      openInp.type = "checkbox";
+      openInp.dataset.field = "openEnded";
+      openInp.checked = !!prev.openEnded;
+      const openText = document.createElement("span");
+      openText.textContent = "Vet ikke utflyttingsdato";
+      openLabel.append(openInp, openText);
+
+      dates.append(fromLabel, toLabel, openLabel);
+
+      // Wiring
+      toggle.addEventListener("click", () => {
+        const turningOn = !row.classList.contains("has-own-dates");
+        row.classList.toggle("has-own-dates", turningOn);
+        dates.hidden = !turningOn;
+        toggle.textContent = turningOn ? "Avvikende datoer ✓" : "Avvikende datoer";
+        if (!turningOn) {
+          fromInp.value = "";
+          toInp.value = "";
+          openInp.checked = false;
+        }
+        this._applyGuestOpenEnded(row);
+        this._refreshGuestSummaries();
+      });
+
+      const refresh = () => {
+        this._applyGuestOpenEnded(row);
+        this._refreshGuestSummaries();
+      };
+      fromInp.addEventListener("change", () => {
+        if (toInp.value && toInp.value < fromInp.value) toInp.value = fromInp.value;
+        toInp.min = fromInp.value || "";
+        refresh();
+      });
+      toInp.addEventListener("change", refresh);
+      openInp.addEventListener("change", refresh);
+
+      row.append(main, summary, dates);
+      this._applyGuestOpenEnded(row);
+      return row;
+    },
+
+    _applyGuestOpenEnded(row) {
+      const openInp = row.querySelector("[data-field='openEnded']");
+      const toInp = row.querySelector("[data-field='to']");
+      toInp.disabled = openInp.checked;
+      if (openInp.checked) toInp.value = "";
+    },
+
+    _refreshGuestSummaries() {
+      const { from: topFrom, to: topTo } = this.getDateRange();
+      const topOpen = this.isOpenEnded();
+      document.querySelectorAll("#guests-list .guest-row").forEach((row) => {
+        const sum = row.querySelector("[data-role='summary']");
+        const period = this._effectivePeriodForRow(row, topFrom, topTo, topOpen);
+
+        if (period.hasOwn) {
+          sum.classList.add("is-custom");
+          sum.textContent = "Egne datoer: " + this._formatPeriodNo(period);
+        } else {
+          sum.classList.remove("is-custom");
+          sum.textContent = topFrom
+            ? "Bruker fellesperioden: " + this._formatPeriodNo(period)
+            : "Bruker fellesperioden (ikke valgt enda).";
+        }
+      });
+    },
+
+    _effectivePeriodForRow(row, topFrom, topTo, topOpen) {
+      const hasOwn = row.classList.contains("has-own-dates");
+      const fromInp = row.querySelector("[data-field='from']");
+      const toInp   = row.querySelector("[data-field='to']");
+      const openInp = row.querySelector("[data-field='openEnded']");
+
+      if (hasOwn && (fromInp.value || toInp.value || openInp.checked)) {
+        return {
+          hasOwn: true,
+          from: fromInp.value || null,
+          to: openInp.checked ? null : (toInp.value || null),
+          openEnded: openInp.checked
+        };
+      }
+      return {
+        hasOwn: false,
+        from: topFrom || null,
+        to: topOpen ? null : (topTo || null),
+        openEnded: topOpen
+      };
+    },
+
+    _formatPeriodNo(period) {
+      if (!period.from) return "ikke valgt";
+      const fromStr = formatDdMm(period.from);
+      if (period.openEnded) return `${fromStr} → open-ended (${this.OPEN_ENDED_DAYS} d.)`;
+      if (!period.to) return `${fromStr} →`;
+      return `${fromStr} – ${formatDdMm(period.to)}`;
     },
 
     _refreshAvailabilityBadge() {
@@ -224,28 +376,62 @@
       else badge.textContent = `${a.available} ledige` + suffix;
     },
 
-    _collectGuestNames() {
-      const inputs = document.querySelectorAll("#guests-list input[data-guest-idx]");
-      return Array.from(inputs).map((inp) => inp.value.trim());
+    /**
+     * Samler gjester med faktisk navn + effektiv periode (faller tilbake
+     * til fellesperioden hvis gjesten ikke har egne datoer).
+     */
+    _collectGuests(topFrom, topTo, topOpen) {
+      const rows = document.querySelectorAll("#guests-list .guest-row");
+      return Array.from(rows).map((row, i) => {
+        const period = this._effectivePeriodForRow(row, topFrom, topTo, topOpen);
+        const name = row.querySelector("[data-field='name']").value.trim();
+        return {
+          index: i + 1,
+          name,
+          from: period.from,
+          to: period.to,
+          openEnded: period.openEnded,
+          hasOwnDates: period.hasOwn
+        };
+      });
     },
 
     /**
-     * Itererer alle datoer fra fromIso til toIso (inkl. begge ender) og
-     * returnerer en liste { date, available, missing } for dager med
-     * mangel, sortert kronologisk.
+     * Sjekk per-dag etterspørsel mot tilgjengelig kapasitet. For hver dag
+     * i unionen av alle gjesters perioder telles antall gjester på huset
+     * den dagen. Hvis tallet overstiger ledige rom, registreres mangel.
+     * Open-ended-perioder iterereres 90 dager frem.
      */
-    _collectShortfalls(locationId, fromIso, toIso, rooms) {
-      const start = parseIsoLocal(fromIso);
-      const end   = parseIsoLocal(toIso);
-      const out = [];
+    _collectShortfalls(locationId, guests) {
+      if (!guests.length) return [];
+      const periods = guests.map((g) => ({
+        from: g.from,
+        end:  g.to || addDaysIso(g.from, this.OPEN_ENDED_DAYS - 1),
+        guest: g
+      }));
 
-      for (let d = new Date(start); d <= end; d = addDaysDate(d, 1)) {
+      let minFrom = periods[0].from;
+      let maxEnd  = periods[0].end;
+      for (const p of periods) {
+        if (p.from < minFrom) minFrom = p.from;
+        if (p.end  > maxEnd)  maxEnd  = p.end;
+      }
+
+      const out = [];
+      for (let d = parseIsoLocal(minFrom); d <= parseIsoLocal(maxEnd); d = addDaysDate(d, 1)) {
+        const iso = isoLocal(d);
+        const onSite = periods.filter((p) => iso >= p.from && iso <= p.end);
+        const needed = onSite.length;
+        if (needed === 0) continue;
+
         const a = window.MockData.getAvailability(locationId, d);
-        if (a.available < rooms) {
+        if (a.available < needed) {
           out.push({
-            date: isoLocal(d),
+            date: iso,
             available: a.available,
-            missing: rooms - a.available
+            needed,
+            missing: needed - a.available,
+            guests: onSite.map((p) => p.guest.name || `Rom ${p.guest.index}`)
           });
         }
       }
@@ -258,55 +444,69 @@
       msg.classList.remove("is-ok", "is-error");
 
       const locId    = this.getSelectedLocationId();
-      const from     = document.getElementById("f-from").value;
-      const toRaw    = document.getElementById("f-to").value;
-      const openEnd  = this.isOpenEnded();
-      const to       = openEnd ? null : (toRaw || null);
+      const topFrom  = document.getElementById("f-from").value;
+      const topToRaw = document.getElementById("f-to").value;
+      const topOpen  = this.isOpenEnded();
+      const topTo    = topOpen ? null : (topToRaw || null);
       const rooms    = this._getRooms();
-      const guests   = this._collectGuestNames();
+      const guests   = this._collectGuests(topFrom, topTo, topOpen);
 
       if (!locId) return this._showMsg("Velg lokasjon.", "error");
-      if (!from)  return this._showMsg("Velg fra-dato.", "error");
-      if (!openEnd && !to) {
-        return this._showMsg(
-          "Velg til-dato, eller huk av for «Vet ikke utflyttingsdato».",
-          "error"
-        );
-      }
-      if (to && to < from) {
-        return this._showMsg("Til-dato må være etter fra-dato.", "error");
-      }
-      if (guests.some((g) => !g)) {
+
+      if (guests.some((g) => !g.name)) {
         return this._showMsg("Fyll inn navn for alle rom.", "error");
       }
 
-      // Sjekk tilgjengelighet for ALLE dager i perioden. Ved open-ended brukes
-      // 90 dager frem som estimert periode. Bestillingen blokkeres ikke ved
-      // mangel — i stedet bygges en advarsel som vises til kunden og som
-      // sendes med i e-postvarselet til Frank.
-      const periodEndIso = openEnd
-        ? addDaysIso(from, this.OPEN_ENDED_DAYS - 1)
-        : to;
-      const shortfalls = this._collectShortfalls(locId, from, periodEndIso, rooms);
+      // Hver gjest må ha en gyldig effektiv periode (egen eller felles)
+      for (const g of guests) {
+        if (!g.from) {
+          const who = g.hasOwnDates ? `Rom ${g.index} («${g.name}»)` : "Fellesperioden";
+          return this._showMsg(
+            `${who} mangler fra-dato.`, "error"
+          );
+        }
+        if (!g.openEnded && !g.to) {
+          return this._showMsg(
+            `Rom ${g.index} («${g.name}») mangler til-dato — eller huk av for «Vet ikke utflyttingsdato».`,
+            "error"
+          );
+        }
+        if (g.to && g.to < g.from) {
+          return this._showMsg(
+            `Rom ${g.index} («${g.name}»): til-dato må være etter fra-dato.`,
+            "error"
+          );
+        }
+      }
+
+      // Sjekk tilgjengelighet per dag basert på hvor mange gjester som er
+      // på huset hver dag. Bestillingen blokkeres ikke ved mangel — i
+      // stedet bygges advarsel som vises til kunden og legges ved
+      // e-postvarselet til Frank.
+      const shortfalls = this._collectShortfalls(locId, guests);
       const warning = shortfalls.length
-        ? buildWarningMessage(shortfalls, rooms)
+        ? buildWarningMessage(shortfalls)
         : null;
 
       // Alle bestillinger opprettes som Upcoming + Pending_Confirmation i
       // SharePoint, uavhengig av kapasitet. Frank løser konflikter manuelt
       // ved bekreftelse. Advarselen er rent informasjonell.
+      const hasMixedDates = guests.some((g) => g.hasOwnDates);
       const payload = {
         customer: this.customer.id,
         location: locId,
-        from,
-        to,                           // null ved open-ended → Check_Out = null i SharePoint
-        openEnded: openEnd,
-        estimatedDays: openEnd ? this.OPEN_ENDED_DAYS : null,
+        from: topFrom || null,        // fellesperioden, brukes som default for gjester uten egne datoer
+        to: topTo,                    // null ved open-ended → Check_Out = null i SharePoint
+        openEnded: topOpen,
+        estimatedDays: (topOpen || guests.some((g) => g.openEnded))
+          ? this.OPEN_ENDED_DAYS
+          : null,
         rooms,
-        guests,
+        guests,                       // [{ index, name, from, to, openEnded, hasOwnDates }]
+        hasMixedDates,
         status: "Upcoming",           // SharePoint: Status
         pendingConfirmation: true,    // SharePoint: Pending_Confirmation
-        shortfalls,                   // [{ date: "YYYY-MM-DD", available, missing }]
+        shortfalls,                   // [{ date, available, needed, missing, guests:[names] }]
         warning                       // ferdig formatert tekst eller null
       };
 
@@ -321,6 +521,8 @@
           this._showConfirmation(res.reference, payload.warning);
           document.getElementById("booking-form").reset();
           document.getElementById("f-rooms").value = "1";
+          // Tøm guests-list helt så ingen gamle navn/datoer arves over
+          document.getElementById("guests-list").innerHTML = "";
           this._renderGuests(1);
           this._applyOpenEndedState();
           this._refreshAvailabilityBadge();
@@ -400,22 +602,24 @@
   }
 
   /**
-   * Bygger advarselsteksten. Grupperer datoer som har samme antall
-   * ledige rom, slik at "15.06 og 16.06 har bare 4 ledige rom" kan
-   * stå som én setning.
+   * Bygger advarselsteksten. Grupperer datoer som har samme (available,
+   * needed)-kombinasjon, slik at sammenhengende dager med samme
+   * kapasitetsbilde slås sammen til én setning.
    */
-  function buildWarningMessage(shortfalls, rooms) {
-    const groups = new Map(); // available → [iso, iso, ...]
+  function buildWarningMessage(shortfalls) {
+    const groups = new Map(); // "avail|needed" → [iso, ...]
     for (const s of shortfalls) {
-      if (!groups.has(s.available)) groups.set(s.available, []);
-      groups.get(s.available).push(s.date);
+      const key = `${s.available}|${s.needed}`;
+      if (!groups.has(key)) groups.set(key, { available: s.available, needed: s.needed, dates: [] });
+      groups.get(key).dates.push(s.date);
     }
 
-    const sortedAvail = Array.from(groups.keys()).sort((a, b) => a - b);
-    const sentences = sortedAvail.map((avail) => {
-      const dates = groups.get(avail).map(formatDdMm);
-      return `${joinNo(dates)} har bare ${avail} ledige rom — du har bestilt ${rooms}.`;
-    });
+    const sentences = Array.from(groups.values())
+      .sort((a, b) => a.available - b.available)
+      .map((g) => {
+        const dates = g.dates.map(formatDdMm);
+        return `${joinNo(dates)} har bare ${g.available} ledige rom — du trenger ${g.needed}.`;
+      });
 
     return "Obs: " + sentences.join(" ") + " 2GM vil kontakte deg.";
   }

@@ -401,21 +401,75 @@ input[type="date"]:disabled {
 .guests legend {
   padding: 0 6px;
 }
+.guests-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+  color: var(--c-muted);
+}
 .guests-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .guest-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: #fafbfc;
+}
+.guest-row-main {
   display: grid;
-  grid-template-columns: 70px 1fr;
+  grid-template-columns: 70px 1fr auto;
   gap: 8px;
   align-items: center;
 }
-.guest-row .guest-num {
+.guest-num {
   font-size: 12px;
   font-weight: 600;
   color: var(--c-muted);
+}
+.guest-toggle {
+  background: transparent;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--c-brand);
+  white-space: nowrap;
+}
+.guest-toggle:hover { background: #f0f4f8; }
+.guest-row.has-own-dates .guest-toggle {
+  background: var(--c-brand);
+  color: #fff;
+  border-color: var(--c-brand);
+}
+.guest-summary {
+  margin: 0 0 0 78px;
+  font-size: 12px;
+  color: var(--c-muted);
+}
+.guest-summary.is-custom {
+  color: var(--c-brand);
+  font-weight: 600;
+}
+.guest-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 0 78px;
+  padding: 8px;
+  background: #fff;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.guest-dates .field-label { font-size: 12px; }
+.guest-dates .checkbox { grid-column: 1 / -1; margin-top: 2px; }
+@media (max-width: 480px) {
+  .guest-summary,
+  .guest-dates { margin-left: 0; }
+  .guest-dates { grid-template-columns: 1fr; }
 }
 
 /* =========================================================
