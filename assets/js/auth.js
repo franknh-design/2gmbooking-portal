@@ -37,6 +37,7 @@
       const phoneForm = document.getElementById("auth-phone-form");
       const codeForm  = document.getElementById("auth-code-form");
       const backBtn   = document.getElementById("auth-back");
+      const skipBtn   = document.getElementById("auth-skip");
 
       phoneForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -51,6 +52,14 @@
       backBtn.addEventListener("click", () => {
         this._showStep("phone");
       });
+
+      if (skipBtn) {
+        skipBtn.addEventListener("click", () => {
+          // eslint-disable-next-line no-console
+          console.log("[MOCK] Hopper over verifisering.");
+          this._completeLogin();
+        });
+      }
     },
 
     _showAuthScreen() {
@@ -86,42 +95,35 @@
 
     _handlePhoneSubmit() {
       const phoneEl = document.getElementById("auth-phone");
-      const phone = phoneEl.value.trim();
-
-      if (!/^[+0-9 ()-]{6,}$/.test(phone)) {
-        return this._showError("Vennligst skriv et gyldig mobilnummer.");
-      }
+      const phoneRaw = (phoneEl.value || "").trim();
+      // I mock-modus tillater vi tomt nummer også — bare gå videre.
+      const phone = phoneRaw || "+47 00000000";
 
       this.phone = phone;
       this.mockOtp = window.MockData.generateMockOtp();
 
-      // Mock: logg koden i konsollen og vis hint.
       // eslint-disable-next-line no-console
       console.log(`[MOCK SMS] Engangskode til ${phone}: ${this.mockOtp}`);
       const hint = document.getElementById("auth-mock-hint");
-      hint.textContent = `Mock-modus: koden er ${this.mockOtp} (også i konsollen).`;
+      hint.textContent =
+        `Mock-modus: skriv ${this.mockOtp} — eller hva som helst på 6 sifre.`;
 
       this._showStep("code");
     },
 
     _handleCodeSubmit() {
       const codeEl = document.getElementById("auth-code");
-      const code = codeEl.value.trim();
+      // Strip alt som ikke er sifre (mellomrom, bindestreker, osv.)
+      const code = String(codeEl.value || "").replace(/\D/g, "");
 
-      if (!window.MockData.validateMockOtp(code)) {
+      // eslint-disable-next-line no-console
+      console.log("[MOCK] Bekrefter kode:", code, "(forventet:", this.mockOtp, ")");
+
+      if (code.length !== 6) {
         return this._showError("Koden må være 6 sifre.");
       }
 
-      // Mock-modus: aksepterer enten den genererte koden eller hvilken som
-      // helst 6-sifret kode (for enklere demo-flyt).
-      const accepted =
-        code === this.mockOtp ||
-        window.MockData.validateMockOtp(code);
-
-      if (!accepted) {
-        return this._showError("Feil kode. Prøv igjen.");
-      }
-
+      // Mock-modus: enhver 6-sifret kode godkjennes.
       this._completeLogin();
     },
 
@@ -130,11 +132,16 @@
       document.getElementById("portal").hidden = false;
 
       if (typeof this.onSuccess === "function") {
-        this.onSuccess({
-          customer: this.customer,
-          token: this.token,
-          phone: this.phone
-        });
+        try {
+          this.onSuccess({
+            customer: this.customer,
+            token: this.token,
+            phone: this.phone
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error("Feil under oppstart av portal:", err);
+        }
       }
     },
 

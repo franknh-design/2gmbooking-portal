@@ -17,7 +17,7 @@
       <p class="auth-sub" id="auth-customer-sub">Logger inn…</p>
 
       <!-- Steg 1: telefonnummer -->
-      <form id="auth-phone-form" class="auth-form">
+      <form id="auth-phone-form" class="auth-form" novalidate>
         <label class="field">
           <span class="field-label">Mobilnummer</span>
           <input
@@ -26,7 +26,6 @@
             name="phone"
             placeholder="+47 999 99 999"
             autocomplete="tel"
-            required
           />
         </label>
         <button type="submit" class="btn btn-primary">Send kode på SMS</button>
@@ -34,7 +33,7 @@
       </form>
 
       <!-- Steg 2: kode -->
-      <form id="auth-code-form" class="auth-form" hidden>
+      <form id="auth-code-form" class="auth-form" hidden novalidate>
         <label class="field">
           <span class="field-label">Engangskode</span>
           <input
@@ -42,15 +41,14 @@
             id="auth-code"
             name="code"
             inputmode="numeric"
-            pattern="[0-9]{6}"
             maxlength="6"
-            placeholder="• • • • • •"
+            placeholder="6 sifre"
             autocomplete="one-time-code"
-            required
           />
         </label>
         <button type="submit" class="btn btn-primary">Bekreft og logg inn</button>
         <button type="button" class="btn btn-link" id="auth-back">← Endre nummer</button>
+        <button type="button" class="btn btn-link" id="auth-skip">Hopp over (mock)</button>
         <p class="auth-hint" id="auth-mock-hint"></p>
       </form>
 
