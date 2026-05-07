@@ -181,10 +181,10 @@
         const idx = row.dataset.guestIdx;
         existing[idx] = {
           name: row.querySelector("[data-field='name']").value,
-          hasOwnDates: row.classList.contains("has-own-dates"),
           from: row.querySelector("[data-field='from']").value,
           to: row.querySelector("[data-field='to']").value,
-          openEnded: row.querySelector("[data-field='openEnded']").checked
+          openEnded: row.querySelector("[data-field='openEnded']").checked,
+          expanded: row.classList.contains("is-expanded")
         };
       });
 
@@ -199,7 +199,17 @@
       const row = document.createElement("div");
       row.className = "guest-row";
       row.dataset.guestIdx = String(idx);
-      if (prev.hasOwnDates) row.classList.add("has-own-dates");
+
+      // hasOwn er rent avledet av om noen av feltene har verdi.
+      // expanded er en separat visuell tilstand — panelet kan være kollapset
+      // selv om gjesten har egne datoer, så det blir mer oversiktlig.
+      const hasOwn = !!(prev.from || prev.to || prev.openEnded);
+      // Default: utvid hvis vi rendrer på nytt og brukeren tidligere
+      // hadde panelet åpent; eller hvis det er første gang og det
+      // allerede ligger verdier inne.
+      const expanded = prev.expanded ?? hasOwn;
+      if (hasOwn) row.classList.add("has-own-dates");
+      if (expanded) row.classList.add("is-expanded");
 
       // Hovedlinje: nummer + navn + toggle
       const main = document.createElement("div");
@@ -219,11 +229,10 @@
       const toggle = document.createElement("button");
       toggle.type = "button";
       toggle.className = "guest-toggle";
-      toggle.textContent = prev.hasOwnDates ? "Avvikende datoer ✓" : "Avvikende datoer";
 
       main.append(numEl, nameEl, toggle);
 
-      // Sammendrag (vises når gjesten bruker fellesperioden, eller egne datoer)
+      // Sammendrag (vises når panelet er kollapset)
       const summary = document.createElement("p");
       summary.className = "guest-summary";
       summary.dataset.role = "summary";
@@ -231,7 +240,7 @@
       // Datopanel
       const dates = document.createElement("div");
       dates.className = "guest-dates";
-      dates.hidden = !prev.hasOwnDates;
+      dates.hidden = !expanded;
 
       const fromLabel = document.createElement("label");
       fromLabel.className = "field";
@@ -261,25 +270,39 @@
       openText.textContent = "Vet ikke utflyttingsdato";
       openLabel.append(openInp, openText);
 
-      dates.append(fromLabel, toLabel, openLabel);
+      // "Bruk fellesperioden i stedet" — eksplisitt vei tilbake til
+      // standardperioden. Vises bare når gjesten faktisk har egne
+      // datoer (toggles via has-own-dates-klassen).
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.className = "guest-reset";
+      reset.textContent = "← Bruk fellesperioden i stedet";
 
-      // Wiring
+      dates.append(fromLabel, toLabel, openLabel, reset);
+
+      // Wiring: toggle = ren expand/collapse, ingen sletting av verdier
       toggle.addEventListener("click", () => {
-        const turningOn = !row.classList.contains("has-own-dates");
-        row.classList.toggle("has-own-dates", turningOn);
-        dates.hidden = !turningOn;
-        toggle.textContent = turningOn ? "Avvikende datoer ✓" : "Avvikende datoer";
-        if (!turningOn) {
-          fromInp.value = "";
-          toInp.value = "";
-          openInp.checked = false;
-        }
-        this._applyGuestOpenEnded(row);
+        const exp = !row.classList.contains("is-expanded");
+        row.classList.toggle("is-expanded", exp);
+        dates.hidden = !exp;
+        this._updateGuestRowVisual(row);
+      });
+
+      reset.addEventListener("click", () => {
+        fromInp.value = "";
+        toInp.value = "";
+        openInp.checked = false;
+        toInp.disabled = false;
+        // Kollaps automatisk siden det ikke er noe å vise lenger
+        row.classList.remove("is-expanded");
+        dates.hidden = true;
+        this._updateGuestRowVisual(row);
         this._refreshGuestSummaries();
       });
 
       const refresh = () => {
         this._applyGuestOpenEnded(row);
+        this._updateGuestRowVisual(row);
         this._refreshGuestSummaries();
       };
       fromInp.addEventListener("change", () => {
@@ -292,7 +315,28 @@
 
       row.append(main, summary, dates);
       this._applyGuestOpenEnded(row);
+      this._updateGuestRowVisual(row);
       return row;
+    },
+
+    /**
+     * Synkroniserer toggle-knappens tekst og has-own-dates-klassen ut
+     * fra om feltene har verdi (semantisk) og om panelet er åpent
+     * (visuelt). Skiller bevisst de to dimensjonene.
+     */
+    _updateGuestRowVisual(row) {
+      const fromInp = row.querySelector("[data-field='from']");
+      const toInp   = row.querySelector("[data-field='to']");
+      const openInp = row.querySelector("[data-field='openEnded']");
+      const toggle  = row.querySelector(".guest-toggle");
+
+      const hasOwn   = !!(fromInp.value || toInp.value || openInp.checked);
+      const expanded = row.classList.contains("is-expanded");
+      row.classList.toggle("has-own-dates", hasOwn);
+
+      const label = hasOwn ? "Egne datoer" : "Avvikende datoer";
+      const arrow = expanded ? "▴" : "▾";
+      toggle.textContent = `${label} ${arrow}`;
     },
 
     _applyGuestOpenEnded(row) {
@@ -322,12 +366,14 @@
     },
 
     _effectivePeriodForRow(row, topFrom, topTo, topOpen) {
-      const hasOwn = row.classList.contains("has-own-dates");
       const fromInp = row.querySelector("[data-field='from']");
       const toInp   = row.querySelector("[data-field='to']");
       const openInp = row.querySelector("[data-field='openEnded']");
+      // hasOwn er rent avledet fra om feltene har verdi — uavhengig av
+      // om panelet er åpent eller ikke.
+      const hasOwn = !!(fromInp.value || toInp.value || openInp.checked);
 
-      if (hasOwn && (fromInp.value || toInp.value || openInp.checked)) {
+      if (hasOwn) {
         return {
           hasOwn: true,
           from: fromInp.value || null,

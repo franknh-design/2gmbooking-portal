@@ -466,6 +466,26 @@ input[type="date"]:disabled {
 }
 .guest-dates .field-label { font-size: 12px; }
 .guest-dates .checkbox { grid-column: 1 / -1; margin-top: 2px; }
+
+/* "Bruk fellesperioden i stedet" — vises bare når gjesten faktisk har
+   egne datoer satt, ikke under den første utfyllingen. */
+.guest-reset {
+  grid-column: 1 / -1;
+  align-self: start;
+  background: transparent;
+  border: none;
+  padding: 4px 0 0;
+  font-size: 12px;
+  color: var(--c-brand);
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+  display: none;
+}
+.guest-row.has-own-dates .guest-reset {
+  display: inline;
+}
+
 @media (max-width: 480px) {
   .guest-summary,
   .guest-dates { margin-left: 0; }
