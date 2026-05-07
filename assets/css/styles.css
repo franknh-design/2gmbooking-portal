@@ -463,6 +463,19 @@ input[type="date"]:disabled {
   background: var(--c-red-bg);
   color: var(--c-red-fg);
 }
+.form-message.has-warning {
+  background: var(--c-amber-bg);
+  color: var(--c-amber-fg);
+}
+.form-warning {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.55);
+  border-left: 3px solid currentColor;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
 
 /* =========================================================
    Footer

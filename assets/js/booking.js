@@ -210,6 +210,29 @@
       return Array.from(inputs).map((inp) => inp.value.trim());
     },
 
+    /**
+     * Itererer alle datoer fra fromIso til toIso (inkl. begge ender) og
+     * returnerer en liste { date, available, missing } for dager med
+     * mangel, sortert kronologisk.
+     */
+    _collectShortfalls(locationId, fromIso, toIso, rooms) {
+      const start = parseIsoLocal(fromIso);
+      const end   = parseIsoLocal(toIso);
+      const out = [];
+
+      for (let d = new Date(start); d <= end; d = addDaysDate(d, 1)) {
+        const a = window.MockData.getAvailability(locationId, d);
+        if (a.available < rooms) {
+          out.push({
+            date: isoLocal(d),
+            available: a.available,
+            missing: rooms - a.available
+          });
+        }
+      }
+      return out;
+    },
+
     _submit() {
       const msg = document.getElementById("form-message");
       msg.hidden = true;
@@ -238,15 +261,17 @@
         return this._showMsg("Fyll inn navn for alle rom.", "error");
       }
 
-      // Sjekk tilgjengelighet på fra-dato. Ved open-ended brukes 90 dager
-      // frem som estimert periode (samsvarer med internt system).
-      const a = window.MockData.getAvailability(locId, new Date(from));
-      if (a.available < rooms) {
-        return this._showMsg(
-          `Ikke nok ledige rom (${a.available} tilgjengelig, ${rooms} ønsket).`,
-          "error"
-        );
-      }
+      // Sjekk tilgjengelighet for ALLE dager i perioden. Ved open-ended brukes
+      // 90 dager frem som estimert periode. Bestillingen blokkeres ikke ved
+      // mangel — i stedet bygges en advarsel som vises til kunden og som
+      // sendes med i e-postvarselet til Frank.
+      const periodEndIso = openEnd
+        ? addDaysIso(from, this.OPEN_ENDED_DAYS - 1)
+        : to;
+      const shortfalls = this._collectShortfalls(locId, from, periodEndIso, rooms);
+      const warning = shortfalls.length
+        ? buildWarningMessage(shortfalls, rooms)
+        : null;
 
       const payload = {
         customer: this.customer.id,
@@ -256,7 +281,9 @@
         openEnded: openEnd,
         estimatedDays: openEnd ? this.OPEN_ENDED_DAYS : null,
         rooms,
-        guests
+        guests,
+        shortfalls,                   // [{ date: "YYYY-MM-DD", available, missing }]
+        warning                       // ferdig formatert tekst eller null
       };
 
       const submitBtn = document.getElementById("submit-btn");
@@ -267,10 +294,7 @@
         submitBtn.disabled = false;
         submitBtn.textContent = "Send bestilling";
         if (res.ok) {
-          this._showMsg(
-            `Bestilling mottatt. Referanse: ${res.reference}`,
-            "ok"
-          );
+          this._showConfirmation(res.reference, payload.warning);
           document.getElementById("booking-form").reset();
           document.getElementById("f-rooms").value = "1";
           this._renderGuests(1);
@@ -285,11 +309,87 @@
     _showMsg(text, kind) {
       const msg = document.getElementById("form-message");
       msg.textContent = text;
-      msg.classList.remove("is-ok", "is-error");
+      msg.classList.remove("is-ok", "is-error", "has-warning");
       msg.classList.add(kind === "ok" ? "is-ok" : "is-error");
+      msg.hidden = false;
+    },
+
+    _showConfirmation(reference, warning) {
+      const msg = document.getElementById("form-message");
+      msg.classList.remove("is-ok", "is-error", "has-warning");
+      msg.classList.add("is-ok");
+      msg.innerHTML = "";
+
+      const head = document.createElement("strong");
+      head.textContent = `Bestilling mottatt. Referanse: ${reference}`;
+      msg.appendChild(head);
+
+      if (warning) {
+        msg.classList.add("has-warning");
+        const warn = document.createElement("p");
+        warn.className = "form-warning";
+        warn.textContent = warning;
+        msg.appendChild(warn);
+      }
+
       msg.hidden = false;
     }
   };
+
+  // ---------- date- og tekst-hjelpere ----------
+
+  function parseIsoLocal(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function isoLocal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function addDaysDate(date, n) {
+    const out = new Date(date);
+    out.setDate(out.getDate() + n);
+    return out;
+  }
+
+  function addDaysIso(iso, n) {
+    return isoLocal(addDaysDate(parseIsoLocal(iso), n));
+  }
+
+  function formatDdMm(iso) {
+    return iso.slice(8, 10) + "." + iso.slice(5, 7);
+  }
+
+  function joinNo(items) {
+    if (items.length <= 1) return items.join("");
+    if (items.length === 2) return items.join(" og ");
+    return items.slice(0, -1).join(", ") + " og " + items[items.length - 1];
+  }
+
+  /**
+   * Bygger advarselsteksten. Grupperer datoer som har samme antall
+   * ledige rom, slik at "15.06 og 16.06 har bare 4 ledige rom" kan
+   * stå som én setning.
+   */
+  function buildWarningMessage(shortfalls, rooms) {
+    const groups = new Map(); // available → [iso, iso, ...]
+    for (const s of shortfalls) {
+      if (!groups.has(s.available)) groups.set(s.available, []);
+      groups.get(s.available).push(s.date);
+    }
+
+    const sortedAvail = Array.from(groups.keys()).sort((a, b) => a - b);
+    const sentences = sortedAvail.map((avail) => {
+      const dates = groups.get(avail).map(formatDdMm);
+      return `${joinNo(dates)} har bare ${avail} ledige rom — du har bestilt ${rooms}.`;
+    });
+
+    return "Obs: " + sentences.join(" ") + " 2GM vil kontakte deg.";
+  }
 
   window.Booking = Booking;
 })();

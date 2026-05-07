@@ -92,6 +92,19 @@
         const ref = "2GM-" + Math.random().toString(36).slice(2, 8).toUpperCase();
         // eslint-disable-next-line no-console
         console.log("[MOCK] Bestilling sendt:", payload, "→ ref", ref);
+
+        // Simuler e-postvarsel til Frank. Når ekte API kommer på plass
+        // skal denne advarselen ligge i e-post-bodyen så han kan ta
+        // kontakt med kunden ved kapasitetsmangel.
+        if (payload.warning) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[MOCK EMAIL → frankhaugan@gmail.com] Bestilling " + ref +
+            " har kapasitetsmangel:\n" + payload.warning +
+            "\nDetaljer:", payload.shortfalls
+          );
+        }
+
         resolve({ ok: true, reference: ref });
       }, 600);
     });
