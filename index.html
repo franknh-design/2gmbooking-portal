@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1B4F72" />
+  <title>2GM Eiendom – Bestillingsportal</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+
+  <!-- ========== SMS-verifisering (vises før portalen) ========== -->
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-card">
+      <div class="auth-logo">2GM Eiendom</div>
+      <h1 class="auth-title">Bestillingsportal</h1>
+      <p class="auth-sub" id="auth-customer-sub">Logger inn…</p>
+
+      <!-- Steg 1: telefonnummer -->
+      <form id="auth-phone-form" class="auth-form">
+        <label class="field">
+          <span class="field-label">Mobilnummer</span>
+          <input
+            type="tel"
+            id="auth-phone"
+            name="phone"
+            placeholder="+47 999 99 999"
+            autocomplete="tel"
+            required
+          />
+        </label>
+        <button type="submit" class="btn btn-primary">Send kode på SMS</button>
+        <p class="auth-hint">Du mottar en 6-sifret engangskode.</p>
+      </form>
+
+      <!-- Steg 2: kode -->
+      <form id="auth-code-form" class="auth-form" hidden>
+        <label class="field">
+          <span class="field-label">Engangskode</span>
+          <input
+            type="text"
+            id="auth-code"
+            name="code"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            placeholder="• • • • • •"
+            autocomplete="one-time-code"
+            required
+          />
+        </label>
+        <button type="submit" class="btn btn-primary">Bekreft og logg inn</button>
+        <button type="button" class="btn btn-link" id="auth-back">← Endre nummer</button>
+        <p class="auth-hint" id="auth-mock-hint"></p>
+      </form>
+
+      <p id="auth-error" class="auth-error" hidden></p>
+    </div>
+  </section>
+
+  <!-- ========== Portal ========== -->
+  <div id="portal" hidden>
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-logo">2GM Eiendom</span>
+        <span class="topbar-divider">/</span>
+        <span class="topbar-app">Bestillingsportal</span>
+      </div>
+      <div class="topbar-right">
+        <span class="badge badge-customer" id="customer-badge">—</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Kalender -->
+      <section class="panel panel-calendar" aria-label="Kalender">
+        <div class="panel-head">
+          <h2 class="panel-title">Tilgjengelighet</h2>
+          <div class="legend" aria-hidden="true">
+            <span class="legend-item"><i class="dot dot-green"></i>Ledig</span>
+            <span class="legend-item"><i class="dot dot-amber"></i>Få igjen</span>
+            <span class="legend-item"><i class="dot dot-red"></i>Fullt</span>
+          </div>
+        </div>
+
+        <div class="cal-controls">
+          <button type="button" class="btn btn-ghost" id="cal-prev" aria-label="Forrige måned">‹</button>
+          <h3 class="cal-month" id="cal-month">—</h3>
+          <button type="button" class="btn btn-ghost" id="cal-next" aria-label="Neste måned">›</button>
+        </div>
+
+        <div class="cal-weekdays" aria-hidden="true">
+          <span>Man</span><span>Tir</span><span>Ons</span>
+          <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
+        </div>
+        <div class="cal-grid" id="cal-grid" role="grid"></div>
+
+        <p class="cal-footnote">Klikk på en dato for å forhåndsutfylle skjemaet.</p>
+      </section>
+
+      <!-- Bestillingsskjema -->
+      <section class="panel panel-form" aria-label="Bestilling">
+        <div class="panel-head">
+          <h2 class="panel-title">Ny bestilling</h2>
+          <span class="badge" id="avail-badge">Velg dato</span>
+        </div>
+
+        <form id="booking-form" class="booking-form" novalidate>
+          <label class="field">
+            <span class="field-label">Lokasjon</span>
+            <select id="f-location" name="location" required></select>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">Fra dato</span>
+              <input type="date" id="f-from" name="from" required />
+            </label>
+            <label class="field">
+              <span class="field-label">Til dato</span>
+              <input type="date" id="f-to" name="to" required />
+            </label>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Antall rom</span>
+            <div class="counter" role="group" aria-label="Antall rom">
+              <button type="button" class="counter-btn" id="rooms-minus" aria-label="Færre rom">−</button>
+              <input
+                type="number"
+                id="f-rooms"
+                name="rooms"
+                value="1"
+                min="1"
+                max="20"
+                inputmode="numeric"
+                aria-live="polite"
+              />
+              <button type="button" class="counter-btn" id="rooms-plus" aria-label="Flere rom">+</button>
+            </div>
+          </div>
+
+          <fieldset class="field guests">
+            <legend class="field-label">Navn på gjester</legend>
+            <div id="guests-list" class="guests-list"></div>
+          </fieldset>
+
+          <button type="submit" class="btn btn-primary btn-submit" id="submit-btn">
+            Send bestilling
+          </button>
+
+          <p id="form-message" class="form-message" hidden></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <small>© 2GM Eiendom AS · Bestillingsportal v1.0</small>
+    </footer>
+  </div>
+
+  <script src="assets/js/mockdata.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/calendar.js"></script>
+  <script src="assets/js/booking.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

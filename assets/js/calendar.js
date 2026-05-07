@@ -1,0 +1,134 @@
+/* =========================================================
+   Kalender-komponent.
+   - Tegner månedsoversikt (Man–Søn).
+   - Henter ledighet pr. dato fra MockData.
+   - Klikk på dato → callback til app.
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const MONTHS_NB = [
+    "januar", "februar", "mars", "april", "mai", "juni",
+    "juli", "august", "september", "oktober", "november", "desember"
+  ];
+
+  const Calendar = {
+    locationId: null,
+    viewYear:  null,
+    viewMonth: null, // 0-indeksert
+    selected:  null, // YYYY-MM-DD
+    onSelect:  null,
+
+    init({ locationId, onSelect }) {
+      this.locationId = locationId;
+      this.onSelect = onSelect;
+
+      const today = new Date();
+      this.viewYear  = today.getFullYear();
+      this.viewMonth = today.getMonth();
+
+      document.getElementById("cal-prev").addEventListener("click", () => this.shift(-1));
+      document.getElementById("cal-next").addEventListener("click", () => this.shift(+1));
+
+      this.render();
+    },
+
+    setLocation(locationId) {
+      this.locationId = locationId;
+      this.render();
+    },
+
+    setSelected(isoDate) {
+      this.selected = isoDate || null;
+      this.render();
+    },
+
+    shift(deltaMonths) {
+      let m = this.viewMonth + deltaMonths;
+      let y = this.viewYear;
+      while (m < 0)  { m += 12; y -= 1; }
+      while (m > 11) { m -= 12; y += 1; }
+      this.viewMonth = m;
+      this.viewYear  = y;
+      this.render();
+    },
+
+    render() {
+      const grid = document.getElementById("cal-grid");
+      const monthEl = document.getElementById("cal-month");
+
+      monthEl.textContent = `${MONTHS_NB[this.viewMonth]} ${this.viewYear}`;
+      grid.innerHTML = "";
+
+      const firstOfMonth = new Date(this.viewYear, this.viewMonth, 1);
+      const daysInMonth  = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+
+      // JS: 0 = søndag … vi vil ha man=0 … søn=6
+      const jsDow = firstOfMonth.getDay();
+      const monBased = (jsDow + 6) % 7;
+
+      // Tomme celler før første
+      for (let i = 0; i < monBased; i++) {
+        const empty = document.createElement("div");
+        empty.className = "cal-cell cal-cell-empty";
+        grid.appendChild(empty);
+      }
+
+      const todayIso = isoOf(new Date());
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(this.viewYear, this.viewMonth, d);
+        const iso  = isoOf(date);
+
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "cal-cell";
+        cell.dataset.date = iso;
+
+        let avail = { available: 0, total: 0, level: "red" };
+        if (this.locationId) {
+          avail = window.MockData.getAvailability(this.locationId, date);
+        }
+
+        cell.classList.add(`lvl-${avail.level}`);
+        if (iso === todayIso) cell.classList.add("is-today");
+        if (iso === this.selected) cell.classList.add("is-selected");
+
+        const dateEl = document.createElement("span");
+        dateEl.className = "cal-date";
+        dateEl.textContent = String(d);
+
+        const roomsEl = document.createElement("span");
+        roomsEl.className = "cal-rooms";
+        if (this.locationId) {
+          roomsEl.textContent =
+            avail.level === "red"
+              ? "Fullt"
+              : `${avail.available} ledig`;
+        } else {
+          roomsEl.textContent = "—";
+        }
+
+        cell.appendChild(dateEl);
+        cell.appendChild(roomsEl);
+
+        cell.addEventListener("click", () => {
+          if (typeof this.onSelect === "function") {
+            this.onSelect(iso, avail);
+          }
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+  };
+
+  function isoOf(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  window.Calendar = Calendar;
+})();
