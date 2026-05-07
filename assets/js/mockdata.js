@@ -93,17 +93,19 @@
         // eslint-disable-next-line no-console
         console.log("[MOCK] Bestilling sendt:", payload, "→ ref", ref);
 
-        // Simuler e-postvarsel til Frank. Når ekte API kommer på plass
-        // skal denne advarselen ligge i e-post-bodyen så han kan ta
-        // kontakt med kunden ved kapasitetsmangel.
-        if (payload.warning) {
-          // eslint-disable-next-line no-console
-          console.warn(
-            "[MOCK EMAIL → frankhaugan@gmail.com] Bestilling " + ref +
-            " har kapasitetsmangel:\n" + payload.warning +
-            "\nDetaljer:", payload.shortfalls
-          );
-        }
+        // Simuler e-postvarsel til Frank. Bestillingen er alltid skrevet
+        // som Upcoming + Pending_Confirmation i SharePoint; advarselen
+        // forteller hvor han må prioritere manuell bekreftelse.
+        const headline = payload.warning
+          ? "har KAPASITETSKONFLIKT — manuell bekreftelse kreves"
+          : "venter på bekreftelse";
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[MOCK EMAIL → frankhaugan@gmail.com] Bestilling ${ref} ${headline}.`,
+          "\nStatus: Upcoming · Pending_Confirmation: true",
+          payload.warning ? "\n" + payload.warning : "",
+          "\nDetaljer:", payload
+        );
 
         resolve({ ok: true, reference: ref });
       }, 600);

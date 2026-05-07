@@ -273,6 +273,9 @@
         ? buildWarningMessage(shortfalls, rooms)
         : null;
 
+      // Alle bestillinger opprettes som Upcoming + Pending_Confirmation i
+      // SharePoint, uavhengig av kapasitet. Frank løser konflikter manuelt
+      // ved bekreftelse. Advarselen er rent informasjonell.
       const payload = {
         customer: this.customer.id,
         location: locId,
@@ -282,6 +285,8 @@
         estimatedDays: openEnd ? this.OPEN_ENDED_DAYS : null,
         rooms,
         guests,
+        status: "Upcoming",           // SharePoint: Status
+        pendingConfirmation: true,    // SharePoint: Pending_Confirmation
         shortfalls,                   // [{ date: "YYYY-MM-DD", available, missing }]
         warning                       // ferdig formatert tekst eller null
       };
@@ -323,6 +328,11 @@
       const head = document.createElement("strong");
       head.textContent = `Bestilling mottatt. Referanse: ${reference}`;
       msg.appendChild(head);
+
+      const sub = document.createElement("p");
+      sub.className = "form-submsg";
+      sub.textContent = "Avventer bekreftelse fra 2GM Eiendom.";
+      msg.appendChild(sub);
 
       if (warning) {
         msg.classList.add("has-warning");
