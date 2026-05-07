@@ -664,7 +664,7 @@
       .sort((a, b) => a.available - b.available)
       .map((g) => {
         const dates = g.dates.map(formatDdMm);
-        return `${joinNo(dates)} har bare ${g.available} ledige rom — du trenger ${g.needed}.`;
+        return `${joinNo(dates)} har bare ${g.available} ledige rom — du trenger ${g.needed} rom.`;
       });
 
     return "Obs: " + sentences.join(" ") + " 2GM vil kontakte deg.";
