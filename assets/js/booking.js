@@ -24,7 +24,22 @@
       this._wireUp();
       this._renderGuests(this._getRooms());
       this._setMinDates();
+      this._applyOpenEndedState();
       this._refreshAvailabilityBadge();
+    },
+
+    OPEN_ENDED_DAYS: 90,
+
+    isOpenEnded() {
+      const cb = document.getElementById("f-open-ended");
+      return !!(cb && cb.checked);
+    },
+
+    _applyOpenEndedState() {
+      const open = this.isOpenEnded();
+      const toEl = document.getElementById("f-to");
+      toEl.disabled = open;
+      if (open) toEl.value = "";
     },
 
     _populateLocations() {
@@ -62,13 +77,19 @@
     },
 
     _wireUp() {
-      const locEl   = document.getElementById("f-location");
-      const fromEl  = document.getElementById("f-from");
-      const toEl    = document.getElementById("f-to");
-      const roomsEl = document.getElementById("f-rooms");
-      const minus   = document.getElementById("rooms-minus");
-      const plus    = document.getElementById("rooms-plus");
-      const form    = document.getElementById("booking-form");
+      const locEl    = document.getElementById("f-location");
+      const fromEl   = document.getElementById("f-from");
+      const toEl     = document.getElementById("f-to");
+      const roomsEl  = document.getElementById("f-rooms");
+      const minus    = document.getElementById("rooms-minus");
+      const plus     = document.getElementById("rooms-plus");
+      const form     = document.getElementById("booking-form");
+      const openEnd  = document.getElementById("f-open-ended");
+
+      openEnd.addEventListener("change", () => {
+        this._applyOpenEndedState();
+        this._refreshAvailabilityBadge();
+      });
 
       locEl.addEventListener("change", () => {
         if (typeof this.onLocationChange === "function") {
@@ -175,9 +196,13 @@
       const a = window.MockData.getAvailability(locId, date);
       badge.classList.add(`lvl-${a.level}`);
 
-      if (a.level === "red") badge.textContent = "Fullt";
-      else if (a.level === "amber") badge.textContent = `Få igjen (${a.available})`;
-      else badge.textContent = `${a.available} ledige`;
+      const suffix = this.isOpenEnded()
+        ? ` · estimert ${this.OPEN_ENDED_DAYS} dager`
+        : "";
+
+      if (a.level === "red") badge.textContent = "Fullt" + suffix;
+      else if (a.level === "amber") badge.textContent = `Få igjen (${a.available})` + suffix;
+      else badge.textContent = `${a.available} ledige` + suffix;
     },
 
     _collectGuestNames() {
@@ -190,19 +215,31 @@
       msg.hidden = true;
       msg.classList.remove("is-ok", "is-error");
 
-      const locId  = this.getSelectedLocationId();
-      const from   = document.getElementById("f-from").value;
-      const to     = document.getElementById("f-to").value;
-      const rooms  = this._getRooms();
-      const guests = this._collectGuestNames();
+      const locId    = this.getSelectedLocationId();
+      const from     = document.getElementById("f-from").value;
+      const toRaw    = document.getElementById("f-to").value;
+      const openEnd  = this.isOpenEnded();
+      const to       = openEnd ? null : (toRaw || null);
+      const rooms    = this._getRooms();
+      const guests   = this._collectGuestNames();
 
-      if (!locId)  return this._showMsg("Velg lokasjon.", "error");
-      if (!from)   return this._showMsg("Velg fra-dato.", "error");
-      if (!to)     return this._showMsg("Velg til-dato.", "error");
-      if (to < from) return this._showMsg("Til-dato må være etter fra-dato.", "error");
-      if (guests.some((g) => !g)) return this._showMsg("Fyll inn navn for alle rom.", "error");
+      if (!locId) return this._showMsg("Velg lokasjon.", "error");
+      if (!from)  return this._showMsg("Velg fra-dato.", "error");
+      if (!openEnd && !to) {
+        return this._showMsg(
+          "Velg til-dato, eller huk av for «Vet ikke utflyttingsdato».",
+          "error"
+        );
+      }
+      if (to && to < from) {
+        return this._showMsg("Til-dato må være etter fra-dato.", "error");
+      }
+      if (guests.some((g) => !g)) {
+        return this._showMsg("Fyll inn navn for alle rom.", "error");
+      }
 
-      // Sjekk tilgjengelighet på fra-dato
+      // Sjekk tilgjengelighet på fra-dato. Ved open-ended brukes 90 dager
+      // frem som estimert periode (samsvarer med internt system).
       const a = window.MockData.getAvailability(locId, new Date(from));
       if (a.available < rooms) {
         return this._showMsg(
@@ -214,7 +251,11 @@
       const payload = {
         customer: this.customer.id,
         location: locId,
-        from, to, rooms,
+        from,
+        to,                           // null ved open-ended → Check_Out = null i SharePoint
+        openEnded: openEnd,
+        estimatedDays: openEnd ? this.OPEN_ENDED_DAYS : null,
+        rooms,
         guests
       };
 
@@ -233,6 +274,7 @@
           document.getElementById("booking-form").reset();
           document.getElementById("f-rooms").value = "1";
           this._renderGuests(1);
+          this._applyOpenEndedState();
           this._refreshAvailabilityBadge();
         } else {
           this._showMsg("Noe gikk galt. Prøv igjen.", "error");

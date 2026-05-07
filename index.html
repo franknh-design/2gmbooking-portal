@@ -114,10 +114,14 @@
               <span class="field-label">Fra dato</span>
               <input type="date" id="f-from" name="from" required />
             </label>
-            <label class="field">
-              <span class="field-label">Til dato</span>
-              <input type="date" id="f-to" name="to" required />
-            </label>
+            <div class="field">
+              <label class="field-label" for="f-to">Til dato</label>
+              <input type="date" id="f-to" name="to" />
+              <label class="checkbox" for="f-open-ended">
+                <input type="checkbox" id="f-open-ended" name="openEnded" />
+                <span>Vet ikke utflyttingsdato (open-ended)</span>
+              </label>
+            </div>
           </div>
 
           <div class="field">
