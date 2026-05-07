@@ -42,6 +42,12 @@
       if (open) toEl.value = "";
     },
 
+    _emitDateChange() {
+      if (typeof this.onDateChange === "function") {
+        this.onDateChange(this.getDateRange());
+      }
+    },
+
     _populateLocations() {
       const sel = document.getElementById("f-location");
       sel.innerHTML = "";
@@ -68,12 +74,25 @@
       return document.getElementById("f-location").value || null;
     },
 
+    /**
+     * Sett dato-feltene programmatisk.
+     * Pass undefined for å la et felt være urørt; "" eller null for å tømme.
+     */
     setDateRange(fromIso, toIso) {
       const fromEl = document.getElementById("f-from");
       const toEl   = document.getElementById("f-to");
-      if (fromIso) fromEl.value = fromIso;
-      if (toIso)   toEl.value   = toIso;
+      if (fromIso !== undefined) fromEl.value = fromIso || "";
+      if (toIso   !== undefined) toEl.value   = toIso   || "";
+      // Hold til-dato sin min-attributt i synk slik at manuell redigering oppfører seg likt
+      toEl.min = fromEl.value || "";
       this._refreshAvailabilityBadge();
+    },
+
+    getDateRange() {
+      return {
+        from: document.getElementById("f-from").value || null,
+        to:   document.getElementById("f-to").value || null
+      };
     },
 
     _wireUp() {
@@ -89,6 +108,7 @@
       openEnd.addEventListener("change", () => {
         this._applyOpenEndedState();
         this._refreshAvailabilityBadge();
+        this._emitDateChange();
       });
 
       locEl.addEventListener("change", () => {
@@ -105,13 +125,12 @@
         }
         toEl.min = fromEl.value || "";
         this._refreshAvailabilityBadge();
-        if (typeof this.onDateChange === "function") {
-          this.onDateChange(fromEl.value);
-        }
+        this._emitDateChange();
       });
 
       toEl.addEventListener("change", () => {
         this._refreshAvailabilityBadge();
+        this._emitDateChange();
       });
 
       minus.addEventListener("click", () => this._stepRooms(-1));

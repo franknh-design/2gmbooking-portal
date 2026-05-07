@@ -16,7 +16,8 @@
     locationId: null,
     viewYear:  null,
     viewMonth: null, // 0-indeksert
-    selected:  null, // YYYY-MM-DD
+    rangeFrom: null, // YYYY-MM-DD
+    rangeTo:   null, // YYYY-MM-DD
     onSelect:  null,
 
     init({ locationId, onSelect }) {
@@ -38,8 +39,9 @@
       this.render();
     },
 
-    setSelected(isoDate) {
-      this.selected = isoDate || null;
+    setRange(fromIso, toIso) {
+      this.rangeFrom = fromIso || null;
+      this.rangeTo   = toIso   || null;
       this.render();
     },
 
@@ -92,7 +94,19 @@
 
         cell.classList.add(`lvl-${avail.level}`);
         if (iso === todayIso) cell.classList.add("is-today");
-        if (iso === this.selected) cell.classList.add("is-selected");
+
+        if (this.rangeFrom && iso === this.rangeFrom) {
+          cell.classList.add("is-range-from");
+          cell.dataset.endpoint = (iso === this.rangeTo) ? "1 dag" : "Fra";
+        }
+        if (this.rangeTo && iso === this.rangeTo && iso !== this.rangeFrom) {
+          cell.classList.add("is-range-to");
+          cell.dataset.endpoint = "Til";
+        }
+        if (this.rangeFrom && this.rangeTo &&
+            iso > this.rangeFrom && iso < this.rangeTo) {
+          cell.classList.add("is-in-range");
+        }
 
         const dateEl = document.createElement("span");
         dateEl.className = "cal-date";

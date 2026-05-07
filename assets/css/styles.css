@@ -234,10 +234,35 @@ input, select, button { font-family: inherit; }
   background: var(--c-brand);
   vertical-align: middle;
 }
-.cal-cell.is-selected {
+.cal-cell.is-selected,
+.cal-cell.is-range-from,
+.cal-cell.is-range-to {
   outline: 2px solid var(--c-brand);
   outline-offset: -2px;
+  box-shadow: 0 2px 6px rgba(27,79,114,.18);
 }
+.cal-cell.is-range-from::before,
+.cal-cell.is-range-to::before {
+  content: attr(data-endpoint);
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  background: var(--c-brand);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.cal-cell.is-in-range {
+  outline: 1px dashed rgba(27,79,114,.45);
+  outline-offset: -2px;
+  background-image: linear-gradient(rgba(27,79,114,.08), rgba(27,79,114,.08));
+}
+.cal-cell { position: relative; }
 
 .cal-cell.lvl-green {
   background: var(--c-green-bg);
