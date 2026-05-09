@@ -1,23 +1,31 @@
 /* =========================================================
    Mock-data — erstattes med Tilgjengelighets-API senere.
    Eksponert som globalt objekt: window.MockData
+   v2.0 — bytter Drammen-mockdata med 2GM-lokasjoner.
+   Token-validering er nå ekte (via window.Api), men kalender,
+   tilgjengelighet, OTP og booking-innsending er fortsatt mock.
    ========================================================= */
 (function () {
   "use strict";
 
   const LOCATIONS = [
-    { id: "drammen-sentrum",   name: "Drammen Sentrum",  totalRooms: 14 },
-    { id: "drammen-bragernes", name: "Drammen Bragernes", totalRooms: 8 },
-    { id: "kongsberg",         name: "Kongsberg",         totalRooms: 10 },
-    { id: "horten",            name: "Horten",            totalRooms: 6 }
+    { id: "strandveien112", name: "Strandveien 112",  totalRooms: 12 },
+    { id: "rigg24",         name: "Rigg 24",          totalRooms: 8  },
+    { id: "rigg44",         name: "Rigg 44",          totalRooms: 8  },
+    { id: "riggbotnhagen",  name: "Riggbotnhågen",    totalRooms: 6  },
+    { id: "andslimoen",     name: "Andslimoen",       totalRooms: 10 }
   ];
 
-  // Kunder — lookup by ?kunde=<id>
+  // Demo-kunde brukes kun når portalen åpnes uten ?token=
+  // (utviklingsmodus). Ekte kundedata kommer fra Customer_Tokens
+  // via window.Api.validateToken().
   const CUSTOMERS = {
-    "norconsult":   { id: "norconsult",   name: "Norconsult AS",        locations: ["drammen-sentrum", "drammen-bragernes", "kongsberg"] },
-    "veidekke":     { id: "veidekke",     name: "Veidekke Entreprenør", locations: ["drammen-sentrum", "horten"] },
-    "skanska":      { id: "skanska",      name: "Skanska Norge AS",     locations: ["kongsberg", "horten", "drammen-bragernes"] },
-    "demo":         { id: "demo",         name: "Demo-kunde",           locations: ["drammen-sentrum", "drammen-bragernes", "kongsberg", "horten"] }
+    "demo": {
+      id: "demo",
+      name: "Demo-kunde",
+      locations: ["strandveien112", "rigg24", "rigg44", "riggbotnhagen", "andslimoen"],
+      maxRooms: 10
+    }
   };
 
   /**
@@ -66,9 +74,14 @@
     return CUSTOMERS[id] || null;
   }
 
+  /**
+   * Filtrer LOCATIONS basert på customer.locations-array.
+   * Sammenligning er case-insensitive for robusthet mot SharePoint-data.
+   */
   function getLocationsForCustomer(customer) {
-    if (!customer) return [];
-    return LOCATIONS.filter(l => customer.locations.includes(l.id));
+    if (!customer || !customer.locations) return [];
+    const allowed = customer.locations.map(s => String(s).toLowerCase());
+    return LOCATIONS.filter(l => allowed.includes(l.id.toLowerCase()));
   }
 
   /**
@@ -90,8 +103,7 @@
       // Simuler nettverk
       setTimeout(() => {
         const ref = "2GM-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-        const customer = getCustomer(payload.customer);
-        const customerName = (customer && customer.name) || payload.customer;
+        const customerName = payload.customerName || payload.customer || "Ukjent";
 
         // Hver gjest blir én SharePoint-rad. Referansen skrives både som
         // eget felt (Reference) og inn i Notes-kolonnen, slik at hver
