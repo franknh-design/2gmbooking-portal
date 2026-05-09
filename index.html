@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.1.8 -->
+<!-- v3.1.9 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -92,9 +92,16 @@
         </p>
         <ul class="mb-list" id="mybookings-list" hidden></ul>
       </section>
+
+      <!-- CTA vises når kunden har bookinger; klikk åpner kalender + skjema. -->
+      <div class="new-booking-cta" id="newBookingCta" hidden>
+        <button type="button" class="btn btn-primary new-booking-cta-btn" id="newBookingCtaBtn">
+          + Ny booking
+        </button>
+      </div>
     </div>
 
-    <main class="layout">
+    <main class="layout" id="mainLayout">
       <!-- Venstre kolonne: kalender -->
       <div class="layout-col">
         <!-- Kalender -->
@@ -197,7 +204,7 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.8</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.9</small>
     </footer>
   </div>
 

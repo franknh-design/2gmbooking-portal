@@ -733,14 +733,29 @@ input[type="date"]:disabled {
   margin: 0 auto;
   padding: 24px 24px 0;
 }
-/* Når selve panelet er hidden (ingen bookinger) skal wrapperen kollapse
-   så vi ikke får tom luft over kalender+skjema. */
-.mybookings-top:has(> [hidden]) {
+/* Når selve panelet er hidden (demo-modus eller ingen token) skal wrapperen
+   kollapse helt så vi ikke får tom luft over kalender+skjema. */
+.mybookings-top:has(#mybookings-panel[hidden]) {
   padding: 0;
 }
 @media (max-width: 900px) {
   .mybookings-top { padding: 16px 16px 0; }
-  .mybookings-top:has(> [hidden]) { padding: 0; }
+  .mybookings-top:has(#mybookings-panel[hidden]) { padding: 0; }
+}
+
+/* CTA "+ Ny booking" — vises kun når kunden har bookinger; klikk åpner layout. */
+.new-booking-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+.new-booking-cta-btn {
+  font-size: 16px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  box-shadow: 0 4px 14px rgba(27,79,114,.25);
 }
 
 .panel-mybookings .badge {

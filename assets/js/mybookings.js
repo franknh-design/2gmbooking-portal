@@ -1,12 +1,14 @@
 /* =========================================================
    Mine bookinger.
-   v1.3
+   v1.4
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
    - Vises under kalenderen, alle lokasjoner samlet
    - Sortert kronologisk på Check_In
    - Viser romnr + dørkode når admin har tildelt
    - Viser bygg-adresse på egen linje under meta
    - "Forleng"-knapp på aktive bookinger → dialog → API-forespørsel
+   - Når kunden har minst én booking: skjuler kalender + skjema og viser
+     i stedet en "+ Ny booking"-CTA. Klikk på CTA åpner layouten.
    ========================================================= */
 (function () {
   "use strict";
@@ -69,12 +71,19 @@
       this.errorEl   = document.getElementById("mybookings-error");
       this.countEl   = document.getElementById("mybookings-count");
 
+      wireNewBookingCta();
+
       if (!this.container || !this.token) {
         if (this.container) this.container.hidden = true;
+        // Demo / ingen token: layout skal være synlig som vanlig
+        setLayoutVisible(true);
         return;
       }
 
       this.container.hidden = false;
+      // Mens vi laster: skjul layout for å unngå flash hvis kunden har
+      // bookinger. Vises igjen i _render hvis lista er tom eller ved feil.
+      setLayoutVisible(false);
       this.refresh();
     },
 
@@ -87,6 +96,9 @@
 
       if (!res || !res.ok) {
         this._setState("error");
+        // Ved feil: la kunden bestille likevel, vis layouten.
+        setLayoutVisible(true);
+        setCtaVisible(false);
         return;
       }
 
@@ -106,10 +118,17 @@
       if (!bookings.length) {
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
+        // Ingen bookinger → kalender + skjema synlig som vanlig, ingen CTA.
+        setLayoutVisible(true);
+        setCtaVisible(false);
         return;
       }
 
       this._setState("list");
+      // Har bookinger → vis CTA i stedet for layouten. Klikk åpner layouten.
+      setLayoutVisible(false);
+      setCtaVisible(true);
+
       if (this.countEl) {
         this.countEl.textContent = `${bookings.length} ${bookings.length === 1 ? "rad" : "rader"}`;
       }
@@ -317,6 +336,33 @@
     const d = new Date(iso);
     d.setDate(d.getDate() + daysToAdd);
     return d.toISOString().slice(0, 10);
+  }
+
+  // ---- Toggle av layout og "+ Ny booking"-CTA ----
+  let _ctaWired = false;
+  function wireNewBookingCta() {
+    if (_ctaWired) return;
+    const btn = document.getElementById("newBookingCtaBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      setLayoutVisible(true);
+      setCtaVisible(false);
+      const layout = document.getElementById("mainLayout");
+      if (layout && typeof layout.scrollIntoView === "function") {
+        layout.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+    _ctaWired = true;
+  }
+
+  function setLayoutVisible(visible) {
+    const layout = document.getElementById("mainLayout");
+    if (layout) layout.hidden = !visible;
+  }
+
+  function setCtaVisible(visible) {
+    const cta = document.getElementById("newBookingCta");
+    if (cta) cta.hidden = !visible;
   }
 
   window.MyBookings = MyBookings;
