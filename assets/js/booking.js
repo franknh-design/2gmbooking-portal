@@ -1,10 +1,11 @@
 /* =========================================================
    Bestillingsskjema.
+   v2.1.1
    - Lokasjonsdropdown (begrenset av kunde)
    - Fra/til-dato
    - Rom-teller med +/-
    - Dynamiske gjeste-felt (ett per rom)
-   - Tilgjengelighets-badge
+   - Tilgjengelighets-badge (henter fra ekte API via Api-cache)
    - Mock submit
    ========================================================= */
 (function () {
@@ -409,17 +410,48 @@
         return;
       }
 
+      // Bruk samme cache som kalenderen via window.Api.getAvailability
+      // Vi henter måneden valgt fra-dato ligger i, og slår opp eksakt dag.
       const date = new Date(fromEl.value);
-      const a = window.MockData.getAvailability(locId, date);
-      badge.classList.add(`lvl-${a.level}`);
+      const year  = date.getFullYear();
+      const month = date.getMonth();
 
-      const suffix = this.isOpenEnded()
-        ? ` · estimert ${this.OPEN_ENDED_DAYS} dager`
-        : "";
+      // Vis "Henter…" mens vi venter
+      badge.textContent = "Henter…";
 
-      if (a.level === "red") badge.textContent = "Fullt" + suffix;
-      else if (a.level === "amber") badge.textContent = `Få igjen (${a.available})` + suffix;
-      else badge.textContent = `${a.available} ledige` + suffix;
+      window.Api.getAvailability(locId, year, month).then(map => {
+        // Brukeren kan ha endret dato eller lokasjon mens vi ventet —
+        // sjekk at vi fortsatt viser samme valg
+        if (this.getSelectedLocationId() !== locId) return;
+        if (fromEl.value !== isoLocal(date)) return;
+
+        if (!map) {
+          badge.textContent = "Ukjent";
+          return;
+        }
+
+        const entry = map.get(isoLocal(date)) || { available: 0, totalActive: 0 };
+        const total = entry.totalActive;
+        const available = entry.available;
+
+        let level = "green";
+        if (total === 0 || available === 0) level = "red";
+        else if (available / total < 0.30) level = "amber";
+
+        badge.classList.add(`lvl-${level}`);
+
+        const suffix = this.isOpenEnded()
+          ? ` · estimert ${this.OPEN_ENDED_DAYS} dager`
+          : "";
+
+        if (level === "red") badge.textContent = "Fullt" + suffix;
+        else if (level === "amber") badge.textContent = `Få igjen (${available})` + suffix;
+        else badge.textContent = `${available} ledige` + suffix;
+      }).catch(err => {
+        // eslint-disable-next-line no-console
+        console.error("[BOOKING] availability-feil:", err);
+        badge.textContent = "Ukjent";
+      });
     },
 
     /**
@@ -470,6 +502,11 @@
         const needed = onSite.length;
         if (needed === 0) continue;
 
+        // OBS: Bruker fortsatt MockData her. Skjemaets badge bruker ekte
+        // tilgjengelighet, men overbooking-validering ved submit gjør det
+        // ikke ennå. Dette er OK fordi booking-innsending også er mock —
+        // når vi bygger ekte innsending, gjør vi sjekken på serversiden i
+        // tillegg, og denne klient-sjekken kan vi gjøre async via Api.
         const a = window.MockData.getAvailability(locationId, d);
         if (a.available < needed) {
           out.push({
