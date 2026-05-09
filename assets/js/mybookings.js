@@ -1,9 +1,10 @@
 /* =========================================================
    Mine bookinger.
-   v1.0
+   v1.1
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
    - Vises under kalenderen, alle lokasjoner samlet
    - Sortert kronologisk på Check_In
+   - Viser romnr + dørkode når admin har tildelt
    ========================================================= */
 (function () {
   "use strict";
@@ -145,6 +146,20 @@
           refEl.className = "mb-ref";
           refEl.textContent = b.ref;
           meta.appendChild(refEl);
+        }
+
+        if (b.roomNumber) {
+          const roomEl = document.createElement("span");
+          roomEl.className = "mb-room";
+          roomEl.textContent = `Rom ${b.roomNumber}`;
+          meta.appendChild(roomEl);
+        }
+
+        if (b.doorCode) {
+          const codeEl = document.createElement("span");
+          codeEl.className = "mb-doorcode";
+          codeEl.textContent = `Kode ${b.doorCode}`;
+          meta.appendChild(codeEl);
         }
 
         meta.appendChild(statusBadge(b.status, b.pendingConfirmation));

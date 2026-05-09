@@ -147,6 +147,22 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
   });
 }
 
+// Map fra Rooms-rad-id → { title, doorCode }. Brukes til å berike booking-svar
+// med romnummer + dørkode etter at admin har tildelt rom.
+export async function getRoomsByIdMap(env) {
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS);
+  const map = {};
+  for (const item of items) {
+    if (!item.id) continue;
+    const f = item.fields || {};
+    map[String(item.id)] = {
+      title: f.Title || null,
+      doorCode: f.Door_Code || null,
+    };
+  }
+  return map;
+}
+
 // ============================================================================
 // Booking
 // ============================================================================

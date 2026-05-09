@@ -1,5 +1,6 @@
 // functions/api/my-bookings.js
-// v1.0 - Returnerer aktive + kommende bookinger for kunden bak token
+// v1.1 - Returnerer aktive + kommende bookinger for kunden bak token,
+//        nå også med roomNumber + doorCode når admin har tildelt rom.
 //
 // POST /api/my-bookings
 // Body: { token: "..." }
@@ -13,11 +14,13 @@
 //         checkIn: "2026-05-18",
 //         checkOut: "2026-05-22",   // null hvis open-ended
 //         status: "Upcoming",
-//         pendingConfirmation: true
+//         pendingConfirmation: true,
+//         roomNumber: "204",        // null før tildelt
+//         doorCode: "1234#"         // null hvis ikke satt
 //       }, ...
 //     ] }
 
-import { findToken, getBookingsForCompany } from "../_utils/sharepoint.js";
+import { findToken, getBookingsForCompany, getRoomsByIdMap } from "../_utils/sharepoint.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -40,10 +43,15 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: true, bookings: [] });
     }
 
-    const items = await getBookingsForCompany(env, company);
+    const [items, roomsById] = await Promise.all([
+      getBookingsForCompany(env, company),
+      getRoomsByIdMap(env),
+    ]);
 
     const bookings = items.map(item => {
       const f = item.fields;
+      const roomId = f.RoomLookupId;
+      const room = roomId ? roomsById[String(roomId)] : null;
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
@@ -52,6 +60,8 @@ export async function onRequestPost(context) {
         checkOut: f.Check_Out || null,
         status: f.Status || "",
         pendingConfirmation: f.Pending_Confirmation === true,
+        roomNumber: room ? room.title : null,
+        doorCode: room ? room.doorCode : null,
       };
     });
 
