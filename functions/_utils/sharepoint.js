@@ -1,8 +1,9 @@
 // functions/_utils/sharepoint.js
-// v1.4 - SharePoint operations via Microsoft Graph
-// Endringer fra v1.3:
-//   - Lagt til createBookingRows() for å opprette bookinger i Booking-listen
-//   - Lagt til generateBookingRef() for unik referanse-generering
+// v1.5 - SharePoint operations via Microsoft Graph
+// Endringer fra v1.4:
+//   - Lagt til fetchAllItems() som håndterer @odata.nextLink-paginering
+//   - Alle list-spørringer går nå gjennom fetchAllItems
+//   - Default page size 999 (Graph API maks)
 
 import { graphRequest } from "./graph.js";
 
@@ -28,15 +29,57 @@ export function propertyIdToName(id) {
 }
 
 // ============================================================================
+// Felles paginering
+// ============================================================================
+
+/**
+ * Henter ALLE rader fra en SharePoint-liste, med automatisk paginering
+ * via @odata.nextLink. Stopper etter MAX_PAGES for sikkerhets skyld
+ * (forhindrer uendelig løkke ved feil).
+ *
+ * Graph API begrenser ofte til 200 per side selv med $top=999, derfor
+ * MÅ vi følge nextLink. Booking-listen har 656 rader og vil vokse,
+ * så uten paginering ville vi savne data uten feilmelding.
+ */
+async function fetchAllItems(env, listId, query = "$expand=fields&$top=999") {
+  const MAX_PAGES = 50; // 50 * 999 = 49 950 rader. Mer enn nok.
+  const startPath = `/sites/${SITE_ID}/lists/${listId}/items?${query}`;
+
+  const allItems = [];
+  let nextUrl = null;
+  let pages = 0;
+
+  do {
+    const data = nextUrl
+      ? await graphRequest(env, nextUrl)         // absolutt URL fra nextLink
+      : await graphRequest(env, startPath);      // relativ sti første gang
+
+    if (Array.isArray(data.value)) {
+      allItems.push(...data.value);
+    }
+
+    nextUrl = data["@odata.nextLink"] || null;
+    pages++;
+
+    if (pages >= MAX_PAGES) {
+      // eslint-disable-next-line no-console
+      console.warn(`[SP] fetchAllItems hit MAX_PAGES (${MAX_PAGES}) for list ${listId}. Truncating.`);
+      break;
+    }
+  } while (nextUrl);
+
+  return allItems;
+}
+
+// ============================================================================
 // Properties (Eiendommer-listen)
 // ============================================================================
 
 async function getPropertyLookupMap(env) {
-  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PROPERTIES}/items?expand=fields&$top=999`;
-  const data = await graphRequest(env, path);
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
 
   const map = {};
-  for (const item of (data.value || [])) {
+  for (const item of items) {
     const lookupId = item.id;
     const title = item.fields?.Title;
     if (lookupId && title) map[lookupId] = title;
@@ -49,10 +92,9 @@ async function getPropertyLookupMap(env) {
 // ============================================================================
 
 export async function findToken(env, token) {
-  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.TOKENS}/items?expand=fields&$top=999`;
-  const data = await graphRequest(env, path);
+  const items = await fetchAllItems(env, LIST_IDS.TOKENS);
 
-  const match = data.value.find(item =>
+  const match = items.find(item =>
     item.fields.Token === token && item.fields.Aktiv === true
   );
 
@@ -94,10 +136,9 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 
   if (!lookupIdForProperty) return [];
 
-  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.ROOMS}/items?expand=fields&$top=999`;
-  const data = await graphRequest(env, path);
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS);
 
-  return data.value.filter(item => {
+  return items.filter(item => {
     const f = item.fields;
     const matches = String(f.PropertyLookupId) === String(lookupIdForProperty);
     const hasTitle = !!f.Title;
@@ -111,24 +152,19 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 // ============================================================================
 
 export async function getBookingsForProperty(env, propertyName) {
-  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items?expand=fields&$top=999`;
-  const data = await graphRequest(env, path);
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
 
   const ACTIVE_STATUSES = new Set(["Active", "Upcoming"]);
 
-  return data.value.filter(item => {
+  return items.filter(item => {
     const f = item.fields;
     return f.Property_Name === propertyName
       && ACTIVE_STATUSES.has(f.Status);
   });
 }
 
-/**
- * Genererer en unik booking-referanse i format "2GM-AB12CD".
- * Kollisjon er praktisk talt umulig (36^6 = 2.2 milliarder kombinasjoner).
- */
 export function generateBookingRef() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // utelater forvirrende I, O, 0, 1
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let suffix = "";
   for (let i = 0; i < 6; i++) {
     suffix += chars[Math.floor(Math.random() * chars.length)];
@@ -136,19 +172,6 @@ export function generateBookingRef() {
   return `2GM-${suffix}`;
 }
 
-/**
- * Oppretter én rad i Booking-listen.
- *
- * Felt som settes:
- *   - Title (Booking_Ref) - felles referanse for hele bestillingen
- *   - Property_Name - tekst (matcher våre tilgjengelighetssjekker)
- *   - Person_Name, Company - hvem som kommer
- *   - Check_In, Check_Out (kan være null = open-ended)
- *   - Status = "Upcoming"
- *   - Pending_Confirmation = true (signaliserer "venter på Frank")
- *   - Notes - referanse + kapasitetsadvarsel hvis aktuelt
- *   - Room - IKKE satt (du tildeler manuelt)
- */
 export async function createBookingRow(env, fields) {
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items`;
 
@@ -157,14 +180,13 @@ export async function createBookingRow(env, fields) {
     Property_Name: fields.propertyName,
     Person_Name: fields.guestName,
     Company: fields.companyName,
-    Check_In: fields.checkIn,            // ISO string eller null
-    Check_Out: fields.checkOut || null,  // null = open-ended
+    Check_In: fields.checkIn,
+    Check_Out: fields.checkOut || null,
     Status: "Upcoming",
     Pending_Confirmation: true,
     Notes: fields.notes || "",
   };
 
-  // Fjern null/undefined-verdier slik at SharePoint bruker default
   for (const key of Object.keys(sharepointFields)) {
     if (sharepointFields[key] === null || sharepointFields[key] === undefined) {
       delete sharepointFields[key];
@@ -179,9 +201,6 @@ export async function createBookingRow(env, fields) {
   return result;
 }
 
-/**
- * Oppretter flere booking-rader i parallell og returnerer resultatene.
- */
 export async function createBookingRows(env, rows) {
   const results = await Promise.allSettled(
     rows.map(row => createBookingRow(env, row))
@@ -276,12 +295,6 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO) {
   return { property: propertyName, days };
 }
 
-/**
- * Hjelpefunksjon: gitt et booking-payload, identifiser hvilke datoer
- * som har for få ledige rom for det antallet bestillingen krever.
- *
- * Brukes til å flagge kapasitetskonflikt i Notes ved innsending.
- */
 export async function checkCapacityConflict(env, propertyName, fromISO, toISO, roomCount) {
   const result = await calculateAvailability(env, propertyName, fromISO, toISO);
 
