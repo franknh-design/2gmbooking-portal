@@ -229,6 +229,21 @@ input, select, button { font-family: inherit; }
   padding: 4px 0;
 }
 
+/* Auto-utvidelse: andre måned rett under den primære, ingen nav-knapper. */
+.cal-extra {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--c-border);
+}
+.cal-month-extra {
+  text-align: center;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-muted);
+  text-transform: capitalize;
+}
+
 .cal-cell {
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-sm);

@@ -1,10 +1,12 @@
 /* =========================================================
    Kalender-komponent.
-   v2.2
+   v2.3
    - Henter ledighet pr. dato fra ekte API (window.Api.getAvailability)
    - Viser spinner mens data lastes
    - Skjuler datoer som er passert (rendres som tomme celler)
    - Deaktiverer «forrige måned»-knappen når man står på inneværende måned
+   - v2.3: Auto-utvider med neste måned når dagens måned har < 4 hele uker
+     igjen, så kunden alltid ser minst 28 dager fremover.
    ========================================================= */
 (function () {
   "use strict";
@@ -18,6 +20,9 @@
   // Hvis < AMBER_THRESHOLD av totalen er ledig → gult.
   const AMBER_THRESHOLD = 0.30;
 
+  // Garantert antall dager kunden skal se fremover fra dagens dato.
+  const MIN_DAYS_AHEAD = 28;
+
   const Calendar = {
     locationId: null,
     viewYear:  null,
@@ -27,7 +32,8 @@
     onSelect:  null,
 
     // availabilityMap: Map<isoDate, { available, occupied, totalActive }>
-    availabilityMap: null,
+    availabilityMap:  null,
+    availabilityMap2: null, // for auto-utvidet neste måned
     isLoading: false,
 
     init({ locationId, onSelect }) {
@@ -79,7 +85,8 @@
      */
     async renderAndLoad() {
       // Tøm tidligere data og marker som loading
-      this.availabilityMap = null;
+      this.availabilityMap  = null;
+      this.availabilityMap2 = null;
       this.isLoading = true;
       this.render();
 
@@ -91,17 +98,21 @@
       }
 
       try {
-        // window.Api.getAvailability har egen cache
-        const data = await window.Api.getAvailability(
-          this.locationId,
-          this.viewYear,
-          this.viewMonth
-        );
-        this.availabilityMap = data; // null ved feil, Map ved suksess
+        const fetches = [
+          window.Api.getAvailability(this.locationId, this.viewYear, this.viewMonth)
+        ];
+        const extra = this._needsExtraMonth() ? this._extraMonthYM() : null;
+        if (extra) {
+          fetches.push(window.Api.getAvailability(this.locationId, extra.year, extra.month));
+        }
+        const results = await Promise.all(fetches);
+        this.availabilityMap  = results[0]; // null ved feil, Map ved suksess
+        this.availabilityMap2 = extra ? results[1] : null;
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[CAL] availability-feil:", err);
-        this.availabilityMap = null;
+        this.availabilityMap  = null;
+        this.availabilityMap2 = null;
       } finally {
         this.isLoading = false;
         this.render();
@@ -109,12 +120,6 @@
     },
 
     render() {
-      const grid = document.getElementById("cal-grid");
-      const monthEl = document.getElementById("cal-month");
-
-      monthEl.textContent = `${MONTHS_NB[this.viewMonth]} ${this.viewYear}`;
-      grid.innerHTML = "";
-
       // Deaktiver forrige-knappen når vi står på inneværende måned —
       // brukeren skal ikke kunne navigere til måneder som er passert.
       const prevBtn = document.getElementById("cal-prev");
@@ -126,15 +131,48 @@
         prevBtn.disabled = onCurrentMonth;
       }
 
-      // Vis spinner-overlay mens vi laster
-      if (this.isLoading) {
-        grid.classList.add("is-loading");
-      } else {
-        grid.classList.remove("is-loading");
-      }
+      // Primær måned
+      this._renderMonthBlock(
+        document.getElementById("cal-grid"),
+        document.getElementById("cal-month"),
+        this.viewYear,
+        this.viewMonth,
+        this.availabilityMap
+      );
 
-      const firstOfMonth = new Date(this.viewYear, this.viewMonth, 1);
-      const daysInMonth  = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+      // Auto-utvidelse: neste måned under hvis nødvendig
+      const extraWrap = document.getElementById("cal-extra");
+      if (this._needsExtraMonth()) {
+        const e = this._extraMonthYM();
+        if (extraWrap) extraWrap.hidden = false;
+        this._renderMonthBlock(
+          document.getElementById("cal-grid-2"),
+          document.getElementById("cal-month-2"),
+          e.year,
+          e.month,
+          this.availabilityMap2
+        );
+      } else if (extraWrap) {
+        extraWrap.hidden = true;
+      }
+    },
+
+    /**
+     * Rendrer én måned inn i (gridEl, monthLabelEl) basert på (year, month, map).
+     * map er null/Map; følger samme konvensjon som this.availabilityMap.
+     */
+    _renderMonthBlock(grid, monthEl, year, month, map) {
+      if (!grid || !monthEl) return;
+
+      monthEl.textContent = `${MONTHS_NB[month]} ${year}`;
+      grid.innerHTML = "";
+
+      // Spinner-overlay mens vi laster
+      if (this.isLoading) grid.classList.add("is-loading");
+      else grid.classList.remove("is-loading");
+
+      const firstOfMonth = new Date(year, month, 1);
+      const daysInMonth  = new Date(year, month + 1, 0).getDate();
 
       // Mandag-først: JS 0=søn → vil ha søn=6
       const jsDow = firstOfMonth.getDay();
@@ -149,7 +187,7 @@
       const todayIso = isoOf(new Date());
 
       for (let d = 1; d <= daysInMonth; d++) {
-        const date = new Date(this.viewYear, this.viewMonth, d);
+        const date = new Date(year, month, d);
         const iso  = isoOf(date);
 
         // Skjul datoer som er passert (men behold dagens dato)
@@ -166,7 +204,7 @@
         cell.dataset.date = iso;
 
         // Beregn nivå basert på loaded data
-        const avail = this._availabilityFor(iso);
+        const avail = this._availabilityForFromMap(iso, map);
         cell.classList.add(`lvl-${avail.level}`);
 
         if (iso === todayIso) cell.classList.add("is-today");
@@ -195,7 +233,7 @@
           roomsEl.textContent = "…";
         } else if (!this.locationId) {
           roomsEl.textContent = "—";
-        } else if (this.availabilityMap === null) {
+        } else if (map === null) {
           // API-feil — vis dash, lvl-red
           roomsEl.textContent = "—";
         } else {
@@ -222,12 +260,12 @@
      * Returnerer { available, total, level } for en gitt isoDate.
      * Fallback hvis data ikke er lastet ennå eller feil.
      */
-    _availabilityFor(iso) {
-      if (this.isLoading || !this.availabilityMap) {
+    _availabilityForFromMap(iso, map) {
+      if (this.isLoading || !map) {
         return { available: 0, total: 0, level: "red" };
       }
 
-      const entry = this.availabilityMap.get(iso);
+      const entry = map.get(iso);
       if (!entry) {
         // Dato utenfor henteperioden — burde ikke skje for samme måned
         return { available: 0, total: 0, level: "red" };
@@ -244,6 +282,30 @@
       }
 
       return { available, total, level };
+    },
+
+    /**
+     * Trenger vi å rendre neste måned også for å oppfylle MIN_DAYS_AHEAD?
+     * Kun aktuelt når vi står på inneværende kalendermåned — etter at
+     * kunden har navigert framover er garantien automatisk oppfylt.
+     */
+    _needsExtraMonth() {
+      const today = new Date();
+      const onCurrent =
+        this.viewYear === today.getFullYear() &&
+        this.viewMonth === today.getMonth();
+      if (!onCurrent) return false;
+
+      const daysInMonth = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+      const daysRemaining = daysInMonth - today.getDate() + 1; // dagens dato teller med
+      return daysRemaining < MIN_DAYS_AHEAD;
+    },
+
+    _extraMonthYM() {
+      let y = this.viewYear;
+      let m = this.viewMonth + 1;
+      if (m > 11) { m = 0; y += 1; }
+      return { year: y, month: m };
     }
   };
 

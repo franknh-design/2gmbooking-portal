@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.1.4 -->
+<!-- v3.1.5 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -120,6 +120,17 @@
           </div>
           <div class="cal-grid" id="cal-grid" role="grid"></div>
 
+          <!-- Auto-utvidelse: rendres når dagens måned har < 4 hele uker igjen.
+               Garanterer at kunden alltid ser minst 4 uker frem fra dagens dato. -->
+          <div id="cal-extra" class="cal-extra" hidden>
+            <h3 class="cal-month cal-month-extra" id="cal-month-2">—</h3>
+            <div class="cal-weekdays" aria-hidden="true">
+              <span>Man</span><span>Tir</span><span>Ons</span>
+              <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
+            </div>
+            <div class="cal-grid" id="cal-grid-2" role="grid"></div>
+          </div>
+
           <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
         </section>
       </div>
@@ -186,7 +197,7 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.4</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.5</small>
     </footer>
   </div>
 
