@@ -116,12 +116,33 @@ input, select, button { font-family: inherit; }
 .topbar-divider { opacity: .55; }
 .topbar-app { font-weight: 500; opacity: .92; }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .topbar-right .badge-customer {
   background: rgba(255,255,255,.14);
   color: #fff;
   border: 1px solid rgba(255,255,255,.28);
   padding: 6px 12px;
   font-weight: 500;
+}
+.topbar-logout {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: .85;
+  transition: background .12s, opacity .12s;
+}
+.topbar-logout:hover {
+  background: rgba(255,255,255,.12);
+  opacity: 1;
 }
 
 /* =========================================================

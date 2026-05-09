@@ -1,15 +1,57 @@
 /* =========================================================
    SMS-verifisering (mock) + ekte token-validering mot API.
-   v2.0
+   v2.1
    - Leser ?token= fra URL.
    - Kaller window.Api.validateToken() for å validere mot SharePoint.
    - Hvis gyldig: viser SMS-flyt (fortsatt mock).
    - Hvis ugyldig: viser feilmelding, blokkerer portal.
    - Steg 1: telefonnummer → "send" engangskode (mock).
    - Steg 2: 6-sifret kode → bekreft og vis portalen.
+   - v2.1: Husker SMS-verifiseringen i localStorage 24t per token, så
+     reload ikke tvinger ny SMS-flyt. Logg ut-knapp i topbar tømmer.
    ========================================================= */
 (function () {
   "use strict";
+
+  // ---- Session-persistering ----
+  const SESSION_PREFIX = "2gm_portal_auth_";
+  const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 timer
+
+  function loadSession(token) {
+    if (!token) return null;
+    try {
+      const raw = localStorage.getItem(SESSION_PREFIX + token);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.verifiedAt) return null;
+      if (Date.now() - obj.verifiedAt > SESSION_MAX_AGE_MS) {
+        localStorage.removeItem(SESSION_PREFIX + token);
+        return null;
+      }
+      return obj;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveSession(token, phone) {
+    if (!token) return;
+    try {
+      localStorage.setItem(SESSION_PREFIX + token, JSON.stringify({
+        verifiedAt: Date.now(),
+        phone: phone || null,
+      }));
+    } catch (_) {
+      // localStorage kan være disabled (private mode etc.) — feil stille,
+      // verste fall må kunden gjennom SMS-steget igjen ved reload.
+    }
+  }
+
+  function clearSession(token) {
+    if (!token) return;
+    try { localStorage.removeItem(SESSION_PREFIX + token); }
+    catch (_) {}
+  }
 
   const Auth = {
     customer: null,
@@ -64,6 +106,16 @@
         // eslint-disable-next-line no-console
         console.log("[AUTH] Token gyldig for:", this.customer.name);
 
+        // Hvis kunden allerede har en gyldig sesjon, hopp over SMS-flyten.
+        const session = loadSession(this.token);
+        if (session) {
+          // eslint-disable-next-line no-console
+          console.log("[AUTH] Gyldig sesjon (24t) — hopper over SMS.");
+          this.phone = session.phone || null;
+          this._completeLogin();
+          return;
+        }
+
         this._showAuthScreen();
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -77,6 +129,16 @@
       const codeForm  = document.getElementById("auth-code-form");
       const backBtn   = document.getElementById("auth-back");
       const skipBtn   = document.getElementById("auth-skip");
+      const logoutBtn = document.getElementById("btn-logout");
+
+      if (logoutBtn) {
+        // Skjul i demo-modus (ingen ekte sesjon å logge ut av).
+        logoutBtn.hidden = !this.token;
+        logoutBtn.addEventListener("click", () => {
+          clearSession(this.token);
+          location.reload();
+        });
+      }
 
       phoneForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -220,6 +282,9 @@
     },
 
     _completeLogin() {
+      // Lagre sesjonen så reload (innen 24t) hopper SMS-steget.
+      saveSession(this.token, this.phone);
+
       document.getElementById("auth-screen").hidden = true;
       document.getElementById("portal").hidden = false;
 
