@@ -31,8 +31,9 @@
   }
 
   // Garantert antall dager kunden skal se fremover fra dagens dato.
-  // 35 dager = 5 hele uker.
-  const MIN_DAYS_AHEAD = 35;
+  // 0 = auto-utvidelse av (måned + neste måned) er av; kunden ser kun
+  // inneværende måned og navigerer selv med > når de trenger neste.
+  const MIN_DAYS_AHEAD = 0;
 
   const Calendar = {
     locationId: null,
