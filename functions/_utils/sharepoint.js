@@ -163,6 +163,20 @@ export async function getBookingsForProperty(env, propertyName) {
   });
 }
 
+export async function getBookingsForCompany(env, companyName) {
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+
+  const ACTIVE_STATUSES = new Set(["Active", "Upcoming"]);
+  const target = String(companyName || "").trim().toLowerCase();
+  if (!target) return [];
+
+  return items.filter(item => {
+    const f = item.fields;
+    const company = String(f.Company || "").trim().toLowerCase();
+    return company === target && ACTIVE_STATUSES.has(f.Status);
+  });
+}
+
 export function generateBookingRef() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let suffix = "";

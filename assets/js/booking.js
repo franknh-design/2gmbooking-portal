@@ -1,7 +1,9 @@
 /* =========================================================
    Bestillingsskjema.
-   v3.0
+   v3.1
    - Innsending kaller ekte /api/submit-booking
+   - Overbooking-validering henter ekte tilgjengelighet via
+     Api.getAvailability (fjernet siste MockData-avhengighet)
    - Etter vellykket innsending: lås portal, vis takk-skjerm
    - Generisk feilmelding ved feil (peker til telefonsupport)
    ========================================================= */
@@ -476,8 +478,13 @@
      * i unionen av alle gjesters perioder telles antall gjester på huset
      * den dagen. Hvis tallet overstiger ledige rom, registreres mangel.
      * Open-ended-perioder iterereres 90 dager frem.
+     *
+     * Henter ekte tilgjengelighet via Api.getAvailability (cachet per
+     * propertyId+måned). Server-siden gjør sin egen kapasitetssjekk i
+     * tillegg, så hvis vi mangler data for en dag (API-feil), skipper vi
+     * den her — Frank får uansett varsel hvis det finnes konflikt.
      */
-    _collectShortfalls(locationId, guests) {
+    async _collectShortfalls(locationId, guests) {
       if (!guests.length) return [];
       const periods = guests.map((g) => ({
         from: g.from,
@@ -492,6 +499,22 @@
         if (p.end  > maxEnd)  maxEnd  = p.end;
       }
 
+      const monthsNeeded = new Set();
+      for (let d = parseIsoLocal(minFrom); d <= parseIsoLocal(maxEnd); d = addDaysDate(d, 1)) {
+        monthsNeeded.add(`${d.getFullYear()}-${d.getMonth()}`);
+      }
+
+      const availabilityByDate = new Map();
+      await Promise.all(Array.from(monthsNeeded).map(async (key) => {
+        const [y, m] = key.split("-").map(Number);
+        const monthMap = await window.Api.getAvailability(locationId, y, m);
+        if (monthMap) {
+          for (const [iso, info] of monthMap.entries()) {
+            availabilityByDate.set(iso, info);
+          }
+        }
+      }));
+
       const out = [];
       for (let d = parseIsoLocal(minFrom); d <= parseIsoLocal(maxEnd); d = addDaysDate(d, 1)) {
         const iso = isoLocal(d);
@@ -499,18 +522,15 @@
         const needed = onSite.length;
         if (needed === 0) continue;
 
-        // OBS: Bruker fortsatt MockData her. Skjemaets badge bruker ekte
-        // tilgjengelighet, men overbooking-validering ved submit gjør det
-        // ikke ennå. Dette er OK fordi booking-innsending også er mock —
-        // når vi bygger ekte innsending, gjør vi sjekken på serversiden i
-        // tillegg, og denne klient-sjekken kan vi gjøre async via Api.
-        const a = window.MockData.getAvailability(locationId, d);
-        if (a.available < needed) {
+        const info = availabilityByDate.get(iso);
+        if (!info) continue;
+
+        if (info.available < needed) {
           out.push({
             date: iso,
-            available: a.available,
+            available: info.available,
             needed,
-            missing: needed - a.available,
+            missing: needed - info.available,
             guests: onSite.map((p) => p.guest.name || `Rom ${p.guest.index}`)
           });
         }
@@ -518,7 +538,7 @@
       return out;
     },
 
-    _submit() {
+    async _submit() {
       const msg = document.getElementById("form-message");
       msg.hidden = true;
       msg.classList.remove("is-ok", "is-error");
@@ -559,11 +579,15 @@
         }
       }
 
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sender…";
+
       // Sjekk tilgjengelighet per dag basert på hvor mange gjester som er
       // på huset hver dag. Bestillingen blokkeres ikke ved mangel — i
       // stedet bygges advarsel som vises til kunden og legges ved
       // e-postvarselet til Frank.
-      const shortfalls = this._collectShortfalls(locId, guests);
+      const shortfalls = await this._collectShortfalls(locId, guests);
       const warning = shortfalls.length
         ? buildWarningMessage(shortfalls)
         : null;
@@ -590,10 +614,6 @@
         warning                       // ferdig formatert tekst eller null
       };
 
-      const submitBtn = document.getElementById("submit-btn");
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Sender…";
-
       // Bygg gjeste-payload til ekte API. Hver gjest får checkIn/checkOut
       // basert på sin effektive periode (egen eller fellesperioden).
       const apiGuests = guests.map(g => ({
@@ -602,27 +622,31 @@
         checkOut: g.openEnded ? null : g.to
       }));
 
-      window.Api.submitBooking({
+      const res = await window.Api.submitBooking({
         token: window.Auth?.token || null,
         property: locId,
         guests: apiGuests
-      }).then((res) => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Send bestilling";
-
-        if (res.ok) {
-          // Lås portalen og vis takk-skjerm
-          this._lockPortalAndShowThanks(res.bookingRef, res.capacityWarning || warning);
-        } else {
-          // Generisk feilmelding (jf. designvalg)
-          // eslint-disable-next-line no-console
-          console.error("[BOOKING] Innsending feilet:", res);
-          this._showMsg(
-            "Noe gikk galt. Vennligst kontakt 2GM Eiendom på +47 99 10 10 41.",
-            "error"
-          );
-        }
       });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send bestilling";
+
+      if (res.ok) {
+        // Oppdater "Mine bookinger"-listen så den nye bestillingen vises
+        if (window.MyBookings && typeof window.MyBookings.refresh === "function") {
+          window.MyBookings.refresh();
+        }
+        // Lås portalen og vis takk-skjerm
+        this._lockPortalAndShowThanks(res.bookingRef, res.capacityWarning || warning);
+      } else {
+        // Generisk feilmelding (jf. designvalg)
+        // eslint-disable-next-line no-console
+        console.error("[BOOKING] Innsending feilet:", res);
+        this._showMsg(
+          "Noe gikk galt. Vennligst kontakt 2GM Eiendom på +47 99 10 10 41.",
+          "error"
+        );
+      }
     },
 
     _showMsg(text, kind) {

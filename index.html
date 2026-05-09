@@ -70,31 +70,50 @@
     </header>
 
     <main class="layout">
-      <!-- Kalender -->
-      <section class="panel panel-calendar" aria-label="Kalender">
-        <div class="panel-head">
-          <h2 class="panel-title">Tilgjengelighet</h2>
-          <div class="legend" aria-hidden="true">
-            <span class="legend-item"><i class="dot dot-green"></i>Ledig</span>
-            <span class="legend-item"><i class="dot dot-amber"></i>Få igjen</span>
-            <span class="legend-item"><i class="dot dot-red"></i>Fullt</span>
+      <!-- Venstre kolonne: kalender + mine bookinger -->
+      <div class="layout-col">
+        <!-- Kalender -->
+        <section class="panel panel-calendar" aria-label="Kalender">
+          <div class="panel-head">
+            <h2 class="panel-title">Tilgjengelighet</h2>
+            <div class="legend" aria-hidden="true">
+              <span class="legend-item"><i class="dot dot-green"></i>Ledig</span>
+              <span class="legend-item"><i class="dot dot-amber"></i>Få igjen</span>
+              <span class="legend-item"><i class="dot dot-red"></i>Fullt</span>
+            </div>
           </div>
-        </div>
 
-        <div class="cal-controls">
-          <button type="button" class="btn btn-ghost" id="cal-prev" aria-label="Forrige måned">‹</button>
-          <h3 class="cal-month" id="cal-month">—</h3>
-          <button type="button" class="btn btn-ghost" id="cal-next" aria-label="Neste måned">›</button>
-        </div>
+          <div class="cal-controls">
+            <button type="button" class="btn btn-ghost" id="cal-prev" aria-label="Forrige måned">‹</button>
+            <h3 class="cal-month" id="cal-month">—</h3>
+            <button type="button" class="btn btn-ghost" id="cal-next" aria-label="Neste måned">›</button>
+          </div>
 
-        <div class="cal-weekdays" aria-hidden="true">
-          <span>Man</span><span>Tir</span><span>Ons</span>
-          <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
-        </div>
-        <div class="cal-grid" id="cal-grid" role="grid"></div>
+          <div class="cal-weekdays" aria-hidden="true">
+            <span>Man</span><span>Tir</span><span>Ons</span>
+            <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
+          </div>
+          <div class="cal-grid" id="cal-grid" role="grid"></div>
 
-        <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
-      </section>
+          <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
+        </section>
+
+        <!-- Mine bookinger -->
+        <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
+          <div class="panel-head">
+            <h2 class="panel-title">Mine bookinger</h2>
+            <span class="badge" id="mybookings-count" hidden></span>
+          </div>
+          <p class="mb-loading" id="mybookings-loading">Laster…</p>
+          <p class="mb-error"   id="mybookings-error"   hidden>
+            Kunne ikke hente bookinger. Prøv å laste siden på nytt.
+          </p>
+          <p class="mb-empty"   id="mybookings-empty"   hidden>
+            Du har ingen aktive eller kommende bookinger.
+          </p>
+          <ul class="mb-list" id="mybookings-list" hidden></ul>
+        </section>
+      </div>
 
       <!-- Bestillingsskjema -->
       <section class="panel panel-form" aria-label="Bestilling">
@@ -158,7 +177,7 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.0</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.1</small>
     </footer>
   </div>
 
@@ -167,6 +186,7 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/calendar.js"></script>
   <script src="assets/js/booking.js"></script>
+  <script src="assets/js/mybookings.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

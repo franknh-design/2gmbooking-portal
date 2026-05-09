@@ -1,9 +1,10 @@
 /* =========================================================
    Kalender-komponent.
-   v2.1
+   v2.2
    - Henter ledighet pr. dato fra ekte API (window.Api.getAvailability)
    - Viser spinner mens data lastes
-   - Faller tilbake til mock hvis API-kall feiler (utviklerscenario)
+   - Skjuler datoer som er passert (rendres som tomme celler)
+   - Deaktiverer «forrige måned»-knappen når man står på inneværende måned
    ========================================================= */
 (function () {
   "use strict";
@@ -59,6 +60,15 @@
       let y = this.viewYear;
       while (m < 0)  { m += 12; y -= 1; }
       while (m > 11) { m -= 12; y += 1; }
+
+      // Ikke tillat navigering bakover forbi inneværende måned
+      const today = new Date();
+      const minY = today.getFullYear();
+      const minM = today.getMonth();
+      if (y < minY || (y === minY && m < minM)) {
+        return;
+      }
+
       this.viewMonth = m;
       this.viewYear  = y;
       this.renderAndLoad();
@@ -105,6 +115,17 @@
       monthEl.textContent = `${MONTHS_NB[this.viewMonth]} ${this.viewYear}`;
       grid.innerHTML = "";
 
+      // Deaktiver forrige-knappen når vi står på inneværende måned —
+      // brukeren skal ikke kunne navigere til måneder som er passert.
+      const prevBtn = document.getElementById("cal-prev");
+      if (prevBtn) {
+        const today = new Date();
+        const onCurrentMonth =
+          this.viewYear === today.getFullYear() &&
+          this.viewMonth === today.getMonth();
+        prevBtn.disabled = onCurrentMonth;
+      }
+
       // Vis spinner-overlay mens vi laster
       if (this.isLoading) {
         grid.classList.add("is-loading");
@@ -130,6 +151,14 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const date = new Date(this.viewYear, this.viewMonth, d);
         const iso  = isoOf(date);
+
+        // Skjul datoer som er passert (men behold dagens dato)
+        if (iso < todayIso) {
+          const empty = document.createElement("div");
+          empty.className = "cal-cell cal-cell-empty";
+          grid.appendChild(empty);
+          continue;
+        }
 
         const cell = document.createElement("button");
         cell.type = "button";

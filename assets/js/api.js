@@ -1,7 +1,7 @@
 /* =========================================================
    API-klient — kommuniserer med Cloudflare Pages Functions.
-   v3.0
-   - Lagt til submitBooking()
+   v3.1
+   - Lagt til getMyBookings() — kundens aktive + kommende bookinger
    ========================================================= */
 (function () {
   "use strict";
@@ -161,10 +161,45 @@
     }
   }
 
+  // --------------------------------------------------------------------------
+  // my-bookings
+  // --------------------------------------------------------------------------
+
+  /**
+   * Henter kundens aktive + kommende bookinger (alle lokasjoner).
+   * Returnerer { ok, bookings: [...] } eller { ok: false, error }.
+   */
+  async function getMyBookings(token) {
+    if (!token || typeof token !== "string") {
+      return { ok: false, error: "missing_token" };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/my-bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] my-bookings feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] my-bookings exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   window.Api = {
     validateToken,
     getAvailability,
     clearAvailabilityCache,
-    submitBooking
+    submitBooking,
+    getMyBookings
   };
 })();

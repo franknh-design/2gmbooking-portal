@@ -46,6 +46,13 @@
         }
       });
 
+      // Liste under kalender: kundens egne bookinger (alle lokasjoner)
+      // Kun når vi har en ekte token — i demo-modus uten token er det
+      // ingen kunde i SharePoint å hente fra.
+      if (window.MyBookings && session.token) {
+        window.MyBookings.init({ token: session.token });
+      }
+
       window.Calendar.init({
         locationId: initialLocId,
         onSelect: (iso /* , avail */) => {
