@@ -1,10 +1,11 @@
 /* =========================================================
    Mine bookinger.
-   v1.1
+   v1.2
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
    - Vises under kalenderen, alle lokasjoner samlet
    - Sortert kronologisk på Check_In
    - Viser romnr + dørkode når admin har tildelt
+   - Viser bygg-adresse på egen linje under meta
    ========================================================= */
 (function () {
   "use strict";
@@ -165,6 +166,14 @@
         meta.appendChild(statusBadge(b.status, b.pendingConfirmation));
 
         row.appendChild(meta);
+
+        if (b.propertyAddress) {
+          const addrEl = document.createElement("div");
+          addrEl.className = "mb-address";
+          addrEl.textContent = b.propertyAddress;
+          row.appendChild(addrEl);
+        }
+
         this.listEl.appendChild(row);
       }
     },

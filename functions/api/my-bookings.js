@@ -1,6 +1,7 @@
 // functions/api/my-bookings.js
-// v1.1 - Returnerer aktive + kommende bookinger for kunden bak token,
-//        nå også med roomNumber + doorCode når admin har tildelt rom.
+// v1.2 - Returnerer aktive + kommende bookinger for kunden bak token.
+//        Beriket med roomNumber + doorCode når admin har tildelt rom,
+//        og propertyAddress (statisk per bygg, kommer fra sharepoint.js).
 //
 // POST /api/my-bookings
 // Body: { token: "..." }
@@ -10,6 +11,7 @@
 //       {
 //         ref: "2GM-AB12CD",
 //         property: "Rigg 24",
+//         propertyAddress: "Aspeveien 2, 9300 Finnsnes", // null hvis ukjent
 //         guest: "Ola Nordmann",
 //         checkIn: "2026-05-18",
 //         checkOut: "2026-05-22",   // null hvis open-ended
@@ -20,7 +22,12 @@
 //       }, ...
 //     ] }
 
-import { findToken, getBookingsForCompany, getRoomsByIdMap } from "../_utils/sharepoint.js";
+import {
+  findToken,
+  getBookingsForCompany,
+  getRoomsByIdMap,
+  propertyAddress,
+} from "../_utils/sharepoint.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -55,6 +62,7 @@ export async function onRequestPost(context) {
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
+        propertyAddress: propertyAddress(f.Property_Name),
         guest: f.Person_Name || "",
         checkIn: f.Check_In || null,
         checkOut: f.Check_Out || null,
