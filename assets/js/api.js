@@ -1,17 +1,17 @@
 /* =========================================================
    API-klient — kommuniserer med Cloudflare Pages Functions.
-   Eksponert som globalt objekt: window.Api
-   v2.1
-   - Lagt til getAvailability() med per-(propertyId+måned) cache
+   v3.0
+   - Lagt til submitBooking()
    ========================================================= */
 (function () {
   "use strict";
 
   const API_BASE = "/api";
 
-  /**
-   * POST /api/validate-token
-   */
+  // --------------------------------------------------------------------------
+  // validate-token
+  // --------------------------------------------------------------------------
+
   async function validateToken(token) {
     if (!token || typeof token !== "string") {
       return { valid: false };
@@ -34,13 +34,10 @@
   }
 
   // --------------------------------------------------------------------------
-  // getAvailability med cache per (propertyId + år + måned)
+  // availability (med cache per propertyId+måned)
   // --------------------------------------------------------------------------
 
-  // cacheKey = "rigg24:2026-05" → { days: [{ date, available, occupied, totalActive }, ...] }
   const availabilityCache = new Map();
-
-  // In-flight requests for å unngå dobbeltkall ved samtidige render()
   const inflightRequests = new Map();
 
   function cacheKey(propertyId, year, month) {
@@ -53,24 +50,12 @@
     return `${year}-${m}-${d}`;
   }
 
-  /**
-   * Henter tilgjengelighet for én måned på én property.
-   *
-   * Returnerer en Map: dato (YYYY-MM-DD) → { available, occupied, totalActive }
-   * for raskt oppslag i kalender-renderen.
-   *
-   * Bruker cache: samme måned hentes ikke to ganger i samme session.
-   * Hvis du vil tvinge ny henting (f.eks. etter en booking), kall clearAvailabilityCache().
-   */
   async function getAvailability(propertyId, year, month) {
     const key = cacheKey(propertyId, year, month);
 
-    // Hit i cache?
     if (availabilityCache.has(key)) {
       return availabilityCache.get(key);
     }
-
-    // Allerede i gang med samme spørring? Vent på den.
     if (inflightRequests.has(key)) {
       return inflightRequests.get(key);
     }
@@ -84,11 +69,7 @@
         const response = await fetch(`${API_BASE}/availability`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            property: propertyId,
-            fromDate,
-            toDate
-          })
+          body: JSON.stringify({ property: propertyId, fromDate, toDate })
         });
 
         const data = await response.json().catch(() => null);
@@ -96,10 +77,9 @@
         if (!response.ok || !data || !Array.isArray(data.days)) {
           // eslint-disable-next-line no-console
           console.error("[API] availability feilet:", response.status, data);
-          return null; // signaliser feil til kalleren
+          return null;
         }
 
-        // Konverter array → Map for raskt oppslag
         const byDate = new Map();
         for (const day of data.days) {
           byDate.set(day.date, {
@@ -120,17 +100,71 @@
     return promise;
   }
 
-  /**
-   * Tøm cache. Kall etter en vellykket booking-innsending så kalenderen
-   * laster fersk data neste gang.
-   */
   function clearAvailabilityCache() {
     availabilityCache.clear();
+  }
+
+  // --------------------------------------------------------------------------
+  // submit-booking
+  // --------------------------------------------------------------------------
+
+  /**
+   * Sender en bestilling til serveren.
+   *
+   * Input:
+   *   {
+   *     token: "test-abc123-xyz789",
+   *     property: "rigg24",
+   *     guests: [
+   *       { name: "Ola",  checkIn: "2026-05-18", checkOut: "2026-05-22" },
+   *       { name: "Kari", checkIn: "2026-05-18", checkOut: null }
+   *     ]
+   *   }
+   *
+   * Returnerer ved suksess:
+   *   { ok: true, bookingRef, rowsCreated, capacityWarning? }
+   *
+   * Returnerer ved feil:
+   *   { ok: false, error: "...", status: 4xx/5xx }
+   *
+   * Kaster IKKE exception - kalleren sjekker .ok.
+   */
+  async function submitBooking({ token, property, guests }) {
+    try {
+      const response = await fetch(`${API_BASE}/submit-booking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, property, guests })
+      });
+
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] submit-booking feilet:", response.status, data);
+        return {
+          ok: false,
+          error: data.error || "http_error",
+          status: response.status
+        };
+      }
+
+      // Vellykket innsending - tøm availability-cache så
+      // kalenderen viser oppdatert ledighet ved neste oppslag
+      clearAvailabilityCache();
+
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] submit-booking exception:", err);
+      return { ok: false, error: "network_error" };
+    }
   }
 
   window.Api = {
     validateToken,
     getAvailability,
-    clearAvailabilityCache
+    clearAvailabilityCache,
+    submitBooking
   };
 })();

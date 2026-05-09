@@ -1,12 +1,9 @@
 /* =========================================================
    Bestillingsskjema.
-   v2.1.1
-   - Lokasjonsdropdown (begrenset av kunde)
-   - Fra/til-dato
-   - Rom-teller med +/-
-   - Dynamiske gjeste-felt (ett per rom)
-   - Tilgjengelighets-badge (henter fra ekte API via Api-cache)
-   - Mock submit
+   v3.0
+   - Innsending kaller ekte /api/submit-booking
+   - Etter vellykket innsending: lås portal, vis takk-skjerm
+   - Generisk feilmelding ved feil (peker til telefonsupport)
    ========================================================= */
 (function () {
   "use strict";
@@ -597,20 +594,33 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Sender…";
 
-      window.MockData.submitBooking(payload).then((res) => {
+      // Bygg gjeste-payload til ekte API. Hver gjest får checkIn/checkOut
+      // basert på sin effektive periode (egen eller fellesperioden).
+      const apiGuests = guests.map(g => ({
+        name: g.name,
+        checkIn: g.from,
+        checkOut: g.openEnded ? null : g.to
+      }));
+
+      window.Api.submitBooking({
+        token: window.Auth?.token || null,
+        property: locId,
+        guests: apiGuests
+      }).then((res) => {
         submitBtn.disabled = false;
         submitBtn.textContent = "Send bestilling";
+
         if (res.ok) {
-          this._showConfirmation(res.reference, payload.warning);
-          document.getElementById("booking-form").reset();
-          document.getElementById("f-rooms").value = "1";
-          // Tøm guests-list helt så ingen gamle navn/datoer arves over
-          document.getElementById("guests-list").innerHTML = "";
-          this._renderGuests(1);
-          this._applyOpenEndedState();
-          this._refreshAvailabilityBadge();
+          // Lås portalen og vis takk-skjerm
+          this._lockPortalAndShowThanks(res.bookingRef, res.capacityWarning || warning);
         } else {
-          this._showMsg("Noe gikk galt. Prøv igjen.", "error");
+          // Generisk feilmelding (jf. designvalg)
+          // eslint-disable-next-line no-console
+          console.error("[BOOKING] Innsending feilet:", res);
+          this._showMsg(
+            "Noe gikk galt. Vennligst kontakt 2GM Eiendom på +47 99 10 10 41.",
+            "error"
+          );
         }
       });
     },
@@ -647,6 +657,43 @@
       }
 
       msg.hidden = false;
+    },
+
+    /**
+     * Vellykket innsending: skjul bestillingsskjemaet, vis stor takk-melding
+     * med booking-referansen. Kalenderen blir fortsatt synlig (lesetilgang).
+     */
+    _lockPortalAndShowThanks(bookingRef, warning) {
+      // Skjul hele formen
+      const form = document.getElementById("booking-form");
+      if (form) form.hidden = true;
+
+      // Bytt panel-tittel
+      const panelHead = document.querySelector(".panel-form .panel-head");
+      if (panelHead) {
+        panelHead.innerHTML =
+          '<h2 class="panel-title">Takk for bestillingen!</h2>';
+      }
+
+      // Bygg takk-skjerm under panel-head
+      const panel = document.querySelector(".panel-form");
+      if (!panel) return;
+
+      // Fjern eksisterende takk-skjerm hvis allerede vist
+      const existing = panel.querySelector(".thanks-screen");
+      if (existing) existing.remove();
+
+      const thanks = document.createElement("div");
+      thanks.className = "thanks-screen";
+      thanks.innerHTML = `
+        <div class="thanks-icon" aria-hidden="true">✓</div>
+        <p class="thanks-lead">Vi har mottatt bestillingen din.</p>
+        <p class="thanks-ref">Referanse: <strong>${escapeHtml(bookingRef)}</strong></p>
+        <p class="thanks-sub">2GM Eiendom tar kontakt med deg så snart vi har bekreftet rom og perioder.</p>
+        ${warning ? `<p class="thanks-warning">${escapeHtml(warning)}</p>` : ""}
+        <p class="thanks-foot">Du kan lukke vinduet.</p>
+      `;
+      panel.appendChild(thanks);
     }
   };
 
@@ -682,6 +729,19 @@
     if (items.length <= 1) return items.join("");
     if (items.length === 2) return items.join(" og ");
     return items.slice(0, -1).join(", ") + " og " + items[items.length - 1];
+  }
+
+  /**
+   * Liten HTML-escape for å trygt sette inn tekst (bookingRef, warning) i
+   * innerHTML uten XSS-risiko, selv om innholdet kommer fra vårt eget API.
+   */
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   /**
