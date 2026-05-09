@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.2.1 -->
+<!-- v3.2.2 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -72,6 +72,7 @@
         <span class="topbar-app">Bestillingsportal</span>
       </div>
       <div class="topbar-right">
+        <button type="button" class="topbar-cta" id="topbar-new-booking" hidden>+ Ny bestilling</button>
         <span class="badge badge-customer" id="customer-badge">—</span>
         <button type="button" class="topbar-logout" id="btn-logout" hidden>Logg ut</button>
       </div>
@@ -80,10 +81,11 @@
     <!-- Mine bookinger over alt annet — kollapser via :has() når lista er hidden -->
     <div class="mybookings-top">
       <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
-        <div class="panel-head">
+        <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="true">
           <h2 class="panel-title">Mine bookinger</h2>
           <span class="badge" id="mybookings-count" hidden></span>
-        </div>
+          <span class="mb-chevron" aria-hidden="true">▾</span>
+        </button>
         <p class="mb-loading" id="mybookings-loading">Laster…</p>
         <p class="mb-error"   id="mybookings-error"   hidden>
           Kunne ikke hente bookinger. Prøv å laste siden på nytt.
@@ -93,13 +95,6 @@
         </p>
         <ul class="mb-list" id="mybookings-list" hidden></ul>
       </section>
-
-      <!-- CTA vises når kunden har bookinger; klikk åpner kalender + skjema. -->
-      <div class="new-booking-cta" id="newBookingCta" hidden>
-        <button type="button" class="btn btn-primary new-booking-cta-btn" id="newBookingCtaBtn">
-          + Ny booking
-        </button>
-      </div>
     </div>
 
     <main class="layout" id="mainLayout">
@@ -205,7 +200,7 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.2.1</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.2.2</small>
     </footer>
   </div>
 

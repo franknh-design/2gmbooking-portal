@@ -144,6 +144,24 @@ input, select, button { font-family: inherit; }
   background: rgba(255,255,255,.12);
   opacity: 1;
 }
+.topbar-cta {
+  background: #fff;
+  color: var(--c-brand);
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: .2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  transition: background .12s, transform .08s;
+}
+.topbar-cta:hover {
+  background: #E6EEF5;
+  transform: translateY(-1px);
+}
+.topbar-cta:active { transform: translateY(0); }
 
 /* =========================================================
    Layout
@@ -764,20 +782,35 @@ input[type="date"]:disabled {
   .mybookings-top:has(#mybookings-panel[hidden]) { padding: 0; }
 }
 
-/* CTA "+ Ny booking" — vises kun når kunden har bookinger; klikk åpner layout. */
-.new-booking-cta {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
+/* Mine bookinger panel-head fungerer som toggle-knapp. */
+.mb-toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 0 14px;
+  font: inherit;
+  color: inherit;
 }
-.new-booking-cta-btn {
-  font-size: 16px;
-  padding: 12px 28px;
-  border-radius: 999px;
-  font-weight: 600;
-  letter-spacing: .2px;
-  box-shadow: 0 4px 14px rgba(27,79,114,.25);
+.mb-chevron {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--c-muted);
+  transition: transform .2s;
 }
+.panel-mybookings.collapsed .mb-chevron {
+  transform: rotate(-90deg);
+}
+.panel-mybookings.collapsed .panel-head { margin-bottom: 0; }
+.panel-mybookings.collapsed .mb-list,
+.panel-mybookings.collapsed .mb-loading,
+.panel-mybookings.collapsed .mb-error,
+.panel-mybookings.collapsed .mb-empty {
+  display: none !important;
+}
+.panel-mybookings.collapsed { padding: 14px 20px; }
 
 .panel-mybookings .badge {
   background: var(--c-bg);

@@ -1,14 +1,16 @@
 /* =========================================================
    Mine bookinger.
-   v1.4
+   v1.5
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
-   - Vises under kalenderen, alle lokasjoner samlet
    - Sortert kronologisk på Check_In
    - Viser romnr + dørkode når admin har tildelt
    - Viser bygg-adresse på egen linje under meta
    - "Forleng"-knapp på aktive bookinger → dialog → API-forespørsel
-   - Når kunden har minst én booking: skjuler kalender + skjema og viser
-     i stedet en "+ Ny booking"-CTA. Klikk på CTA åpner layouten.
+   - Tre visnings-moduser basert på antall:
+       0 bookinger     → panel skjult, layout (kalender + skjema) synlig
+       1–2 bookinger   → panel sammentrukket over layout (klikk = utvid)
+       3+ bookinger    → panel utvidet, layout skjult
+     Topbar-knappen "+ Ny bestilling" åpner layouten når den er skjult.
    ========================================================= */
 (function () {
   "use strict";
@@ -71,12 +73,14 @@
       this.errorEl   = document.getElementById("mybookings-error");
       this.countEl   = document.getElementById("mybookings-count");
 
-      wireNewBookingCta();
+      wireTopbarCta();
+      wirePanelToggle();
 
       if (!this.container || !this.token) {
         if (this.container) this.container.hidden = true;
-        // Demo / ingen token: layout skal være synlig som vanlig
+        // Demo / ingen token: layout skal være synlig, ingen topbar-CTA.
         setLayoutVisible(true);
+        setTopbarCtaVisible(false);
         return;
       }
 
@@ -84,6 +88,7 @@
       // Mens vi laster: skjul layout for å unngå flash hvis kunden har
       // bookinger. Vises igjen i _render hvis lista er tom eller ved feil.
       setLayoutVisible(false);
+      setTopbarCtaVisible(false);
       this.refresh();
     },
 
@@ -98,7 +103,7 @@
         this._setState("error");
         // Ved feil: la kunden bestille likevel, vis layouten.
         setLayoutVisible(true);
-        setCtaVisible(false);
+        setTopbarCtaVisible(false);
         return;
       }
 
@@ -115,23 +120,31 @@
     },
 
     _render(bookings) {
-      if (!bookings.length) {
+      const count = bookings.length;
+
+      if (count === 0) {
+        // Ingen bookinger → panelet kollapser via :has(), layout synlig,
+        // ingen topbar-CTA (skjemaet er allerede der).
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
-        // Ingen bookinger → kalender + skjema synlig som vanlig, ingen CTA.
+        setPanelCollapsed(this.container, false);
         setLayoutVisible(true);
-        setCtaVisible(false);
+        setTopbarCtaVisible(false);
         return;
       }
 
       this._setState("list");
-      // Har bookinger → vis CTA i stedet for layouten. Klikk åpner layouten.
-      setLayoutVisible(false);
-      setCtaVisible(true);
 
       if (this.countEl) {
-        this.countEl.textContent = `${bookings.length} ${bookings.length === 1 ? "rad" : "rader"}`;
+        this.countEl.textContent = `${count} ${count === 1 ? "rad" : "rader"}`;
       }
+
+      // 1–2 bookinger: panel sammentrukket over layout (begge synlige).
+      // 3+ bookinger:  panel utvidet, layout skjult bak topbar-CTA.
+      const heavy = count > 2;
+      setPanelCollapsed(this.container, !heavy);
+      setLayoutVisible(!heavy);
+      setTopbarCtaVisible(true);
 
       this.listEl.innerHTML = "";
 
@@ -338,21 +351,33 @@
     return d.toISOString().slice(0, 10);
   }
 
-  // ---- Toggle av layout og "+ Ny booking"-CTA ----
-  let _ctaWired = false;
-  function wireNewBookingCta() {
-    if (_ctaWired) return;
-    const btn = document.getElementById("newBookingCtaBtn");
+  // ---- Toggle-håndtering: topbar-CTA, layout, panel-collapse ----
+  let _topbarWired = false;
+  function wireTopbarCta() {
+    if (_topbarWired) return;
+    const btn = document.getElementById("topbar-new-booking");
     if (!btn) return;
     btn.addEventListener("click", () => {
       setLayoutVisible(true);
-      setCtaVisible(false);
       const layout = document.getElementById("mainLayout");
       if (layout && typeof layout.scrollIntoView === "function") {
         layout.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
-    _ctaWired = true;
+    _topbarWired = true;
+  }
+
+  let _toggleWired = false;
+  function wirePanelToggle() {
+    if (_toggleWired) return;
+    const toggle = document.getElementById("mybookings-toggle");
+    const panel  = document.getElementById("mybookings-panel");
+    if (!toggle || !panel) return;
+    toggle.addEventListener("click", () => {
+      const collapsed = panel.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    _toggleWired = true;
   }
 
   function setLayoutVisible(visible) {
@@ -360,9 +385,16 @@
     if (layout) layout.hidden = !visible;
   }
 
-  function setCtaVisible(visible) {
-    const cta = document.getElementById("newBookingCta");
-    if (cta) cta.hidden = !visible;
+  function setTopbarCtaVisible(visible) {
+    const btn = document.getElementById("topbar-new-booking");
+    if (btn) btn.hidden = !visible;
+  }
+
+  function setPanelCollapsed(panel, collapsed) {
+    if (!panel) return;
+    panel.classList.toggle("collapsed", !!collapsed);
+    const toggle = document.getElementById("mybookings-toggle");
+    if (toggle) toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
 
   window.MyBookings = MyBookings;
