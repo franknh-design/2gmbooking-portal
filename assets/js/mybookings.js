@@ -1,6 +1,6 @@
 /* =========================================================
    Mine bookinger.
-   v1.5
+   v1.6
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
    - Sortert kronologisk på Check_In
    - Viser romnr + dørkode når admin har tildelt
@@ -11,6 +11,8 @@
        1–2 bookinger   → panel sammentrukket over layout (klikk = utvid)
        3+ bookinger    → panel utvidet, layout skjult
      Topbar-knappen "+ Ny bestilling" åpner layouten når den er skjult.
+   - v1.6: Auto-refresh hver 90 sek + ved visibilitychange så endringer
+     fra admin (rom + dørkode + status) dukker opp uten manuell reload.
    ========================================================= */
 (function () {
   "use strict";
@@ -94,20 +96,42 @@
       // slik at det er en konsekvent vei til ny bestilling uavhengig av modus.
       setTopbarCtaVisible(true);
       this.refresh();
+
+      // v1.6: Lytt etter admin-godkjenninger så portalen reflekterer endringer
+      // (status: pending → confirmed, rom + dørkode tildelt) uten manuell reload.
+      // Polling hvert 90. sek + ved visibilitychange (når fanen får fokus igjen).
+      this._startAutoRefresh();
     },
 
-    async refresh() {
-      if (!this.token || !this.container) return;
+    _startAutoRefresh() {
+      if (this._autoRefreshStarted) return;
+      this._autoRefreshStarted = true;
+      setInterval(() => this.refresh(true), 90000);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) this.refresh(true);
+      });
+    },
 
-      this._setState("loading");
+    async refresh(silent) {
+      if (!this.token || !this.container) return;
+      // Forhindrer overlappende fetch hvis polling og visibilitychange
+      // utløses samtidig — drop nye kall mens vi venter på et eksisterende.
+      if (this._loading) return;
+      this._loading = true;
+
+      // silent=true: ikke flip til loading-state. Vi beholder eksisterende
+      // liste til ny data er klar, så det ikke flimrer ved bakgrunns-poll.
+      if (!silent) this._setState("loading");
 
       const res = await window.Api.getMyBookings(this.token);
+      this._loading = false;
 
       if (!res || !res.ok) {
-        this._setState("error");
-        // Ved feil: la kunden bestille likevel, vis layouten.
-        setLayoutVisible(true);
-        setTopbarCtaVisible(false);
+        if (!silent) {
+          this._setState("error");
+          setLayoutVisible(true);
+        }
+        // Stille feil ved bakgrunns-refresh — beholder forrige render.
         return;
       }
 
