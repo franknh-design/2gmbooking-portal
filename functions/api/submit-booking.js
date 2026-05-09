@@ -1,5 +1,6 @@
 // functions/api/submit-booking.js
-// v1.0 - Booking submission endpoint
+// v1.1 - Notes-feltet inneholder nå AVVENTER ROMTILDELING-markør
+//        slik at admin-appen ikke får "Room not found"-popup på null lookup
 //
 // POST /api/submit-booking
 // Body: {
@@ -142,17 +143,23 @@ export async function onRequestPost(context) {
     const bookingRef = generateBookingRef();
 
     // 7. Bygg rader til SharePoint
-    const rowsToCreate = guests.map(g => ({
-      bookingRef,
-      propertyName,
-      guestName: g.name,
-      companyName: tokenRow.fields.Firma || "",
-      checkIn: g.checkIn,
-      checkOut: g.checkOut || null,
-      notes: capacityWarning
-        ? `${bookingRef} · ${capacityWarning}`
-        : `${bookingRef}`,
-    }));
+    // Notes inneholder en eksplisitt AVVENTER ROMTILDELING-markør så
+    // admin-appen kan vise raden tydelig som "ikke tildelt ennå" og
+    // unngå "Room not found"-popup ved null RoomLookupId.
+    const PENDING_TAG = "AVVENTER ROMTILDELING";
+    const rowsToCreate = guests.map(g => {
+      const noteParts = [bookingRef, PENDING_TAG];
+      if (capacityWarning) noteParts.push(capacityWarning);
+      return {
+        bookingRef,
+        propertyName,
+        guestName: g.name,
+        companyName: tokenRow.fields.Firma || "",
+        checkIn: g.checkIn,
+        checkOut: g.checkOut || null,
+        notes: noteParts.join(" · "),
+      };
+    });
 
     // 8. Opprett rader
     const result = await createBookingRows(env, rowsToCreate);
