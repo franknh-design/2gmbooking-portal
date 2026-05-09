@@ -129,19 +129,11 @@ input, select, button { font-family: inherit; }
    ========================================================= */
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 24px;
   padding: 24px;
   max-width: 1280px;
   margin: 0 auto;
-}
-/* Når kunden ikke har bookinger skal venstre kolonne forsvinne helt
-   så kalender + skjema fyller bredden alene. */
-.layout:has(.layout-col-bookings #mybookings-panel[hidden]) {
-  grid-template-columns: minmax(0, 1fr);
-}
-.layout-col-bookings:has(#mybookings-panel[hidden]) {
-  display: none;
 }
 
 @media (max-width: 900px) {
@@ -734,8 +726,23 @@ input[type="date"]:disabled {
 }
 
 /* =========================================================
-   Mine bookinger — venstre kolonne i .layout, kollapser når tom.
+   Mine bookinger — vises over .layout når kunden har bookinger.
    ========================================================= */
+.mybookings-top {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 24px 0;
+}
+/* Når selve panelet er hidden (ingen bookinger) skal wrapperen kollapse
+   så vi ikke får tom luft over kalender+skjema. */
+.mybookings-top:has(> [hidden]) {
+  padding: 0;
+}
+@media (max-width: 900px) {
+  .mybookings-top { padding: 16px 16px 0; }
+  .mybookings-top:has(> [hidden]) { padding: 0; }
+}
+
 .panel-mybookings .badge {
   background: var(--c-bg);
   color: var(--c-muted);
