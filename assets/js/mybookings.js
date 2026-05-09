@@ -1,11 +1,12 @@
 /* =========================================================
    Mine bookinger.
-   v1.2
+   v1.3
    - Henter kundens Active + Upcoming bookinger via Api.getMyBookings()
    - Vises under kalenderen, alle lokasjoner samlet
    - Sortert kronologisk på Check_In
    - Viser romnr + dørkode når admin har tildelt
    - Viser bygg-adresse på egen linje under meta
+   - "Forleng"-knapp på aktive bookinger → dialog → API-forespørsel
    ========================================================= */
 (function () {
   "use strict";
@@ -174,10 +175,149 @@
           row.appendChild(addrEl);
         }
 
+        // Forleng-knapp kun på aktive bookinger med satt utflytting.
+        // Open-ended (Check_Out null) trenger ikke forlengelse.
+        if (b.status === "Active" && b.checkOut) {
+          const actions = document.createElement("div");
+          actions.className = "mb-actions";
+
+          const extendBtn = document.createElement("button");
+          extendBtn.type = "button";
+          extendBtn.className = "btn btn-ghost mb-extend-btn";
+          extendBtn.textContent = "Forleng oppholdet";
+          extendBtn.addEventListener("click", () => openExtendDialog(b, this));
+          actions.appendChild(extendBtn);
+
+          row.appendChild(actions);
+        }
+
         this.listEl.appendChild(row);
       }
     },
   };
+
+  // ---- Forleng-dialog ----
+  // Åpnes som <dialog>-element; faller tilbake til prompt() hvis nettleseren
+  // ikke støtter <dialog> (Safari < 15.4 etc.).
+  function openExtendDialog(booking, mybookingsRef) {
+    const dlg = ensureDialog();
+    if (!dlg) {
+      // fallback: ren prompt
+      const today = new Date().toISOString().slice(0, 10);
+      const min = laterIso(booking.checkOut, 1);
+      const ans = window.prompt(
+        `Ny utflyttingsdato for ${booking.ref} (YYYY-MM-DD), tidligst ${min}:`,
+        min
+      );
+      if (ans) submitExtension(booking, ans, mybookingsRef);
+      return;
+    }
+
+    dlg.querySelector(".extend-dlg-ref").textContent = booking.ref;
+    dlg.querySelector(".extend-dlg-current").textContent = formatIso(booking.checkOut) || booking.checkOut;
+    const input = dlg.querySelector("input[name=newDate]");
+    const minIso = laterIso(booking.checkOut, 1);
+    input.min = minIso;
+    input.value = minIso;
+    dlg.querySelector(".extend-dlg-msg").textContent = "";
+
+    dlg._booking = booking;
+    dlg._mybookingsRef = mybookingsRef;
+
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+  }
+
+  function ensureDialog() {
+    let dlg = document.getElementById("extendDialog");
+    if (dlg) return dlg;
+
+    if (typeof HTMLDialogElement === "undefined") return null;
+
+    dlg = document.createElement("dialog");
+    dlg.id = "extendDialog";
+    dlg.className = "extend-dlg";
+    dlg.innerHTML = `
+      <form method="dialog" class="extend-dlg-form">
+        <h3 class="extend-dlg-title">Forleng oppholdet</h3>
+        <p class="extend-dlg-sub">
+          Booking <strong class="extend-dlg-ref"></strong>,
+          nåværende utflytting <strong class="extend-dlg-current"></strong>.
+        </p>
+        <label class="field">
+          <span class="field-label">Ny utflyttingsdato</span>
+          <input type="date" name="newDate" required />
+        </label>
+        <p class="extend-dlg-msg" aria-live="polite"></p>
+        <div class="extend-dlg-buttons">
+          <button type="button" class="btn btn-ghost" data-action="cancel">Avbryt</button>
+          <button type="button" class="btn btn-primary" data-action="submit">Send forespørsel</button>
+        </div>
+      </form>
+    `;
+    document.body.appendChild(dlg);
+
+    dlg.addEventListener("click", (e) => {
+      const action = e.target?.dataset?.action;
+      if (action === "cancel") {
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      } else if (action === "submit") {
+        const input = dlg.querySelector("input[name=newDate]");
+        const value = input.value;
+        const booking = dlg._booking;
+        if (!value) {
+          dlg.querySelector(".extend-dlg-msg").textContent = "Velg en dato.";
+          return;
+        }
+        const minIso = laterIso(booking.checkOut, 1);
+        if (value < minIso) {
+          dlg.querySelector(".extend-dlg-msg").textContent =
+            `Datoen må være ${formatIso(minIso) || minIso} eller senere.`;
+          return;
+        }
+        submitExtension(booking, value, dlg._mybookingsRef, dlg);
+      }
+    });
+
+    return dlg;
+  }
+
+  async function submitExtension(booking, requestedCheckOut, mybookingsRef, dlg) {
+    const msgEl = dlg ? dlg.querySelector(".extend-dlg-msg") : null;
+    const submitBtn = dlg ? dlg.querySelector('[data-action="submit"]') : null;
+
+    if (msgEl) msgEl.textContent = "Sender …";
+    if (submitBtn) submitBtn.disabled = true;
+
+    const res = await window.Api.requestExtension({
+      token: mybookingsRef.token,
+      bookingRef: booking.ref,
+      requestedCheckOut,
+    });
+
+    if (submitBtn) submitBtn.disabled = false;
+
+    if (!res || !res.ok) {
+      const err = (res && res.error) || "ukjent feil";
+      if (msgEl) msgEl.textContent = `Kunne ikke sende: ${err}`;
+      else window.alert(`Kunne ikke sende forespørselen (${err}).`);
+      return;
+    }
+
+    if (dlg) {
+      dlg.close ? dlg.close() : dlg.removeAttribute("open");
+    }
+    window.alert(
+      "Takk! Forespørselen er sendt til 2GM. Du får tilbakemelding så snart admin har sett på den."
+    );
+  }
+
+  function laterIso(iso, daysToAdd) {
+    if (!iso) return new Date().toISOString().slice(0, 10);
+    const d = new Date(iso);
+    d.setDate(d.getDate() + daysToAdd);
+    return d.toISOString().slice(0, 10);
+  }
 
   window.MyBookings = MyBookings;
 })();

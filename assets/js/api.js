@@ -1,7 +1,8 @@
 /* =========================================================
    API-klient — kommuniserer med Cloudflare Pages Functions.
-   v3.1
+   v3.2
    - Lagt til getMyBookings() — kundens aktive + kommende bookinger
+   - Lagt til requestExtension() — be admin om å forlenge en aktiv booking
    ========================================================= */
 (function () {
   "use strict";
@@ -195,11 +196,45 @@
     }
   }
 
+  // --------------------------------------------------------------------------
+  // extend-booking
+  // --------------------------------------------------------------------------
+
+  /**
+   * Ber admin forlenge en aktiv booking. Skriver INGENTING til SharePoint —
+   * sender kun e-post til admin som tar avgjørelsen manuelt.
+   * Returnerer { ok: true, mode } eller { ok: false, error }.
+   */
+  async function requestExtension({ token, bookingRef, requestedCheckOut }) {
+    if (!token || !bookingRef || !requestedCheckOut) {
+      return { ok: false, error: "missing_arguments" };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/extend-booking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, bookingRef, requestedCheckOut })
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] extend-booking feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] extend-booking exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   window.Api = {
     validateToken,
     getAvailability,
     clearAvailabilityCache,
     submitBooking,
-    getMyBookings
+    getMyBookings,
+    requestExtension
   };
 })();
