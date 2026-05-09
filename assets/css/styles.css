@@ -267,33 +267,6 @@ input, select, button { font-family: inherit; }
   gap: 16px;
   margin-bottom: 12px;
 }
-/* Måneds-navigasjon: kraftigere kontrast så pilene er lette å se. */
-.cal-controls .btn-ghost {
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--c-brand);
-  border: 0;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(27,79,114,.25);
-  transition: background .12s, transform .08s, box-shadow .12s;
-}
-.cal-controls .btn-ghost:hover:not(:disabled) {
-  background: var(--c-brand-light);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(27,79,114,.30);
-}
-.cal-controls .btn-ghost:active:not(:disabled) {
-  transform: translateY(0);
-}
-.cal-controls .btn-ghost:disabled {
-  background: var(--c-border);
-  color: var(--c-muted);
-  box-shadow: none;
-  opacity: 1;
-}
 .cal-month {
   margin: 0;
   font-size: 16px;
