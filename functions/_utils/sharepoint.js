@@ -1,27 +1,30 @@
 // functions/_utils/sharepoint.js
-// v1.2 - SharePoint operations via Microsoft Graph
-// Endringer fra v1.1:
-//   - Bytter fra liste-NAVN til liste-IDer for robusthet (navn kan endres)
-//   - "Bookings" -> "Booking" (riktig listenavn på SharePoint)
+// v1.3 - SharePoint operations via Microsoft Graph
+// Endringer fra v1.2:
+//   - Property er en LOOKUP: bruker PropertyLookupId i Rooms, og henter
+//     Properties-listen dynamisk for å bygge ID -> navn-mapping
+//   - Filtrerer bort "tomme" Rooms-rader (uten Title)
+//   - LongTerm: SharePoint har ikke LongTerm_EndDate - antar open-ended
+//   - Property_Name i Booking er fortsatt tekst (ikke lookup)
 
 import { graphRequest } from "./graph.js";
 
 // ----------------------------------------------------------------------------
-// SharePoint site og liste-IDer
-// (Listenavnene endres ved omdøping; ID-ene er permanente.)
+// SharePoint site og liste-IDer (UUID-er - permanente, robuste)
 // ----------------------------------------------------------------------------
 
 const SITE_ID = "2gmeiendom.sharepoint.com,ccff273d-0332-4541-bdaa-7ab2acb35882,b3801ad9-27fc-4b55-8fa4-c1113315c376";
 
 const LIST_IDS = {
-  TOKENS:   "73f113fe-76b0-48b2-9105-243a45166420", // Customer_Tokens
-  ROOMS:    "bfa962a0-5eb2-416c-abe8-adba06558c11", // Rooms
-  BOOKINGS: "fe1dfe34-23df-4864-b0b1-b01bf60bfb75", // Booking (entall i SharePoint)
+  TOKENS:     "73f113fe-76b0-48b2-9105-243a45166420", // Customer_Tokens
+  ROOMS:      "bfa962a0-5eb2-416c-abe8-adba06558c11", // Rooms
+  BOOKINGS:   "fe1dfe34-23df-4864-b0b1-b01bf60bfb75", // Booking (entall)
+  PROPERTIES: "d842d574-f238-442a-be3d-77334727e89f", // "Eiendommer..."
 };
 
 // ----------------------------------------------------------------------------
-// Property-mapping: teknisk ID til displaynavn slik det står i SharePoint
-// (Bookings.Property_Name, Rooms.Property)
+// Property-mapping: teknisk ID (i Customer_Tokens.TillatteLokasjoner og frontend)
+// til displaynavn slik det står i SharePoint Properties.Title
 // ----------------------------------------------------------------------------
 
 const PROPERTY_MAP = {
@@ -34,6 +37,32 @@ const PROPERTY_MAP = {
 
 export function propertyIdToName(id) {
   return PROPERTY_MAP[String(id || "").toLowerCase()] || null;
+}
+
+// ============================================================================
+// Properties (Eiendommer-listen)
+// ============================================================================
+
+/**
+ * Henter alle properties og bygger en mapping:
+ *   { 1: "Rigg 44", 2: "Rigg 24", 3: "Rigg Botnhågen", ... }
+ *
+ * Brukes til å oversette Rooms.PropertyLookupId til menneskelig navn.
+ */
+async function getPropertyLookupMap(env) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PROPERTIES}/items?expand=fields&$top=999`;
+  const data = await graphRequest(env, path);
+
+  const map = {};
+  for (const item of (data.value || [])) {
+    // SharePoint-rader har 'id' øverst og 'Title' i fields
+    const lookupId = item.id;
+    const title = item.fields?.Title;
+    if (lookupId && title) {
+      map[lookupId] = title;
+    }
+  }
+  return map;
 }
 
 // ============================================================================
@@ -83,18 +112,28 @@ export function maskPhone(phone) {
 // ============================================================================
 
 /**
- * Henter alle aktive rom for en property.
+ * Henter alle aktive rom for en property (via PropertyLookupId).
+ * Filtrerer bort "tomme" rader (uten Title) som finnes i listen.
  */
-export async function getRoomsForProperty(env, propertyName) {
+export async function getRoomsForProperty(env, propertyName, propertyLookupMap) {
+  // Finn lookupId som tilsvarer dette property-navnet
+  const lookupIdForProperty = Object.entries(propertyLookupMap)
+    .find(([id, name]) => name === propertyName)?.[0];
+
+  if (!lookupIdForProperty) {
+    return []; // Ukjent property - returner tom liste
+  }
+
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.ROOMS}/items?expand=fields&$top=999`;
   const data = await graphRequest(env, path);
 
   return data.value.filter(item => {
     const f = item.fields;
-    // Property kan være lookup-felt; støtt flere mulige feltnavn.
-    const property = f.Property || f.Property0 || f.PropertyLookup || "";
+    // PropertyLookupId kommer som streng ("1", "2", ...) i Graph API
+    const matches = String(f.PropertyLookupId) === String(lookupIdForProperty);
+    const hasTitle = !!f.Title;        // filtrerer bort tomme rader
     const isActive = f.Active === true;
-    return property === propertyName && isActive;
+    return matches && hasTitle && isActive;
   });
 }
 
@@ -102,9 +141,6 @@ export async function getRoomsForProperty(env, propertyName) {
 // Booking (entall i SharePoint!)
 // ============================================================================
 
-/**
- * Henter alle bookinger for en property med Status Active eller Upcoming.
- */
 export async function getBookingsForProperty(env, propertyName) {
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items?expand=fields&$top=999`;
   const data = await graphRequest(env, path);
@@ -130,11 +166,7 @@ function parseDateUTC(input) {
 }
 
 /**
- * Returnerer true hvis D er i [start, end] inklusive.
- * end=null betyr open-ended -> alltid true for D >= start.
- *
- * Inklusive begge ender per 2GMs forretningsregel:
- *   "Check_Out-dagen er rengjøringsdag, rommet er fortsatt opptatt".
+ * D er i [start, end] inklusive. end=null betyr open-ended (alltid true for D >= start).
  */
 function isDateInRangeInclusive(D, start, end) {
   if (!start) return false;
@@ -147,11 +179,14 @@ function isDateInRangeInclusive(D, start, end) {
  * Beregner tilgjengelighet for én property over en datoperiode.
  *
  * Regelsett:
- *   - Rom telles kun hvis Active=true
- *   - Rom på langtidsleie (LongTerm_StartDate <= D <= LongTerm_EndDate, end open-ended)
- *     trekkes fra totalen for de dagene
+ *   - Rom telles kun hvis Active=true og har Title (filtrer bort tomme rader)
+ *   - Rom på langtidsleie (LongTerm_StartDate <= D, alltid open-ended siden
+ *     LongTerm_EndDate-felt ikke eksisterer i Rooms-listen) trekkes fra totalen
  *   - Bookinger med Status in {Active, Upcoming} og Check_In <= D <= Check_Out
  *     teller som opptatt. Manglende Check_Out = open-ended -> opptatt for alltid.
+ *
+ * Inklusive ender per 2GMs forretningsregel:
+ *   "Check_Out-dagen er rengjøringsdag, rommet er fortsatt opptatt".
  */
 export async function calculateAvailability(env, propertyName, fromISO, toISO) {
   const fromDate = parseDateUTC(fromISO);
@@ -164,15 +199,21 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO) {
     throw new Error("toDate before fromDate");
   }
 
+  // Hent property-mapping FØRST, så bruker vi den i parallel rom/booking-spørring
+  const propertyMap = await getPropertyLookupMap(env);
+
   const [rooms, bookings] = await Promise.all([
-    getRoomsForProperty(env, propertyName),
+    getRoomsForProperty(env, propertyName, propertyMap),
     getBookingsForProperty(env, propertyName),
   ]);
 
+  // Pre-parse longterm-perioder per rom. LongTerm_EndDate finnes ikke,
+  // så vi behandler alle som open-ended (-> rommet utilgjengelig fra start).
   const roomLongTerm = rooms.map(r => ({
     id: r.id,
+    title: r.fields.Title,
     longTermStart: parseDateUTC(r.fields.LongTerm_StartDate),
-    longTermEnd:   parseDateUTC(r.fields.LongTerm_EndDate),
+    longTermEnd:   null, // open-ended - feltet finnes ikke
   }));
 
   const bookingPeriods = bookings.map(b => ({
@@ -214,3 +255,4 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO) {
     days,
   };
 }
+  
