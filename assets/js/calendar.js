@@ -21,7 +21,8 @@
   const AMBER_THRESHOLD = 0.30;
 
   // Garantert antall dager kunden skal se fremover fra dagens dato.
-  const MIN_DAYS_AHEAD = 28;
+  // 35 dager = 5 hele uker.
+  const MIN_DAYS_AHEAD = 35;
 
   const Calendar = {
     locationId: null,

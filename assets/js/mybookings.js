@@ -88,7 +88,9 @@
       // Mens vi laster: skjul layout for å unngå flash hvis kunden har
       // bookinger. Vises igjen i _render hvis lista er tom eller ved feil.
       setLayoutVisible(false);
-      setTopbarCtaVisible(false);
+      // Topbar-CTA er alltid synlig når kunden er logget inn (har token);
+      // slik at det er en konsekvent vei til ny bestilling uavhengig av modus.
+      setTopbarCtaVisible(true);
       this.refresh();
     },
 
@@ -123,13 +125,12 @@
       const count = bookings.length;
 
       if (count === 0) {
-        // Ingen bookinger → panelet kollapser via :has(), layout synlig,
-        // ingen topbar-CTA (skjemaet er allerede der).
+        // Ingen bookinger → panelet kollapser via :has(), layout synlig.
+        // Topbar-CTA forblir synlig (satt i init) som konsistent inngang.
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
         setPanelCollapsed(this.container, false);
         setLayoutVisible(true);
-        setTopbarCtaVisible(false);
         return;
       }
 
@@ -144,7 +145,7 @@
       const heavy = count > 2;
       setPanelCollapsed(this.container, !heavy);
       setLayoutVisible(!heavy);
-      setTopbarCtaVisible(true);
+      // Topbar-CTA forblir synlig (satt i init).
 
       this.listEl.innerHTML = "";
 
