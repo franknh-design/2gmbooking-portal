@@ -1,8 +1,9 @@
 /* =========================================================
    Kalender-komponent.
-   - Tegner månedsoversikt (Man–Søn).
-   - Henter ledighet pr. dato fra MockData.
-   - Klikk på dato → callback til app.
+   v2.1
+   - Henter ledighet pr. dato fra ekte API (window.Api.getAvailability)
+   - Viser spinner mens data lastes
+   - Faller tilbake til mock hvis API-kall feiler (utviklerscenario)
    ========================================================= */
 (function () {
   "use strict";
@@ -12,13 +13,21 @@
     "juli", "august", "september", "oktober", "november", "desember"
   ];
 
+  // Når regner vi en dag som "få igjen" vs "ledig"?
+  // Hvis < AMBER_THRESHOLD av totalen er ledig → gult.
+  const AMBER_THRESHOLD = 0.30;
+
   const Calendar = {
     locationId: null,
     viewYear:  null,
     viewMonth: null, // 0-indeksert
-    rangeFrom: null, // YYYY-MM-DD
-    rangeTo:   null, // YYYY-MM-DD
+    rangeFrom: null,
+    rangeTo:   null,
     onSelect:  null,
+
+    // availabilityMap: Map<isoDate, { available, occupied, totalActive }>
+    availabilityMap: null,
+    isLoading: false,
 
     init({ locationId, onSelect }) {
       this.locationId = locationId;
@@ -31,18 +40,18 @@
       document.getElementById("cal-prev").addEventListener("click", () => this.shift(-1));
       document.getElementById("cal-next").addEventListener("click", () => this.shift(+1));
 
-      this.render();
+      this.renderAndLoad();
     },
 
     setLocation(locationId) {
       this.locationId = locationId;
-      this.render();
+      this.renderAndLoad();
     },
 
     setRange(fromIso, toIso) {
       this.rangeFrom = fromIso || null;
       this.rangeTo   = toIso   || null;
-      this.render();
+      this.render(); // ren rendering, ingen ny henting
     },
 
     shift(deltaMonths) {
@@ -52,7 +61,41 @@
       while (m > 11) { m -= 12; y += 1; }
       this.viewMonth = m;
       this.viewYear  = y;
+      this.renderAndLoad();
+    },
+
+    /**
+     * Hovedflyt: render umiddelbart med spinner, hent data, render igjen.
+     */
+    async renderAndLoad() {
+      // Tøm tidligere data og marker som loading
+      this.availabilityMap = null;
+      this.isLoading = true;
       this.render();
+
+      // Ingen lokasjon valgt → ingen henting
+      if (!this.locationId) {
+        this.isLoading = false;
+        this.render();
+        return;
+      }
+
+      try {
+        // window.Api.getAvailability har egen cache
+        const data = await window.Api.getAvailability(
+          this.locationId,
+          this.viewYear,
+          this.viewMonth
+        );
+        this.availabilityMap = data; // null ved feil, Map ved suksess
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[CAL] availability-feil:", err);
+        this.availabilityMap = null;
+      } finally {
+        this.isLoading = false;
+        this.render();
+      }
     },
 
     render() {
@@ -62,14 +105,20 @@
       monthEl.textContent = `${MONTHS_NB[this.viewMonth]} ${this.viewYear}`;
       grid.innerHTML = "";
 
+      // Vis spinner-overlay mens vi laster
+      if (this.isLoading) {
+        grid.classList.add("is-loading");
+      } else {
+        grid.classList.remove("is-loading");
+      }
+
       const firstOfMonth = new Date(this.viewYear, this.viewMonth, 1);
       const daysInMonth  = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
 
-      // JS: 0 = søndag … vi vil ha man=0 … søn=6
+      // Mandag-først: JS 0=søn → vil ha søn=6
       const jsDow = firstOfMonth.getDay();
       const monBased = (jsDow + 6) % 7;
 
-      // Tomme celler før første
       for (let i = 0; i < monBased; i++) {
         const empty = document.createElement("div");
         empty.className = "cal-cell cal-cell-empty";
@@ -87,12 +136,10 @@
         cell.className = "cal-cell";
         cell.dataset.date = iso;
 
-        let avail = { available: 0, total: 0, level: "red" };
-        if (this.locationId) {
-          avail = window.MockData.getAvailability(this.locationId, date);
-        }
-
+        // Beregn nivå basert på loaded data
+        const avail = this._availabilityFor(iso);
         cell.classList.add(`lvl-${avail.level}`);
+
         if (iso === todayIso) cell.classList.add("is-today");
 
         if (this.rangeFrom && iso === this.rangeFrom) {
@@ -114,13 +161,19 @@
 
         const roomsEl = document.createElement("span");
         roomsEl.className = "cal-rooms";
-        if (this.locationId) {
+
+        if (this.isLoading) {
+          roomsEl.textContent = "…";
+        } else if (!this.locationId) {
+          roomsEl.textContent = "—";
+        } else if (this.availabilityMap === null) {
+          // API-feil — vis dash, lvl-red
+          roomsEl.textContent = "—";
+        } else {
           roomsEl.textContent =
             avail.level === "red"
               ? "Fullt"
               : `${avail.available} ledig`;
-        } else {
-          roomsEl.textContent = "—";
         }
 
         cell.appendChild(dateEl);
@@ -134,6 +187,34 @@
 
         grid.appendChild(cell);
       }
+    },
+
+    /**
+     * Returnerer { available, total, level } for en gitt isoDate.
+     * Fallback hvis data ikke er lastet ennå eller feil.
+     */
+    _availabilityFor(iso) {
+      if (this.isLoading || !this.availabilityMap) {
+        return { available: 0, total: 0, level: "red" };
+      }
+
+      const entry = this.availabilityMap.get(iso);
+      if (!entry) {
+        // Dato utenfor henteperioden — burde ikke skje for samme måned
+        return { available: 0, total: 0, level: "red" };
+      }
+
+      const available = entry.available;
+      const total = entry.totalActive;
+
+      let level = "green";
+      if (total === 0 || available === 0) {
+        level = "red";
+      } else if (available / total < AMBER_THRESHOLD) {
+        level = "amber";
+      }
+
+      return { available, total, level };
     }
   };
 
