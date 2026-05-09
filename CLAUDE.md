@@ -108,7 +108,11 @@ Rom telles ikke i totalantallet hvis Active=false eller Title mangler.
 ## Konvensjoner
 
 - **Språk:** All UI på norsk bokmål (ikke nordnorsk)
-- **Versjonering:** Bump v3.0 → v3.0.1 i `index.html` footer ved hver endring
+- **Versjonering:** Bump versjon på TRE steder ved hver endring:
+  1. HTML-kommentar `<!-- v3.x.y -->` rett under `<!DOCTYPE html>` (leses av `update.js`)
+  2. Footer-string i `index.html` (synlig for kunden)
+  3. `version.txt` på roten (uten `v`-prefiks, plain `3.x.y`)
+  Glemmer du `version.txt` så vises aldri "Ny versjon"-banneret hos kundene.
 - **Zip-deliveries:** Versjon i filnavn (`2gmbooking_v3_1_0.zip`)
 - **Modulær kode:** Full filer i deliveries (ikke snippets), modulært strukturert
 - **Code style:** Vanilla JS, ingen frameworks. ESM (`import/export`) i Functions, IIFE (`(function(){...})()`) i frontend.

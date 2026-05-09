@@ -37,6 +37,48 @@
 /* HTML hidden-attributtet må vinne over senere display:flex/grid-regler */
 [hidden] { display: none !important; }
 
+/* =========================================================
+   Versjons-oppdatering — sticky banner til brukeren klikker.
+   ========================================================= */
+#updateBanner {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--c-brand);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(27,79,114,.35), 0 2px 6px rgba(0,0,0,.08);
+  z-index: 10001;
+  font-size: 14px;
+  font-weight: 500;
+  align-items: center;
+  gap: 14px;
+  font-family: inherit;
+  max-width: calc(100vw - 24px);
+  animation: _updateBannerIn .25s cubic-bezier(.2,.7,.3,1) forwards;
+}
+#updateBanner.show { display: flex !important; }
+#updateBanner button {
+  background: #fff;
+  color: var(--c-brand);
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+}
+#updateBanner button:hover { background: #E6EEF5; }
+@keyframes _updateBannerIn {
+  from { opacity: 0; transform: translate(-50%, -12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -669,8 +711,23 @@ input[type="date"]:disabled {
 }
 
 /* =========================================================
-   Mine bookinger
+   Mine bookinger — vises over .layout når kunden har bookinger.
    ========================================================= */
+.mybookings-top {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 24px 0;
+}
+/* Når selve panelet er hidden (ingen bookinger) skal wrapperen kollapse
+   så vi ikke får tom luft over kalender+skjema. */
+.mybookings-top:has(> [hidden]) {
+  padding: 0;
+}
+@media (max-width: 900px) {
+  .mybookings-top { padding: 16px 16px 0; }
+  .mybookings-top:has(> [hidden]) { padding: 0; }
+}
+
 .panel-mybookings .badge {
   background: var(--c-bg);
   color: var(--c-muted);

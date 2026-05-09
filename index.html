@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v3.1.4 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -8,6 +9,12 @@
   <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body>
+
+  <!-- ========== Versjons-oppdatering (sticky til klikk) ========== -->
+  <div id="updateBanner">
+    <span>🔄 Ny versjon tilgjengelig — kjører <span id="updateBannerOldVer" style="font-weight:600">v?</span> → <span id="updateBannerNewVer" style="font-weight:600">v?</span></span>
+    <button onclick="applyUpdate()">Last inn på nytt</button>
+  </div>
 
   <!-- ========== SMS-verifisering (vises før portalen) ========== -->
   <section id="auth-screen" class="auth-screen" hidden>
@@ -69,8 +76,26 @@
       </div>
     </header>
 
+    <!-- Mine bookinger over alt annet — kollapser via :has() når lista er hidden -->
+    <div class="mybookings-top">
+      <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
+        <div class="panel-head">
+          <h2 class="panel-title">Mine bookinger</h2>
+          <span class="badge" id="mybookings-count" hidden></span>
+        </div>
+        <p class="mb-loading" id="mybookings-loading">Laster…</p>
+        <p class="mb-error"   id="mybookings-error"   hidden>
+          Kunne ikke hente bookinger. Prøv å laste siden på nytt.
+        </p>
+        <p class="mb-empty"   id="mybookings-empty"   hidden>
+          Du har ingen aktive eller kommende bookinger.
+        </p>
+        <ul class="mb-list" id="mybookings-list" hidden></ul>
+      </section>
+    </div>
+
     <main class="layout">
-      <!-- Venstre kolonne: kalender + mine bookinger -->
+      <!-- Venstre kolonne: kalender -->
       <div class="layout-col">
         <!-- Kalender -->
         <section class="panel panel-calendar" aria-label="Kalender">
@@ -96,22 +121,6 @@
           <div class="cal-grid" id="cal-grid" role="grid"></div>
 
           <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
-        </section>
-
-        <!-- Mine bookinger -->
-        <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
-          <div class="panel-head">
-            <h2 class="panel-title">Mine bookinger</h2>
-            <span class="badge" id="mybookings-count" hidden></span>
-          </div>
-          <p class="mb-loading" id="mybookings-loading">Laster…</p>
-          <p class="mb-error"   id="mybookings-error"   hidden>
-            Kunne ikke hente bookinger. Prøv å laste siden på nytt.
-          </p>
-          <p class="mb-empty"   id="mybookings-empty"   hidden>
-            Du har ingen aktive eller kommende bookinger.
-          </p>
-          <ul class="mb-list" id="mybookings-list" hidden></ul>
         </section>
       </div>
 
@@ -177,10 +186,11 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.3</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.4</small>
     </footer>
   </div>
 
+  <script src="assets/js/update.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/mockdata.js"></script>
   <script src="assets/js/auth.js"></script>
