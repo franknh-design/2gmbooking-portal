@@ -1,0 +1,96 @@
+// functions/api/availability.js
+// v1.0 - Availability endpoint for booking portal
+//
+// POST /api/availability
+// Body: { property: "rigg24", fromDate: "2026-05-01", toDate: "2026-05-31" }
+//
+// Returns:
+//   {
+//     property: "rigg24",
+//     propertyName: "Rigg 24",
+//     days: [
+//       { date: "2026-05-01", available: 7, occupied: 1, totalActive: 8 },
+//       ...
+//     ]
+//   }
+//
+// Eller ved feil:
+//   { error: "invalid_property" | "invalid_dates" | "internal_error" }
+
+import {
+  propertyIdToName,
+  calculateAvailability,
+} from "../_utils/sharepoint.js";
+
+// Maksimalt antall dager per spørring. Klienten bør be om én måned om gangen.
+// Forhindrer DoS-aktige spørringer ("gi meg 10 år") som ville hentet og
+// itererte over enorme datamengder.
+const MAX_DAYS = 92;
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+
+  try {
+    const body = await request.json();
+    const { property, fromDate, toDate } = body || {};
+
+    // Valider property-id mot kjent mapping
+    const propertyName = propertyIdToName(property);
+    if (!propertyName) {
+      return jsonResponse({ error: "invalid_property" }, 400);
+    }
+
+    // Valider datoer
+    if (!fromDate || !toDate) {
+      return jsonResponse({ error: "invalid_dates" }, 400);
+    }
+    const from = new Date(fromDate);
+    const to   = new Date(toDate);
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return jsonResponse({ error: "invalid_dates" }, 400);
+    }
+    if (to < from) {
+      return jsonResponse({ error: "invalid_dates" }, 400);
+    }
+
+    const dayCount = Math.floor((to - from) / (24 * 60 * 60 * 1000)) + 1;
+    if (dayCount > MAX_DAYS) {
+      return jsonResponse({ error: "range_too_large", maxDays: MAX_DAYS }, 400);
+    }
+
+    const result = await calculateAvailability(
+      env,
+      propertyName,
+      fromDate,
+      toDate,
+    );
+
+    return jsonResponse({
+      property,
+      propertyName,
+      days: result.days,
+    });
+  } catch (err) {
+    console.error("availability error:", err);
+    return jsonResponse({ error: "internal_error" }, 500);
+  }
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: corsHeaders() });
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders() },
+  });
+}
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
