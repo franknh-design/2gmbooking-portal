@@ -1,1 +1,36 @@
+/* =========================================================
+   Tillegg for v2.1 — kalender loading-spinner
+   Lim disse reglene inn på slutten av styles.css
+   ========================================================= */
 
+/* Holder kalenderen relativ så spinner-overlay kan posisjoneres */
+.cal-grid {
+  position: relative;
+}
+
+/* Dimmer kalenderen mens data lastes */
+.cal-grid.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Spinner-overlay over kalender-rutene */
+.cal-grid.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 3px solid rgba(27, 79, 114, 0.2);
+  border-top-color: #1B4F72;
+  border-radius: 50%;
+  animation: cal-spin 0.8s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes cal-spin {
+  to { transform: rotate(360deg); }
+}
