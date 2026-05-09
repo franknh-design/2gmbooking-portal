@@ -47,7 +47,11 @@
 
   function applyUpdate() {
     const v = newVersionAvailable || Date.now();
-    location.replace(location.pathname + "?v=" + v);
+    // Behold eksisterende query params (spesielt ?token=...) — sett kun "v".
+    // Tidligere kastet vi pathname+"?v=…" som strippet token og logget kunden ut.
+    const url = new URL(location.href);
+    url.searchParams.set("v", v);
+    location.replace(url.toString());
   }
 
   window.applyUpdate = applyUpdate;
