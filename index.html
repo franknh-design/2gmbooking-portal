@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.2.3 -->
+<!-- v3.2.4 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -12,50 +12,52 @@
 
   <!-- ========== Versjons-oppdatering (sticky til klikk) ========== -->
   <div id="updateBanner">
-    <span>🔄 Ny versjon tilgjengelig — kjører <span id="updateBannerOldVer" style="font-weight:600">v?</span> → <span id="updateBannerNewVer" style="font-weight:600">v?</span></span>
-    <button onclick="applyUpdate()">Last inn på nytt</button>
+    <span id="updateBannerText">🔄 Ny versjon tilgjengelig — kjører <span id="updateBannerOldVer" style="font-weight:600">v?</span> → <span id="updateBannerNewVer" style="font-weight:600">v?</span></span>
+    <button onclick="applyUpdate()" data-i18n="update.reload">Last inn på nytt</button>
   </div>
 
   <!-- ========== SMS-verifisering (vises før portalen) ========== -->
   <section id="auth-screen" class="auth-screen" hidden>
     <div class="auth-card">
       <div class="auth-logo">2GM Eiendom</div>
-      <h1 class="auth-title">Bestillingsportal</h1>
-      <p class="auth-sub" id="auth-customer-sub">Logger inn…</p>
+      <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
+      <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
       <!-- Steg 1: telefonnummer -->
       <form id="auth-phone-form" class="auth-form" novalidate>
         <label class="field">
-          <span class="field-label">Mobilnummer</span>
+          <span class="field-label" data-i18n="auth.phoneLabel">Mobilnummer</span>
           <input
             type="tel"
             id="auth-phone"
             name="phone"
+            data-i18n-placeholder="auth.phonePlaceholder"
             placeholder="+47 999 99 999"
             autocomplete="tel"
           />
         </label>
-        <button type="submit" class="btn btn-primary">Send kode på SMS</button>
-        <p class="auth-hint">Du mottar en 6-sifret engangskode.</p>
+        <button type="submit" class="btn btn-primary" data-i18n="auth.sendCode">Send kode på SMS</button>
+        <p class="auth-hint" data-i18n="auth.codeHint">Du mottar en 6-sifret engangskode.</p>
       </form>
 
       <!-- Steg 2: kode -->
       <form id="auth-code-form" class="auth-form" hidden novalidate>
         <label class="field">
-          <span class="field-label">Engangskode</span>
+          <span class="field-label" data-i18n="auth.codeLabel">Engangskode</span>
           <input
             type="text"
             id="auth-code"
             name="code"
             inputmode="numeric"
             maxlength="6"
+            data-i18n-placeholder="auth.codePlaceholder"
             placeholder="6 sifre"
             autocomplete="one-time-code"
           />
         </label>
-        <button type="submit" class="btn btn-primary">Bekreft og logg inn</button>
-        <button type="button" class="btn btn-link" id="auth-back">← Endre nummer</button>
-        <button type="button" class="btn btn-link" id="auth-skip">Hopp over (mock)</button>
+        <button type="submit" class="btn btn-primary" data-i18n="auth.confirm">Bekreft og logg inn</button>
+        <button type="button" class="btn btn-link" id="auth-back" data-i18n="auth.changeNumber">← Endre nummer</button>
+        <button type="button" class="btn btn-link" id="auth-skip" data-i18n="auth.skip">Hopp over (mock)</button>
         <p class="auth-hint" id="auth-mock-hint"></p>
       </form>
 
@@ -69,12 +71,16 @@
       <div class="topbar-left">
         <span class="topbar-logo">2GM Eiendom</span>
         <span class="topbar-divider">/</span>
-        <span class="topbar-app">Bestillingsportal</span>
+        <span class="topbar-app" data-i18n="topbar.app">Bestillingsportal</span>
       </div>
       <div class="topbar-right">
-        <button type="button" class="topbar-cta" id="topbar-new-booking" hidden>+ Ny bestilling</button>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang-btn="nb" class="lang-btn">NB</button>
+          <button type="button" data-lang-btn="en" class="lang-btn">EN</button>
+        </div>
+        <button type="button" class="topbar-cta" id="topbar-new-booking" data-i18n="topbar.newBooking" hidden>+ Ny bestilling</button>
         <span class="badge badge-customer" id="customer-badge">—</span>
-        <button type="button" class="topbar-logout" id="btn-logout" hidden>Logg ut</button>
+        <button type="button" class="topbar-logout" id="btn-logout" data-i18n="topbar.logout" hidden>Logg ut</button>
       </div>
     </header>
 
@@ -82,15 +88,15 @@
     <div class="mybookings-top">
       <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
         <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="true">
-          <h2 class="panel-title">Mine bookinger</h2>
+          <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
           <span class="badge" id="mybookings-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
         </button>
-        <p class="mb-loading" id="mybookings-loading">Laster…</p>
-        <p class="mb-error"   id="mybookings-error"   hidden>
+        <p class="mb-loading" id="mybookings-loading" data-i18n="mybookings.loading">Laster…</p>
+        <p class="mb-error"   id="mybookings-error"   data-i18n="mybookings.error" hidden>
           Kunne ikke hente bookinger. Prøv å laste siden på nytt.
         </p>
-        <p class="mb-empty"   id="mybookings-empty"   hidden>
+        <p class="mb-empty"   id="mybookings-empty"   data-i18n="mybookings.empty" hidden>
           Du har ingen aktive eller kommende bookinger.
         </p>
         <ul class="mb-list" id="mybookings-list" hidden></ul>
@@ -101,75 +107,68 @@
       <!-- Venstre kolonne: kalender -->
       <div class="layout-col">
         <!-- Kalender -->
-        <section class="panel panel-calendar" aria-label="Kalender">
+        <section class="panel panel-calendar" aria-label="Calendar">
           <div class="panel-head">
-            <h2 class="panel-title">Tilgjengelighet</h2>
+            <h2 class="panel-title" data-i18n="calendar.title">Tilgjengelighet</h2>
             <div class="legend" aria-hidden="true">
-              <span class="legend-item"><i class="dot dot-green"></i>Ledig</span>
-              <span class="legend-item"><i class="dot dot-amber"></i>Få igjen</span>
-              <span class="legend-item"><i class="dot dot-red"></i>Fullt</span>
+              <span class="legend-item"><i class="dot dot-green"></i><span data-i18n="calendar.legendFree">Ledig</span></span>
+              <span class="legend-item"><i class="dot dot-amber"></i><span data-i18n="calendar.legendFew">Få igjen</span></span>
+              <span class="legend-item"><i class="dot dot-red"></i><span data-i18n="calendar.legendFull">Fullt</span></span>
             </div>
           </div>
 
           <div class="cal-controls">
-            <button type="button" class="btn btn-ghost" id="cal-prev" aria-label="Forrige måned">‹</button>
+            <button type="button" class="btn btn-ghost" id="cal-prev" data-i18n-aria="calendar.prev" aria-label="Forrige måned">‹</button>
             <h3 class="cal-month" id="cal-month">—</h3>
-            <button type="button" class="btn btn-ghost" id="cal-next" aria-label="Neste måned">›</button>
+            <button type="button" class="btn btn-ghost" id="cal-next" data-i18n-aria="calendar.next" aria-label="Neste måned">›</button>
           </div>
 
-          <div class="cal-weekdays" aria-hidden="true">
-            <span>Man</span><span>Tir</span><span>Ons</span>
-            <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
-          </div>
+          <div class="cal-weekdays" id="cal-weekdays" aria-hidden="true"></div>
           <div class="cal-grid" id="cal-grid" role="grid"></div>
 
-          <!-- Auto-utvidelse: rendres når dagens måned har < 4 hele uker igjen.
-               Garanterer at kunden alltid ser minst 4 uker frem fra dagens dato. -->
+          <!-- Auto-utvidelse: rendres når dagens måned har < 5 hele uker igjen. -->
           <div id="cal-extra" class="cal-extra" hidden>
             <h3 class="cal-month cal-month-extra" id="cal-month-2">—</h3>
-            <div class="cal-weekdays" aria-hidden="true">
-              <span>Man</span><span>Tir</span><span>Ons</span>
-              <span>Tor</span><span>Fre</span><span>Lør</span><span>Søn</span>
-            </div>
+            <div class="cal-weekdays" id="cal-weekdays-2" aria-hidden="true"></div>
             <div class="cal-grid" id="cal-grid-2" role="grid"></div>
           </div>
 
-          <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
+          <p class="cal-footnote" data-i18n="calendar.footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
         </section>
       </div>
 
       <!-- Bestillingsskjema -->
-      <section class="panel panel-form" aria-label="Bestilling">
+      <section class="panel panel-form" aria-label="Booking">
         <div class="panel-head">
-          <h2 class="panel-title">Ny bestilling</h2>
-          <span class="badge" id="avail-badge">Velg dato</span>
+          <h2 class="panel-title" data-i18n="booking.title">Ny bestilling</h2>
+          <span class="badge" id="avail-badge" data-i18n="booking.pickDate">Velg dato</span>
         </div>
 
         <form id="booking-form" class="booking-form" novalidate>
           <label class="field">
-            <span class="field-label">Lokasjon</span>
+            <span class="field-label" data-i18n="booking.location">Lokasjon</span>
             <select id="f-location" name="location" required></select>
           </label>
 
           <div class="field-row">
             <label class="field">
-              <span class="field-label">Fra dato</span>
+              <span class="field-label" data-i18n="booking.from">Fra dato</span>
               <input type="date" id="f-from" name="from" required />
             </label>
             <div class="field">
-              <label class="field-label" for="f-to">Til dato</label>
+              <label class="field-label" for="f-to" data-i18n="booking.to">Til dato</label>
               <input type="date" id="f-to" name="to" />
               <label class="checkbox" for="f-open-ended">
                 <input type="checkbox" id="f-open-ended" name="openEnded" />
-                <span>Vet ikke utflyttingsdato (open-ended)</span>
+                <span data-i18n="booking.openEnded">Vet ikke utflyttingsdato (open-ended)</span>
               </label>
             </div>
           </div>
 
           <div class="field">
-            <span class="field-label">Antall rom</span>
-            <div class="counter" role="group" aria-label="Antall rom">
-              <button type="button" class="counter-btn" id="rooms-minus" aria-label="Færre rom">−</button>
+            <span class="field-label" data-i18n="booking.rooms">Antall rom</span>
+            <div class="counter" role="group" data-i18n-aria="booking.rooms" aria-label="Antall rom">
+              <button type="button" class="counter-btn" id="rooms-minus" data-i18n-aria="booking.fewerRooms" aria-label="Færre rom">−</button>
               <input
                 type="number"
                 id="f-rooms"
@@ -180,17 +179,17 @@
                 inputmode="numeric"
                 aria-live="polite"
               />
-              <button type="button" class="counter-btn" id="rooms-plus" aria-label="Flere rom">+</button>
+              <button type="button" class="counter-btn" id="rooms-plus" data-i18n-aria="booking.moreRooms" aria-label="Flere rom">+</button>
             </div>
           </div>
 
           <fieldset class="field guests">
-            <legend class="field-label">Navn på gjester</legend>
-            <p class="guests-hint">Bruker fellesperioden over med mindre du klikker «Avvikende datoer».</p>
+            <legend class="field-label" data-i18n="booking.guests">Navn på gjester</legend>
+            <p class="guests-hint" data-i18n="booking.guestsHint">Bruker fellesperioden over med mindre du klikker «Avvikende datoer».</p>
             <div id="guests-list" class="guests-list"></div>
           </fieldset>
 
-          <button type="submit" class="btn btn-primary btn-submit" id="submit-btn">
+          <button type="submit" class="btn btn-primary btn-submit" id="submit-btn" data-i18n="booking.submit">
             Send bestilling
           </button>
 
@@ -200,10 +199,11 @@
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.2.3</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.2.4</small>
     </footer>
   </div>
 
+  <script src="assets/js/i18n.js"></script>
   <script src="assets/js/update.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/mockdata.js"></script>

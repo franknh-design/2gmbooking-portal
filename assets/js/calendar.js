@@ -11,14 +11,24 @@
 (function () {
   "use strict";
 
-  const MONTHS_NB = [
-    "januar", "februar", "mars", "april", "mai", "juni",
-    "juli", "august", "september", "oktober", "november", "desember"
-  ];
-
   // Når regner vi en dag som "få igjen" vs "ledig"?
   // Hvis < AMBER_THRESHOLD av totalen er ledig → gult.
   const AMBER_THRESHOLD = 0.30;
+
+  function months() {
+    return (window.I18n && window.I18n.t("months.long")) || [
+      "januar","februar","mars","april","mai","juni",
+      "juli","august","september","oktober","november","desember"
+    ];
+  }
+  function weekdays() {
+    return (window.I18n && window.I18n.t("weekdays.short")) || [
+      "Man","Tir","Ons","Tor","Fre","Lør","Søn"
+    ];
+  }
+  function tx(key, vars) {
+    return window.I18n ? window.I18n.t(key, vars) : key;
+  }
 
   // Garantert antall dager kunden skal se fremover fra dagens dato.
   // 35 dager = 5 hele uker.
@@ -165,8 +175,19 @@
     _renderMonthBlock(grid, monthEl, year, month, map) {
       if (!grid || !monthEl) return;
 
-      monthEl.textContent = `${MONTHS_NB[month]} ${year}`;
+      const ms = months();
+      monthEl.textContent = `${ms[month]} ${year}`;
       grid.innerHTML = "";
+
+      // Fyll ukedags-headerne (én eller to grids).
+      const wd = weekdays();
+      const wdEl1 = document.getElementById("cal-weekdays");
+      const wdEl2 = document.getElementById("cal-weekdays-2");
+      if (wdEl1 && !wdEl1.dataset.lang) wdEl1.dataset.lang = "";
+      [wdEl1, wdEl2].forEach(host => {
+        if (!host) return;
+        host.innerHTML = wd.map(d => `<span>${d}</span>`).join("");
+      });
 
       // Spinner-overlay mens vi laster
       if (this.isLoading) grid.classList.add("is-loading");
@@ -240,8 +261,8 @@
         } else {
           roomsEl.textContent =
             avail.level === "red"
-              ? "Fullt"
-              : `${avail.available} ledig`;
+              ? tx("calendar.full")
+              : tx("calendar.available", { n: avail.available });
         }
 
         cell.appendChild(dateEl);
@@ -316,6 +337,11 @@
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   }
+
+  // Re-rendre kalenderen ved språkendring (måneder + ukedager + tekst-celler)
+  document.addEventListener("i18n:change", () => {
+    if (typeof Calendar.render === "function") Calendar.render();
+  });
 
   window.Calendar = Calendar;
 })();

@@ -33,16 +33,24 @@
       // helt til brukeren faktisk klikker. Sticky by design.
       if (remote !== newVersionAvailable) {
         newVersionAvailable = remote;
-        const lblNew = document.getElementById("updateBannerNewVer");
-        const lblOld = document.getElementById("updateBannerOldVer");
-        if (lblNew) lblNew.textContent = "v" + remote;
-        if (lblOld) lblOld.textContent = "v" + runningVersion;
+        renderBannerText();
       }
       const banner = document.getElementById("updateBanner");
       if (banner) banner.classList.add("show");
     } catch (e) {
       // Stille — offline / nettverksglipp / 404 før første deploy med version.txt.
     }
+  }
+
+  function renderBannerText() {
+    if (!newVersionAvailable) return;
+    const span = document.getElementById("updateBannerText");
+    if (!span) return;
+    const t = window.I18n ? window.I18n.t : ((k) => k);
+    span.innerHTML = t("update.text", {
+      old: `<span style="font-weight:600">v${runningVersion}</span>`,
+      new: `<span style="font-weight:600">v${newVersionAvailable}</span>`,
+    });
   }
 
   function applyUpdate() {
@@ -60,4 +68,7 @@
     setTimeout(checkForUpdate, 5000);
     setInterval(checkForUpdate, 60000);
   });
+
+  // Re-render bannertekst ved språkbytte (versjonsnumrene er allerede kjent).
+  document.addEventListener("i18n:change", renderBannerText);
 })();

@@ -10,6 +10,8 @@
 (function () {
   "use strict";
 
+  function tx(key, vars) { return window.I18n ? window.I18n.t(key, vars) : key; }
+
   const Booking = {
     customer: null,
     onLocationChange: null,
@@ -57,7 +59,7 @@
       if (locations.length === 0) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "Ingen lokasjoner tilgjengelig";
+        opt.textContent = tx("booking.noLocations");
         sel.appendChild(opt);
         sel.disabled = true;
         return;
@@ -217,11 +219,11 @@
 
       const numEl = document.createElement("span");
       numEl.className = "guest-num";
-      numEl.textContent = `Rom ${idx}`;
+      numEl.textContent = tx("booking.guestRoom", { n: idx });
 
       const nameEl = document.createElement("input");
       nameEl.type = "text";
-      nameEl.placeholder = "Navn på gjest";
+      nameEl.placeholder = tx("booking.guestName");
       nameEl.dataset.field = "name";
       nameEl.value = prev.name || "";
       nameEl.required = true;
@@ -244,7 +246,7 @@
 
       const fromLabel = document.createElement("label");
       fromLabel.className = "field";
-      fromLabel.innerHTML = '<span class="field-label">Fra dato</span>';
+      fromLabel.innerHTML = `<span class="field-label">${tx("booking.from")}</span>`;
       const fromInp = document.createElement("input");
       fromInp.type = "date";
       fromInp.dataset.field = "from";
@@ -253,7 +255,7 @@
 
       const toLabel = document.createElement("label");
       toLabel.className = "field";
-      toLabel.innerHTML = '<span class="field-label">Til dato</span>';
+      toLabel.innerHTML = `<span class="field-label">${tx("booking.to")}</span>`;
       const toInp = document.createElement("input");
       toInp.type = "date";
       toInp.dataset.field = "to";
@@ -267,16 +269,13 @@
       openInp.dataset.field = "openEnded";
       openInp.checked = !!prev.openEnded;
       const openText = document.createElement("span");
-      openText.textContent = "Vet ikke utflyttingsdato";
+      openText.textContent = tx("booking.dontKnowOut");
       openLabel.append(openInp, openText);
 
-      // "Bruk fellesperioden i stedet" — eksplisitt vei tilbake til
-      // standardperioden. Vises bare når gjesten faktisk har egne
-      // datoer (toggles via has-own-dates-klassen).
       const reset = document.createElement("button");
       reset.type = "button";
       reset.className = "guest-reset";
-      reset.textContent = "← Bruk fellesperioden i stedet";
+      reset.textContent = tx("booking.useShared");
 
       dates.append(fromLabel, toLabel, openLabel, reset);
 
@@ -334,7 +333,7 @@
       const expanded = row.classList.contains("is-expanded");
       row.classList.toggle("has-own-dates", hasOwn);
 
-      const label = hasOwn ? "Egne datoer" : "Avvikende datoer";
+      const label = hasOwn ? tx("booking.tabOwn") : tx("booking.tabDeviating");
       const arrow = expanded ? "▴" : "▾";
       toggle.textContent = `${label} ${arrow}`;
     },
@@ -355,12 +354,12 @@
 
         if (period.hasOwn) {
           sum.classList.add("is-custom");
-          sum.textContent = "Egne datoer: " + this._formatPeriodNo(period);
+          sum.textContent = tx("booking.summaryOwn", { period: this._formatPeriodNo(period) });
         } else {
           sum.classList.remove("is-custom");
           sum.textContent = topFrom
-            ? "Bruker fellesperioden: " + this._formatPeriodNo(period)
-            : "Bruker fellesperioden (ikke valgt enda).";
+            ? tx("booking.summaryShared", { period: this._formatPeriodNo(period) })
+            : tx("booking.summaryNotPicked");
         }
       });
     },
@@ -390,11 +389,11 @@
     },
 
     _formatPeriodNo(period) {
-      if (!period.from) return "ikke valgt";
+      if (!period.from) return tx("booking.periodNotPicked");
       const fromStr = formatDdMm(period.from);
-      if (period.openEnded) return `${fromStr} → open-ended (${this.OPEN_ENDED_DAYS} d.)`;
-      if (!period.to) return `${fromStr} →`;
-      return `${fromStr} – ${formatDdMm(period.to)}`;
+      if (period.openEnded) return tx("booking.openPeriod", { from: fromStr, days: this.OPEN_ENDED_DAYS });
+      if (!period.to) return tx("booking.fromOnly", { from: fromStr });
+      return tx("booking.fullPeriod", { from: fromStr, to: formatDdMm(period.to) });
     },
 
     _refreshAvailabilityBadge() {
@@ -405,7 +404,7 @@
       badge.classList.remove("lvl-green", "lvl-amber", "lvl-red");
 
       if (!locId || !fromEl.value) {
-        badge.textContent = "Velg dato";
+        badge.textContent = tx("booking.pickDate");
         return;
       }
 
@@ -416,7 +415,7 @@
       const month = date.getMonth();
 
       // Vis "Henter…" mens vi venter
-      badge.textContent = "Henter…";
+      badge.textContent = tx("booking.fetching");
 
       window.Api.getAvailability(locId, year, month).then(map => {
         // Brukeren kan ha endret dato eller lokasjon mens vi ventet —
@@ -425,7 +424,7 @@
         if (fromEl.value !== isoLocal(date)) return;
 
         if (!map) {
-          badge.textContent = "Ukjent";
+          badge.textContent = tx("booking.unknown");
           return;
         }
 
@@ -440,16 +439,16 @@
         badge.classList.add(`lvl-${level}`);
 
         const suffix = this.isOpenEnded()
-          ? ` · estimert ${this.OPEN_ENDED_DAYS} dager`
+          ? tx("booking.openSuffix", { days: this.OPEN_ENDED_DAYS })
           : "";
 
-        if (level === "red") badge.textContent = "Fullt" + suffix;
-        else if (level === "amber") badge.textContent = `Få igjen (${available})` + suffix;
-        else badge.textContent = `${available} ledige` + suffix;
+        if (level === "red") badge.textContent = tx("booking.full") + suffix;
+        else if (level === "amber") badge.textContent = tx("booking.fewLeft", { n: available }) + suffix;
+        else badge.textContent = tx("booking.nFree", { n: available }) + suffix;
       }).catch(err => {
         // eslint-disable-next-line no-console
         console.error("[BOOKING] availability-feil:", err);
-        badge.textContent = "Ukjent";
+        badge.textContent = tx("booking.unknown");
       });
     },
 
@@ -551,37 +550,31 @@
       const rooms    = this._getRooms();
       const guests   = this._collectGuests(topFrom, topTo, topOpen);
 
-      if (!locId) return this._showMsg("Velg lokasjon.", "error");
+      if (!locId) return this._showMsg(tx("booking.errPickLoc"), "error");
 
       if (guests.some((g) => !g.name)) {
-        return this._showMsg("Fyll inn navn for alle rom.", "error");
+        return this._showMsg(tx("booking.errAllNames"), "error");
       }
 
       // Hver gjest må ha en gyldig effektiv periode (egen eller felles)
       for (const g of guests) {
         if (!g.from) {
-          const who = g.hasOwnDates ? `Rom ${g.index} («${g.name}»)` : "Fellesperioden";
-          return this._showMsg(
-            `${who} mangler fra-dato.`, "error"
-          );
+          const who = g.hasOwnDates
+            ? tx("booking.guestRoom", { n: g.index }) + ` («${g.name}»)`
+            : tx("booking.sharedPeriod");
+          return this._showMsg(tx("booking.errNoFrom", { who }), "error");
         }
         if (!g.openEnded && !g.to) {
-          return this._showMsg(
-            `Rom ${g.index} («${g.name}») mangler til-dato — eller huk av for «Vet ikke utflyttingsdato».`,
-            "error"
-          );
+          return this._showMsg(tx("booking.errNoTo", { n: g.index, name: g.name }), "error");
         }
         if (g.to && g.to < g.from) {
-          return this._showMsg(
-            `Rom ${g.index} («${g.name}»): til-dato må være etter fra-dato.`,
-            "error"
-          );
+          return this._showMsg(tx("booking.errBadOrder", { n: g.index, name: g.name }), "error");
         }
       }
 
       const submitBtn = document.getElementById("submit-btn");
       submitBtn.disabled = true;
-      submitBtn.textContent = "Sender…";
+      submitBtn.textContent = tx("booking.sending");
 
       // Sjekk tilgjengelighet per dag basert på hvor mange gjester som er
       // på huset hver dag. Bestillingen blokkeres ikke ved mangel — i
@@ -629,7 +622,7 @@
       });
 
       submitBtn.disabled = false;
-      submitBtn.textContent = "Send bestilling";
+      submitBtn.textContent = tx("booking.submit");
 
       if (res.ok) {
         // Oppdater "Mine bookinger"-listen så den nye bestillingen vises
@@ -639,13 +632,9 @@
         // Lås portalen og vis takk-skjerm
         this._lockPortalAndShowThanks(res.bookingRef, res.capacityWarning || warning);
       } else {
-        // Generisk feilmelding (jf. designvalg)
         // eslint-disable-next-line no-console
         console.error("[BOOKING] Innsending feilet:", res);
-        this._showMsg(
-          "Noe gikk galt. Vennligst kontakt 2GM Eiendom på +47 99 10 10 41.",
-          "error"
-        );
+        this._showMsg(tx("booking.errGeneric"), "error");
       }
     },
 
@@ -695,15 +684,12 @@
       // Bytt panel-tittel
       const panelHead = document.querySelector(".panel-form .panel-head");
       if (panelHead) {
-        panelHead.innerHTML =
-          '<h2 class="panel-title">Takk for bestillingen!</h2>';
+        panelHead.innerHTML = `<h2 class="panel-title">${tx("booking.thanksTitle")}</h2>`;
       }
 
-      // Bygg takk-skjerm under panel-head
       const panel = document.querySelector(".panel-form");
       if (!panel) return;
 
-      // Fjern eksisterende takk-skjerm hvis allerede vist
       const existing = panel.querySelector(".thanks-screen");
       if (existing) existing.remove();
 
@@ -711,11 +697,11 @@
       thanks.className = "thanks-screen";
       thanks.innerHTML = `
         <div class="thanks-icon" aria-hidden="true">✓</div>
-        <p class="thanks-lead">Vi har mottatt bestillingen din.</p>
-        <p class="thanks-ref">Referanse: <strong>${escapeHtml(bookingRef)}</strong></p>
-        <p class="thanks-sub">2GM Eiendom tar kontakt med deg så snart vi har bekreftet rom og perioder.</p>
+        <p class="thanks-lead">${tx("booking.thanksLead")}</p>
+        <p class="thanks-ref">${tx("booking.thanksRef", { ref: escapeHtml(bookingRef) })}</p>
+        <p class="thanks-sub">${tx("booking.thanksSub")}</p>
         ${warning ? `<p class="thanks-warning">${escapeHtml(warning)}</p>` : ""}
-        <p class="thanks-foot">Du kan lukke vinduet.</p>
+        <p class="thanks-foot">${tx("booking.thanksFoot")}</p>
       `;
       panel.appendChild(thanks);
     }
@@ -750,9 +736,10 @@
   }
 
   function joinNo(items) {
+    const and = ` ${tx("booking.joinAnd")} `;
     if (items.length <= 1) return items.join("");
-    if (items.length === 2) return items.join(" og ");
-    return items.slice(0, -1).join(", ") + " og " + items[items.length - 1];
+    if (items.length === 2) return items.join(and);
+    return items.slice(0, -1).join(", ") + and + items[items.length - 1];
   }
 
   /**
@@ -785,11 +772,25 @@
       .sort((a, b) => a.available - b.available)
       .map((g) => {
         const dates = g.dates.map(formatDdMm);
-        return `${joinNo(dates)} har bare ${g.available} ledige rom — du trenger ${g.needed} rom.`;
+        return tx("booking.warningSentence", {
+          dates: joinNo(dates),
+          available: g.available,
+          needed: g.needed,
+        });
       });
 
-    return "Obs: " + sentences.join(" ") + " 2GM vil kontakte deg.";
+    return `${tx("booking.warningPrefix")} ${sentences.join(" ")} ${tx("booking.warningSuffix")}`;
   }
+
+  // Re-rendre dynamisk innhold ved språkbytte (badge, gjeste-rader, summaries).
+  document.addEventListener("i18n:change", () => {
+    if (typeof Booking._refreshAvailabilityBadge === "function") {
+      Booking._refreshAvailabilityBadge();
+    }
+    if (typeof Booking._renderGuests === "function") {
+      Booking._renderGuests(Booking._getRooms());
+    }
+  });
 
   window.Booking = Booking;
 })();

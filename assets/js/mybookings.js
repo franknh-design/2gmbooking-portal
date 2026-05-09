@@ -15,24 +15,26 @@
 (function () {
   "use strict";
 
-  const MONTHS_NB = [
-    "jan", "feb", "mar", "apr", "mai", "jun",
-    "jul", "aug", "sep", "okt", "nov", "des"
-  ];
+  function tx(key, vars) { return window.I18n ? window.I18n.t(key, vars) : key; }
+  function shortMonths() {
+    return (window.I18n && window.I18n.t("months.short")) || [
+      "jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"
+    ];
+  }
 
   function formatIso(iso) {
     if (!iso) return null;
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
     if (!m) return iso;
     const day = parseInt(m[3], 10);
-    const month = MONTHS_NB[parseInt(m[2], 10) - 1];
+    const month = shortMonths()[parseInt(m[2], 10) - 1];
     const year = m[1];
     return `${day}. ${month} ${year}`;
   }
 
   function formatPeriod(checkIn, checkOut) {
     const fromTxt = formatIso(checkIn) || "?";
-    const toTxt = checkOut ? formatIso(checkOut) : "åpen";
+    const toTxt = checkOut ? formatIso(checkOut) : tx("mybookings.openPeriod");
     return `${fromTxt} → ${toTxt}`;
   }
 
@@ -42,13 +44,13 @@
 
     if (pending) {
       wrap.classList.add("mb-status-pending");
-      wrap.textContent = "Avventer bekreftelse";
+      wrap.textContent = tx("mybookings.statusPending");
     } else if (status === "Active") {
       wrap.classList.add("mb-status-active");
-      wrap.textContent = "Aktiv";
+      wrap.textContent = tx("mybookings.statusActive");
     } else if (status === "Upcoming") {
       wrap.classList.add("mb-status-upcoming");
-      wrap.textContent = "Bekreftet";
+      wrap.textContent = tx("mybookings.statusUpcoming");
     } else {
       wrap.textContent = status || "—";
     }
@@ -137,7 +139,7 @@
       this._setState("list");
 
       if (this.countEl) {
-        this.countEl.textContent = `${count} ${count === 1 ? "rad" : "rader"}`;
+        this.countEl.textContent = tx(count === 1 ? "mybookings.rowsOne" : "mybookings.rowsMany", { n: count });
       }
 
       // 1–2 bookinger: panel sammentrukket over layout (begge synlige).
@@ -158,7 +160,7 @@
 
         const guestEl = document.createElement("span");
         guestEl.className = "mb-guest";
-        guestEl.textContent = b.guest || "(uten navn)";
+        guestEl.textContent = b.guest || tx("mybookings.unnamed");
         main.appendChild(guestEl);
 
         const periodEl = document.createElement("span");
@@ -186,14 +188,14 @@
         if (b.roomNumber) {
           const roomEl = document.createElement("span");
           roomEl.className = "mb-room";
-          roomEl.textContent = `Rom ${b.roomNumber}`;
+          roomEl.textContent = tx("mybookings.room", { n: b.roomNumber });
           meta.appendChild(roomEl);
         }
 
         if (b.doorCode) {
           const codeEl = document.createElement("span");
           codeEl.className = "mb-doorcode";
-          codeEl.textContent = `Kode ${b.doorCode}`;
+          codeEl.textContent = tx("mybookings.code", { code: b.doorCode });
           meta.appendChild(codeEl);
         }
 
@@ -217,7 +219,7 @@
           const extendBtn = document.createElement("button");
           extendBtn.type = "button";
           extendBtn.className = "btn btn-ghost mb-extend-btn";
-          extendBtn.textContent = "Forleng oppholdet";
+          extendBtn.textContent = tx("mybookings.extend");
           extendBtn.addEventListener("click", () => openExtendDialog(b, this));
           actions.appendChild(extendBtn);
 
@@ -235,19 +237,29 @@
   function openExtendDialog(booking, mybookingsRef) {
     const dlg = ensureDialog();
     if (!dlg) {
-      // fallback: ren prompt
-      const today = new Date().toISOString().slice(0, 10);
       const min = laterIso(booking.checkOut, 1);
       const ans = window.prompt(
-        `Ny utflyttingsdato for ${booking.ref} (YYYY-MM-DD), tidligst ${min}:`,
+        tx("extend.fallbackPrompt", { ref: booking.ref, min }),
         min
       );
       if (ans) submitExtension(booking, ans, mybookingsRef);
       return;
     }
 
-    dlg.querySelector(".extend-dlg-ref").textContent = booking.ref;
-    dlg.querySelector(".extend-dlg-current").textContent = formatIso(booking.checkOut) || booking.checkOut;
+    // Bygg sub-teksten med fete ref og current i et trygt template.
+    const refTxt     = booking.ref;
+    const currentTxt = formatIso(booking.checkOut) || booking.checkOut;
+    const subRaw     = tx("extend.subPart", { ref: "{REF}", current: "{CUR}" });
+    const subSafe    = subRaw
+      .replace("{REF}",  `<strong>${escapeHtml(refTxt)}</strong>`)
+      .replace("{CUR}",  `<strong>${escapeHtml(String(currentTxt))}</strong>`);
+    dlg.querySelector(".extend-dlg-sub").innerHTML = subSafe;
+
+    dlg.querySelector(".extend-dlg-title").textContent = tx("extend.title");
+    dlg.querySelector(".extend-dlg-newdate-label").textContent = tx("extend.newDate");
+    dlg.querySelector('[data-action="cancel"]').textContent = tx("extend.cancel");
+    dlg.querySelector('[data-action="submit"]').textContent = tx("extend.send");
+
     const input = dlg.querySelector("input[name=newDate]");
     const minIso = laterIso(booking.checkOut, 1);
     input.min = minIso;
@@ -272,19 +284,16 @@
     dlg.className = "extend-dlg";
     dlg.innerHTML = `
       <form method="dialog" class="extend-dlg-form">
-        <h3 class="extend-dlg-title">Forleng oppholdet</h3>
-        <p class="extend-dlg-sub">
-          Booking <strong class="extend-dlg-ref"></strong>,
-          nåværende utflytting <strong class="extend-dlg-current"></strong>.
-        </p>
+        <h3 class="extend-dlg-title"></h3>
+        <p class="extend-dlg-sub"></p>
         <label class="field">
-          <span class="field-label">Ny utflyttingsdato</span>
+          <span class="field-label extend-dlg-newdate-label"></span>
           <input type="date" name="newDate" required />
         </label>
         <p class="extend-dlg-msg" aria-live="polite"></p>
         <div class="extend-dlg-buttons">
-          <button type="button" class="btn btn-ghost" data-action="cancel">Avbryt</button>
-          <button type="button" class="btn btn-primary" data-action="submit">Send forespørsel</button>
+          <button type="button" class="btn btn-ghost" data-action="cancel"></button>
+          <button type="button" class="btn btn-primary" data-action="submit"></button>
         </div>
       </form>
     `;
@@ -299,13 +308,13 @@
         const value = input.value;
         const booking = dlg._booking;
         if (!value) {
-          dlg.querySelector(".extend-dlg-msg").textContent = "Velg en dato.";
+          dlg.querySelector(".extend-dlg-msg").textContent = tx("extend.errPick");
           return;
         }
         const minIso = laterIso(booking.checkOut, 1);
         if (value < minIso) {
           dlg.querySelector(".extend-dlg-msg").textContent =
-            `Datoen må være ${formatIso(minIso) || minIso} eller senere.`;
+            tx("extend.errMin", { date: formatIso(minIso) || minIso });
           return;
         }
         submitExtension(booking, value, dlg._mybookingsRef, dlg);
@@ -315,11 +324,20 @@
     return dlg;
   }
 
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   async function submitExtension(booking, requestedCheckOut, mybookingsRef, dlg) {
     const msgEl = dlg ? dlg.querySelector(".extend-dlg-msg") : null;
     const submitBtn = dlg ? dlg.querySelector('[data-action="submit"]') : null;
 
-    if (msgEl) msgEl.textContent = "Sender …";
+    if (msgEl) msgEl.textContent = tx("extend.sending");
     if (submitBtn) submitBtn.disabled = true;
 
     const res = await window.Api.requestExtension({
@@ -331,18 +349,16 @@
     if (submitBtn) submitBtn.disabled = false;
 
     if (!res || !res.ok) {
-      const err = (res && res.error) || "ukjent feil";
-      if (msgEl) msgEl.textContent = `Kunne ikke sende: ${err}`;
-      else window.alert(`Kunne ikke sende forespørselen (${err}).`);
+      const err = (res && res.error) || "unknown";
+      if (msgEl) msgEl.textContent = tx("extend.errFail", { err });
+      else window.alert(tx("extend.fallbackFail", { err }));
       return;
     }
 
     if (dlg) {
       dlg.close ? dlg.close() : dlg.removeAttribute("open");
     }
-    window.alert(
-      "Takk! Forespørselen er sendt til 2GM. Du får tilbakemelding så snart admin har sett på den."
-    );
+    window.alert(tx("extend.success"));
   }
 
   function laterIso(iso, daysToAdd) {
@@ -397,6 +413,11 @@
     const toggle = document.getElementById("mybookings-toggle");
     if (toggle) toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
+
+  // Re-rendre lista ved språkendring (status-tekster, knapper, tellere).
+  document.addEventListener("i18n:change", () => {
+    if (MyBookings.token) MyBookings.refresh();
+  });
 
   window.MyBookings = MyBookings;
 })();

@@ -165,7 +165,7 @@
 
     _showLoading() {
       const sub = document.getElementById("auth-customer-sub");
-      sub.textContent = "Verifiserer tilgang…";
+      sub.textContent = window.I18n ? window.I18n.t("auth.verifying") : "Verifiserer tilgang…";
 
       // Skjul begge skjemaer mens vi laster
       document.getElementById("auth-phone-form").hidden = true;
@@ -183,9 +183,9 @@
       document.getElementById("auth-code-form").hidden = true;
 
       const errEl = document.getElementById("auth-error");
-      errEl.innerHTML =
-        "<strong>Ugyldig eller utløpt lenke.</strong><br>" +
-        "Kontakt 2GM Eiendom for å få en ny tilgangslenke.";
+      errEl.innerHTML = window.I18n
+        ? window.I18n.t("auth.invalidToken")
+        : "<strong>Ugyldig eller utløpt lenke.</strong><br>Kontakt 2GM Eiendom for å få en ny tilgangslenke.";
       errEl.hidden = false;
 
       document.getElementById("auth-screen").hidden = false;
@@ -200,9 +200,9 @@
       document.getElementById("auth-code-form").hidden = true;
 
       const errEl = document.getElementById("auth-error");
-      errEl.innerHTML =
-        "<strong>Kunne ikke kontakte serveren.</strong><br>" +
-        "Sjekk internettforbindelsen og prøv igjen.";
+      errEl.innerHTML = window.I18n
+        ? window.I18n.t("auth.networkError")
+        : "<strong>Kunne ikke kontakte serveren.</strong><br>Sjekk internettforbindelsen og prøv igjen.";
       errEl.hidden = false;
 
       document.getElementById("auth-screen").hidden = false;
@@ -211,15 +211,16 @@
 
     _showAuthScreen() {
       const sub = document.getElementById("auth-customer-sub");
+      const t = window.I18n ? window.I18n.t : ((k, v) => k);
       sub.textContent = this.customer
-        ? `Innlogging for ${this.customer.name}`
-        : "Innlogging";
+        ? t("auth.loginAs", { name: this.customer.name })
+        : t("auth.loginGeneric");
 
       // Vis hint om hvilket nummer SMS-en sendes til (hvis vi har det)
       const phoneInput = document.getElementById("auth-phone");
       if (this.customer && this.customer.phoneMasked) {
         phoneInput.placeholder = this.customer.phoneMasked;
-        phoneInput.title = `SMS sendes til ${this.customer.phoneMasked}`;
+        phoneInput.title = `SMS → ${this.customer.phoneMasked}`;
       }
 
       document.getElementById("auth-screen").hidden = false;
@@ -259,8 +260,9 @@
       // eslint-disable-next-line no-console
       console.log(`[MOCK SMS] Engangskode til ${phone}: ${this.mockOtp}`);
       const hint = document.getElementById("auth-mock-hint");
-      hint.textContent =
-        `Mock-modus: skriv ${this.mockOtp} — eller hva som helst på 6 sifre.`;
+      hint.textContent = window.I18n
+        ? window.I18n.t("auth.mockHint", { code: this.mockOtp })
+        : `Mock-modus: skriv ${this.mockOtp} — eller hva som helst på 6 sifre.`;
 
       this._showStep("code");
     },
@@ -274,7 +276,7 @@
       console.log("[MOCK] Bekrefter kode:", code, "(forventet:", this.mockOtp, ")");
 
       if (code.length !== 6) {
-        return this._showError("Koden må være 6 sifre.");
+        return this._showError(window.I18n ? window.I18n.t("auth.codeMustBe6") : "Koden må være 6 sifre.");
       }
 
       // Mock-modus: enhver 6-sifret kode godkjennes.
