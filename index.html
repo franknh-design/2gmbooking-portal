@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.1.5 -->
+<!-- v3.1.6 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -76,26 +76,26 @@
       </div>
     </header>
 
-    <!-- Mine bookinger over alt annet — kollapser via :has() når lista er hidden -->
-    <div class="mybookings-top">
-      <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
-        <div class="panel-head">
-          <h2 class="panel-title">Mine bookinger</h2>
-          <span class="badge" id="mybookings-count" hidden></span>
-        </div>
-        <p class="mb-loading" id="mybookings-loading">Laster…</p>
-        <p class="mb-error"   id="mybookings-error"   hidden>
-          Kunne ikke hente bookinger. Prøv å laste siden på nytt.
-        </p>
-        <p class="mb-empty"   id="mybookings-empty"   hidden>
-          Du har ingen aktive eller kommende bookinger.
-        </p>
-        <ul class="mb-list" id="mybookings-list" hidden></ul>
-      </section>
-    </div>
-
     <main class="layout">
-      <!-- Venstre kolonne: kalender -->
+      <!-- Venstre kolonne: Mine bookinger (kollapser via :has() når panelet er hidden) -->
+      <div class="layout-col layout-col-bookings">
+        <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
+          <div class="panel-head">
+            <h2 class="panel-title">Mine bookinger</h2>
+            <span class="badge" id="mybookings-count" hidden></span>
+          </div>
+          <p class="mb-loading" id="mybookings-loading">Laster…</p>
+          <p class="mb-error"   id="mybookings-error"   hidden>
+            Kunne ikke hente bookinger. Prøv å laste siden på nytt.
+          </p>
+          <p class="mb-empty"   id="mybookings-empty"   hidden>
+            Du har ingen aktive eller kommende bookinger.
+          </p>
+          <ul class="mb-list" id="mybookings-list" hidden></ul>
+        </section>
+      </div>
+
+      <!-- Høyre kolonne: kalender øverst, ny bestilling under -->
       <div class="layout-col">
         <!-- Kalender -->
         <section class="panel panel-calendar" aria-label="Kalender">
@@ -133,10 +133,9 @@
 
           <p class="cal-footnote">Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.</p>
         </section>
-      </div>
 
-      <!-- Bestillingsskjema -->
-      <section class="panel panel-form" aria-label="Bestilling">
+        <!-- Bestillingsskjema (under kalenderen i samme høyre kolonne) -->
+        <section class="panel panel-form" aria-label="Bestilling">
         <div class="panel-head">
           <h2 class="panel-title">Ny bestilling</h2>
           <span class="badge" id="avail-badge">Velg dato</span>
@@ -193,11 +192,12 @@
 
           <p id="form-message" class="form-message" hidden></p>
         </form>
-      </section>
+        </section>
+      </div>
     </main>
 
     <footer class="footer">
-      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.5</small>
+      <small>© 2GM Eiendom AS · Bestillingsportal v3.1.6</small>
     </footer>
   </div>
 
