@@ -162,8 +162,9 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
   });
 }
 
-// Map fra Rooms-rad-id → { title, doorCode }. Brukes til å berike booking-svar
-// med romnummer + dørkode etter at admin har tildelt rom.
+// Map fra Rooms-rad-id → { title, doorCode, cleaningStatus }. Brukes til å berike
+// booking-svar og til auto-checkin (vi trenger Cleaning_Status for å sjekke om
+// rommet er klart før vi flipper Upcoming → Active).
 export async function getRoomsByIdMap(env) {
   const items = await fetchAllItems(env, LIST_IDS.ROOMS);
   const map = {};
@@ -173,9 +174,19 @@ export async function getRoomsByIdMap(env) {
     map[String(item.id)] = {
       title: f.Title || null,
       doorCode: f.Door_Code || null,
+      cleaningStatus: f.Cleaning_Status || null,
     };
   }
   return map;
+}
+
+// PATCH Status på en booking-rad. Brukes av auto-checkin i my-bookings.js.
+export async function updateBookingStatus(env, itemId, status) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items/${itemId}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify({ Status: status }),
+  });
 }
 
 // ============================================================================
