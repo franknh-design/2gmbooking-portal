@@ -205,7 +205,10 @@
       const response = await fetch(`${API_BASE}/my-bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ token }),
+        // v3.8.6: defensive — POST cachees normalt ikke, men noen mellomledd
+        // (browser, CDN, service worker) kan likevel returnere stale data.
+        cache: "no-store",
       });
 
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));

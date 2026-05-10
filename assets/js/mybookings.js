@@ -146,7 +146,9 @@
     _startAutoRefresh() {
       if (this._autoRefreshStarted) return;
       this._autoRefreshStarted = true;
-      setInterval(() => this.refresh(true), 90000);
+      // v3.8.6: 90s → 60s. Pending → Confirmed-flips skal ikke ta mer enn ett
+      // minutt å reflektere i portalen.
+      setInterval(() => this.refresh(true), 60000);
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) this.refresh(true);
       });
@@ -163,8 +165,14 @@
       // liste til ny data er klar, så det ikke flimrer ved bakgrunns-poll.
       if (!silent) this._setState("loading");
 
-      const res = await window.Api.getMyBookings(this.token);
-      this._loading = false;
+      // v3.8.6: try/finally så `_loading` ALLTID resettes — uten dette ville
+      // en uventet exception (f.eks. fra _render) blokkere all videre polling.
+      let res;
+      try {
+        res = await window.Api.getMyBookings(this.token);
+      } finally {
+        this._loading = false;
+      }
 
       if (!res || !res.ok) {
         if (!silent) {
@@ -177,6 +185,25 @@
 
       const bookings = Array.isArray(res.bookings) ? res.bookings : [];
       this._render(bookings, !!silent);
+      this._updateLastRefreshed();
+    },
+
+    // v3.8.6: viser "Sist oppdatert HH:MM" så kunden ser at lista poller seg
+    // selv. Oppdateres etter hver vellykket fetch (manuell + auto-poll).
+    _updateLastRefreshed() {
+      let el = document.getElementById("mybookings-last-refreshed");
+      if (!el) {
+        const filtersWrap = document.getElementById("mybookings-filters");
+        if (!filtersWrap || !filtersWrap.parentNode) return;
+        el = document.createElement("p");
+        el.id = "mybookings-last-refreshed";
+        el.className = "mb-last-refreshed";
+        filtersWrap.parentNode.insertBefore(el, filtersWrap.nextSibling);
+      }
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      el.textContent = tx("mybookings.lastRefreshed", { time: `${hh}:${mm}` });
     },
 
     _setState(state) {

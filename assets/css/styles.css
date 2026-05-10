@@ -1272,6 +1272,15 @@ input[type="date"]:disabled {
   color: #78350F;
 }
 
+/* v3.8.6: subtil "Sist oppdatert HH:MM"-tekst under filter-pillene som
+   forteller kunden at lista poller seg selv. */
+.mb-last-refreshed {
+  margin: -4px 0 10px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  opacity: .7;
+}
+
 .panel-mybookings .badge {
   background: var(--c-bg);
   color: var(--c-muted);
