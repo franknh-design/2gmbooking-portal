@@ -271,6 +271,21 @@
     },
 
     _render(bookings, silent) {
+      // v3.9.2: detekter Upcoming → Active-transisjon (admin tildelte rom +
+      // check-in dato passerte → status flippet automatisk i backend).
+      // Hvis kunden står på "Kommende"-fanen og en booking nettopp ble aktiv,
+      // bytt til "Aktive" så den nye live-bookingen er åpenbart synlig.
+      // Ignorerer "all"-filteret (kunden har eksplisitt valgt det) og
+      // "active" (allerede riktig fane).
+      const wasUpcomingIds = new Set();
+      for (const b of (this._lastBookings || [])) {
+        if (b && b.status === "Upcoming") wasUpcomingIds.add(b.id);
+      }
+      const newlyActive = (bookings || []).some(b => b && b.status === "Active" && wasUpcomingIds.has(b.id));
+      if (newlyActive && this._filter === "upcoming") {
+        this._filter = "active";
+      }
+
       // v3.7.8: cache full liste så filter-bytte kan re-rendre uten ny fetch
       this._lastBookings = bookings || [];
       const totalCount = this._lastBookings.length;
