@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.7.7 -->
+<!-- v3.7.8 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -23,7 +23,7 @@
       <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
       <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
-      <!-- v3.7.7: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
+      <!-- v3.7.8: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
       <form id="auth-pin-form" class="auth-form" novalidate>
         <label class="field">
           <span class="field-label" data-i18n="auth.pinLabel">PIN-kode</span>
@@ -79,6 +79,12 @@
           <span class="badge" id="mybookings-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
         </button>
+        <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle -->
+        <div class="mb-filters" id="mybookings-filters" role="tablist" aria-label="Filter">
+          <button type="button" data-mb-filter="active"   class="mb-filter-btn is-active" data-i18n="mybookings.filterActive">Aktive</button>
+          <button type="button" data-mb-filter="upcoming" class="mb-filter-btn" data-i18n="mybookings.filterUpcoming">Kommende</button>
+          <button type="button" data-mb-filter="all"      class="mb-filter-btn" data-i18n="mybookings.filterAll">Alle</button>
+        </div>
         <p class="mb-loading" id="mybookings-loading" data-i18n="mybookings.loading">Laster…</p>
         <p class="mb-error"   id="mybookings-error"   data-i18n="mybookings.error" hidden>
           Kunne ikke hente bookinger. Prøv å laste siden på nytt.
@@ -90,7 +96,7 @@
       </section>
     </div>
 
-    <!-- v3.7.7: Ledige rom som egen seksjon over Tilgjengelighet + Ny bestilling.
+    <!-- v3.7.8: Ledige rom som egen seksjon over Tilgjengelighet + Ny bestilling.
          Vises kun når mainLayout er synlig (kunden har klikket +Ny bestilling
          eller har ingen bookinger) OG seksjonen har innhold. CSS-styres. -->
     <div class="freerooms-top">
@@ -148,7 +154,7 @@
         </div>
 
         <form id="booking-form" class="booking-form" novalidate>
-          <!-- v3.7.7: Lokasjon + Fra/Til dato i en visuell gruppe — dette er
+          <!-- v3.7.8: Lokasjon + Fra/Til dato i en visuell gruppe — dette er
                grunnvalgene som styrer hele bestillingen, så de fortjener et
                eget fremhevet felt så kunden ikke hopper rett til gjeste-listen. -->
           <div class="booking-key-fields">
@@ -208,7 +214,7 @@
     </main>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.7.7</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.7.8</small>
     </footer>
   </div>
 

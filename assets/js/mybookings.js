@@ -108,6 +108,9 @@
     loadingEl: null,
     errorEl: null,
     countEl: null,
+    // v3.7.8: filter-state — "active" | "upcoming" | "all"
+    _filter: "active",
+    _lastBookings: [],
 
     init({ token }) {
       this.token = token || null;
@@ -120,6 +123,7 @@
 
       wireTopbarCta();
       wirePanelToggle();
+      this._wireFilters();
 
       if (!this.container || !this.token) {
         if (this.container) this.container.hidden = true;
@@ -188,18 +192,75 @@
       if (this.countEl)   this.countEl.hidden   = state !== "list";
     },
 
-    _render(bookings, silent) {
-      const count = bookings.length;
+    _wireFilters() {
+      const wrap = document.getElementById("mybookings-filters");
+      if (!wrap || wrap._wired) return;
+      wrap._wired = true;
+      wrap.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-mb-filter]");
+        if (!btn) return;
+        const f = btn.getAttribute("data-mb-filter");
+        if (f === this._filter) return;
+        this._filter = f;
+        this._render(this._lastBookings, true);
+      });
+    },
 
-      if (count === 0) {
-        // Ingen bookinger → panelet kollapser via :has(), layout synlig.
-        // Topbar-CTA forblir synlig (satt i init) som konsistent inngang.
+    _applyFilter(bookings) {
+      if (this._filter === "active")   return bookings.filter(b => b.status === "Active");
+      if (this._filter === "upcoming") return bookings.filter(b => b.status === "Upcoming");
+      return bookings;
+    },
+
+    _updateFilterButtons(bookings) {
+      const counts = {
+        active:   bookings.filter(b => b.status === "Active").length,
+        upcoming: bookings.filter(b => b.status === "Upcoming").length,
+        all:      bookings.length,
+      };
+      const labels = {
+        active:   tx("mybookings.filterActive"),
+        upcoming: tx("mybookings.filterUpcoming"),
+        all:      tx("mybookings.filterAll"),
+      };
+      document.querySelectorAll("#mybookings-filters [data-mb-filter]").forEach(btn => {
+        const k = btn.getAttribute("data-mb-filter");
+        btn.innerHTML = `${escapeHtml(labels[k])} <span class="mb-filter-count">(${counts[k]})</span>`;
+        btn.classList.toggle("is-active", k === this._filter);
+      });
+    },
+
+    _render(bookings, silent) {
+      // v3.7.8: cache full liste så filter-bytte kan re-rendre uten ny fetch
+      this._lastBookings = bookings || [];
+      const totalCount = this._lastBookings.length;
+
+      // Oppdater filter-knappenes counts uansett (også når 0)
+      this._updateFilterButtons(this._lastBookings);
+
+      if (totalCount === 0) {
+        // Ingen bookinger overhodet → empty-state, layout synlig
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
         if (!silent) {
           setPanelCollapsed(this.container, false);
           setLayoutVisible(true);
         }
+        return;
+      }
+
+      const filtered = this._applyFilter(this._lastBookings);
+      const count = filtered.length;
+
+      if (count === 0) {
+        // Filter har truffet 0 — vis filterspesifikk empty-message
+        this._setState("empty");
+        if (this.emptyEl) {
+          if (this._filter === "active") this.emptyEl.textContent = tx("mybookings.emptyActive");
+          else if (this._filter === "upcoming") this.emptyEl.textContent = tx("mybookings.emptyUpcoming");
+          else this.emptyEl.textContent = tx("mybookings.empty");
+        }
+        if (this.countEl) this.countEl.textContent = "";
         return;
       }
 
@@ -214,8 +275,10 @@
       // v3.5.4: Bakgrunns-poll (silent=true) endrer IKKE layout/panel-state.
       // Ellers ville Ny bestilling-skjemaet plutselig forsvinne mens kunden
       // fyller det ut hvis ny booking dukket opp og pushed count til 3+.
+      // v3.7.8: bruker totalCount (ikke filtered count) som heuristikk for
+      // heavy-mode — filtervalg endrer ikke layout-stilen.
       if (!silent) {
-        const heavy = count > 2;
+        const heavy = totalCount > 2;
         setPanelCollapsed(this.container, !heavy);
         setLayoutVisible(!heavy);
       }
@@ -227,7 +290,7 @@
       // innenfor hver gruppe. Hjelper kunder med mange bookinger spredt
       // over flere bygg å lese lista raskt.
       const groups = new Map();
-      for (const b of bookings) {
+      for (const b of filtered) {
         const key = (b.property || "").trim() || tx("mybookings.noLocation");
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key).push(b);

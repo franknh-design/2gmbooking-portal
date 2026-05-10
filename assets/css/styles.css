@@ -1160,6 +1160,7 @@ input[type="date"]:disabled {
   transform: rotate(-90deg);
 }
 .panel-mybookings.collapsed .panel-head { margin-bottom: 0; }
+.panel-mybookings.collapsed .mb-filters,
 .panel-mybookings.collapsed .mb-list,
 .panel-mybookings.collapsed .mb-loading,
 .panel-mybookings.collapsed .mb-error,
@@ -1167,6 +1168,40 @@ input[type="date"]:disabled {
   display: none !important;
 }
 .panel-mybookings.collapsed { padding: 14px 20px; }
+
+/* v3.7.8: filter-toggler — Aktive / Kommende / Alle */
+.mb-filters {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+.mb-filter-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.mb-filter-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+.mb-filter-btn.is-active {
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  border-color: var(--color-text-primary);
+}
+.mb-filter-btn .mb-filter-count {
+  margin-left: 4px;
+  opacity: .7;
+  font-weight: 400;
+}
 
 .panel-mybookings .badge {
   background: var(--c-bg);
