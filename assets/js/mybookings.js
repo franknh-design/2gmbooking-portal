@@ -753,9 +753,12 @@
   function collapseToList() {
     setLayoutVisible(false);
     setPanelCollapsed(document.getElementById("mybookings-panel"), false);
-    const top = document.getElementById("mybookings-panel");
-    if (top && typeof top.scrollIntoView === "function") {
-      top.scrollIntoView({ behavior: "smooth", block: "start" });
+    // v3.6.5: scroll helt til topps i portalen, ikke bare til mybookings-
+    // panelet — kunden vil se topbar/banneret igjen etter Lukk.
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (_) {
+      window.scrollTo(0, 0);
     }
   }
 
