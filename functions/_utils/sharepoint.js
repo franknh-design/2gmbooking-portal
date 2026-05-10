@@ -102,6 +102,21 @@ async function getPropertyLookupMap(env) {
   return map;
 }
 
+// v1.7: Properties-meta inkl. FullTenant_Company, brukt av availability
+// for å gi customer-eide bygg ledighet til kunden selv.
+async function getPropertyMetaMap(env) {
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const map = {};
+  for (const item of items) {
+    if (!item.id) continue;
+    map[item.id] = {
+      title: item.fields?.Title || null,
+      fullTenantCompany: item.fields?.FullTenant_Company || null,
+    };
+  }
+  return map;
+}
+
 // ============================================================================
 // Customer_Tokens
 // ============================================================================
@@ -340,7 +355,12 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   if (!fromDate || !toDate) throw new Error("Invalid date range");
   if (toDate < fromDate)    throw new Error("toDate before fromDate");
 
-  const propertyMap = await getPropertyLookupMap(env);
+  const propertyMeta = await getPropertyMetaMap(env);
+  // Bakoverkompat: enkel id→title-map for getRoomsForProperty.
+  const propertyMap = {};
+  for (const [id, m] of Object.entries(propertyMeta)) {
+    if (m.title) propertyMap[id] = m.title;
+  }
 
   const [rooms, bookings] = await Promise.all([
     getRoomsForProperty(env, propertyName, propertyMap),
@@ -352,11 +372,19 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   // ledighet basert på sine egne bookinger. Eksempel: SalMar leier alle
   // leiligheter på Strandveien 112; uten denne sjekken viste portalen "fullt"
   // selv om alle leilighetene var tomme av SalMars egne ansatte.
+  // v1.8: utvidet til også å sjekke Property.FullTenant_Company. Hvis bygget
+  // er full-tenant til kunden, gjelder det alle rom i bygget — selv om det
+  // enkelte rom mangler LongTerm_Company-feltet.
   const customerLower = String(customerCompany || "").trim().toLowerCase();
   const roomLongTerm = rooms.map(r => {
     const ltStart = parseDateUTC(r.fields.LongTerm_StartDate);
     const ltCompany = String(r.fields.LongTerm_Company || "").trim().toLowerCase();
-    const isOwnLongTerm = !!customerLower && !!ltCompany && ltCompany === customerLower;
+    const propMeta = propertyMeta[r.fields.PropertyLookupId] || {};
+    const ftCompany = String(propMeta.fullTenantCompany || "").trim().toLowerCase();
+    const isOwnLongTerm = !!customerLower && (
+      (!!ltCompany && ltCompany === customerLower) ||
+      (!!ftCompany && ftCompany === customerLower)
+    );
     return {
       id: r.id,
       longTermStart: isOwnLongTerm ? null : ltStart,
