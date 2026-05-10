@@ -265,11 +265,18 @@
         } else if (map === null) {
           // API-feil — vis dash, lvl-red
           roomsEl.textContent = "—";
+        } else if (avail.level === "red") {
+          roomsEl.textContent = tx("calendar.full");
+        } else if (avail.freeRooms && avail.freeRooms.length && avail.freeRooms.length <= 3) {
+          // v3.7.1: vis konkrete rom-navn når listen er kort (sole-tenant case).
+          // For SalMar på Strandveien 112 betyr det "L203" istedenfor "1 ledig".
+          roomsEl.textContent = avail.freeRooms.join(", ");
+          roomsEl.title = tx("calendar.available", { n: avail.available }) + ": " + avail.freeRooms.join(", ");
         } else {
-          roomsEl.textContent =
-            avail.level === "red"
-              ? tx("calendar.full")
-              : tx("calendar.available", { n: avail.available });
+          roomsEl.textContent = tx("calendar.available", { n: avail.available });
+          if (avail.freeRooms && avail.freeRooms.length) {
+            roomsEl.title = avail.freeRooms.join(", ");
+          }
         }
 
         cell.appendChild(dateEl);
@@ -310,7 +317,7 @@
         level = "amber";
       }
 
-      return { available, total, level };
+      return { available, total, level, freeRooms: entry.freeRooms || null };
     },
 
     /**

@@ -112,7 +112,8 @@
           byDate.set(day.date, {
             available: day.available || 0,
             occupied: day.occupied || 0,
-            totalActive: day.totalActive || 0
+            totalActive: day.totalActive || 0,
+            freeRooms: Array.isArray(day.freeRooms) ? day.freeRooms : null
           });
         }
 

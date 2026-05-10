@@ -376,6 +376,11 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   // er full-tenant til kunden, gjelder det alle rom i bygget — selv om det
   // enkelte rom mangler LongTerm_Company-feltet.
   const customerLower = String(customerCompany || "").trim().toLowerCase();
+  // v1.10: vis konkrete rom-navn på ledige dager — kun for kunder som er
+  // sole tenant på bygget (SalMar AS på Strandveien 112). Begrenser så vi
+  // ikke lekker rom-info på blandede properties (Rigg 24 osv.).
+  const showFreeRooms = customerLower === "salmar as" && propertyName === "Strandveien 112";
+  const roomTitleById = {};
   const roomLongTerm = rooms.map(r => {
     const ltStart = parseDateUTC(r.fields.LongTerm_StartDate);
     const ltCompany = String(r.fields.LongTerm_Company || "").trim().toLowerCase();
@@ -385,8 +390,10 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       (!!ltCompany && ltCompany === customerLower) ||
       (!!ftCompany && ftCompany === customerLower)
     );
+    const id = String(r.id);
+    roomTitleById[id] = r.fields.Title || id;
     return {
-      id: String(r.id),
+      id,
       longTermStart: isOwnLongTerm ? null : ltStart,
       longTermEnd:   null,
     };
@@ -417,22 +424,32 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     }
     const activeRoomsToday = countableRoomIds.size;
 
-    let occupiedToday = 0;
+    const occupiedRoomIds = new Set();
     for (const b of bookingPeriods) {
       if (!countableRoomIds.has(b.roomId)) continue;
       if (isDateInRangeInclusive(D, b.checkIn, b.checkOut)) {
-        occupiedToday++;
+        occupiedRoomIds.add(b.roomId);
       }
     }
+    const occupiedToday = occupiedRoomIds.size;
 
     const available = Math.max(0, activeRoomsToday - occupiedToday);
 
-    days.push({
+    const dayObj = {
       date: D.toISOString().slice(0, 10),
       available,
       occupied: occupiedToday,
       totalActive: activeRoomsToday,
-    });
+    };
+    if (showFreeRooms && available > 0) {
+      const freeRooms = [];
+      for (const id of countableRoomIds) {
+        if (!occupiedRoomIds.has(id)) freeRooms.push(roomTitleById[id] || id);
+      }
+      freeRooms.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+      dayObj.freeRooms = freeRooms;
+    }
+    days.push(dayObj);
   }
 
   return { property: propertyName, days };
