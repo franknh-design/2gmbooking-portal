@@ -218,33 +218,43 @@
       const row = document.createElement("li");
       row.className = "mb-row mb-card";
 
-      // ----- Header: navn + status -----
+      // ----- Header: navn + status·ref til høyre -----
       const head = document.createElement("div");
       head.className = "mb-card-head";
+
       const nameEl = document.createElement("h3");
       nameEl.className = "mb-card-name";
       nameEl.textContent = b.guest || tx("mybookings.unnamed");
       head.appendChild(nameEl);
-      head.appendChild(statusBadge(b.status, b.pendingConfirmation));
+
+      const right = document.createElement("div");
+      right.className = "mb-card-head-right";
+      right.appendChild(statusBadge(b.status, b.pendingConfirmation));
+      if (b.ref) {
+        const refEl = document.createElement("span");
+        refEl.className = "mb-card-ref";
+        refEl.textContent = b.ref;
+        right.appendChild(refEl);
+      }
+      head.appendChild(right);
       row.appendChild(head);
 
-      // ----- Subline: property · rom -----
+      // ----- Subline: property · rom · adresse (alt på én linje) -----
+      const subParts = [b.property || "—"];
+      if (b.roomNumber) subParts.push(tx("mybookings.room", { n: b.roomNumber }));
+      if (b.propertyAddress) subParts.push(b.propertyAddress);
       const sub = document.createElement("div");
       sub.className = "mb-card-sub";
-      sub.textContent = b.roomNumber
-        ? `${b.property || "—"} · ${tx("mybookings.room", { n: b.roomNumber })}`
-        : (b.property || "—");
+      sub.textContent = subParts.join(" · ");
       row.appendChild(sub);
 
-      // ----- Label-verdi-tabell -----
-      const tbl = document.createElement("table");
-      tbl.className = "mb-card-info";
-      const tbody = document.createElement("tbody");
+      // ----- Info-flex: venstre stack (datoer) + høyre stack (dørkode) -----
+      const infoRow = document.createElement("div");
+      infoRow.className = "mb-card-info-row";
 
-      if (b.propertyAddress) {
-        tbody.appendChild(_infoRow(tx("mybookings.lblAddress"), b.propertyAddress));
-      }
-      tbody.appendChild(_infoRow(tx("mybookings.lblCheckIn"), _formatDateNb(b.checkIn) || "—"));
+      const leftStack = document.createElement("div");
+      leftStack.className = "mb-card-info-stack";
+      leftStack.appendChild(_infoItem(tx("mybookings.lblCheckIn"), _formatDateNb(b.checkIn) || "—"));
 
       let outVal;
       if (b.checkOut) {
@@ -254,27 +264,27 @@
       } else {
         outVal = tx("mybookings.openPeriod");
       }
-      tbody.appendChild(_infoRow(tx("mybookings.lblCheckOut"), outVal));
+      leftStack.appendChild(_infoItem(tx("mybookings.lblCheckOut"), outVal));
+      infoRow.appendChild(leftStack);
 
-      // Dørkode-rad: kun når rom er tildelt (ellers ingen kode mulig)
+      // Høyre stack: Dørkode (kun når rom er tildelt — uten rom ingen kode)
       if (b.roomNumber) {
-        tbody.appendChild(_doorCodeRow(b.doorCode));
+        const rightStack = document.createElement("div");
+        rightStack.className = "mb-card-info-stack mb-card-info-stack-right";
+        rightStack.appendChild(_doorCodeItem(b.doorCode));
+        infoRow.appendChild(rightStack);
       }
 
-      if (b.ref) {
-        tbody.appendChild(_infoRow(tx("mybookings.lblReference"), b.ref, "mb-card-ref"));
-      }
+      row.appendChild(infoRow);
 
-      tbl.appendChild(tbody);
-      row.appendChild(tbl);
-
-      // ----- Forleng-knapp -----
-      if (b.status === "Active" && b.checkOut) {
+      // ----- Forleng-knapp: Active eller Upcoming med satt utflytting -----
+      const canExtend = (b.status === "Active" || b.status === "Upcoming") && b.checkOut;
+      if (canExtend) {
         const actions = document.createElement("div");
-        actions.className = "mb-actions mb-card-actions";
+        actions.className = "mb-card-actions";
         const extendBtn = document.createElement("button");
         extendBtn.type = "button";
-        extendBtn.className = "btn btn-ghost mb-extend-btn";
+        extendBtn.className = "mb-extend-btn";
         extendBtn.textContent = tx("mybookings.extend");
         extendBtn.addEventListener("click", () => openExtendDialog(b, this));
         actions.appendChild(extendBtn);
@@ -428,41 +438,42 @@
     return p ? ddmmyyyy(p) : "";
   }
 
-  function _infoRow(label, value, valueClass) {
-    const tr  = document.createElement("tr");
-    const td1 = document.createElement("td");
-    td1.className = "mb-card-info-label";
-    td1.textContent = label;
-    const td2 = document.createElement("td");
-    td2.className = "mb-card-info-value" + (valueClass ? " " + valueClass : "");
-    td2.textContent = value;
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    return tr;
+  function _infoItem(label, value) {
+    const wrap = document.createElement("div");
+    wrap.className = "mb-card-info-item";
+    const lbl = document.createElement("span");
+    lbl.className = "mb-card-info-label";
+    lbl.textContent = label;
+    const val = document.createElement("span");
+    val.className = "mb-card-info-value";
+    val.textContent = value;
+    wrap.appendChild(lbl);
+    wrap.appendChild(val);
+    return wrap;
   }
 
-  function _doorCodeRow(code) {
-    const tr  = document.createElement("tr");
-    tr.className = "mb-card-doorcode-row";
-    const td1 = document.createElement("td");
-    td1.className = "mb-card-info-label";
-    td1.textContent = "🔑 " + tx("mybookings.doorCodeLabel");
-    const td2 = document.createElement("td");
-    td2.className = "mb-card-info-value";
+  function _doorCodeItem(code) {
+    const wrap = document.createElement("div");
+    wrap.className = "mb-card-info-item mb-card-info-item-doorcode";
+    const lbl = document.createElement("span");
+    lbl.className = "mb-card-info-label";
+    lbl.textContent = "🔑 " + tx("mybookings.doorCodeLabel");
+    const val = document.createElement("span");
+    val.className = "mb-card-info-value";
     if (code) {
       const span = document.createElement("span");
       span.className = "mb-card-doorcode-value";
       span.textContent = formatDoorCodeDigits(code);
-      td2.appendChild(span);
+      val.appendChild(span);
     } else {
       const span = document.createElement("span");
       span.className = "mb-card-doorcode-pending";
       span.textContent = tx("mybookings.doorCodePending");
-      td2.appendChild(span);
+      val.appendChild(span);
     }
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    return tr;
+    wrap.appendChild(lbl);
+    wrap.appendChild(val);
+    return wrap;
   }
 
   // ---- Toggle-håndtering: topbar-CTA, layout, panel-collapse ----

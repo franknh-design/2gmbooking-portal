@@ -881,8 +881,8 @@ input[type="date"]:disabled {
   gap: 8px;
 }
 
-/* Booking-card v3.3.4: kompakt label-verdi-tabell — strammere padding og
-   mindre font så hver booking tar mindre vertikal plass. */
+/* Booking-card v3.3.5: 2-kolonne flex-layout — datoer venstre, dørkode høyre.
+   Header har navn venstre, status·ref høyre. Adresse merges inn i subline. */
 .mb-row,
 .mb-card {
   background: var(--c-surface);
@@ -893,9 +893,15 @@ input[type="date"]:disabled {
 .mb-card-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   margin-bottom: 1px;
+}
+.mb-card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .mb-card-name {
   margin: 0;
@@ -909,22 +915,36 @@ input[type="date"]:disabled {
   color: var(--c-muted);
   margin-bottom: 6px;
 }
-.mb-card-info {
-  width: 100%;
-  border-collapse: collapse;
+.mb-card-info-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+.mb-card-info-stack {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mb-card-info-stack-right {
+  flex: 0 0 auto;
+  align-items: flex-end;
+}
+.mb-card-info-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   line-height: 1.3;
 }
-.mb-card-info td {
-  padding: 1px 0;
-  vertical-align: top;
-}
 .mb-card-info-label {
-  width: 90px;
   color: var(--c-muted);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
+  min-width: 70px;
 }
 .mb-card-info-value {
   color: var(--c-text);
@@ -932,12 +952,12 @@ input[type="date"]:disabled {
 }
 .mb-card-doorcode-value {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: .1em;
   color: var(--c-brand);
   background: var(--c-bg);
-  padding: 1px 6px;
+  padding: 1px 8px;
   border-radius: 3px;
   display: inline-block;
 }
@@ -950,14 +970,33 @@ input[type="date"]:disabled {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   color: var(--c-muted);
+  background: var(--c-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 .mb-card-actions {
   margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--c-border);
+  display: flex;
+  justify-content: flex-end;
+}
+.mb-extend-btn {
+  background: var(--c-brand);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s;
+}
+.mb-extend-btn:hover {
+  background: var(--c-brand-light);
 }
 @media (max-width: 600px) {
-  .mb-card-info-label { width: 80px; font-size: 10px; }
+  .mb-card-info-row { flex-direction: column; gap: 6px; }
+  .mb-card-info-stack-right { align-items: flex-start; }
+  .mb-card-info-label { min-width: 60px; font-size: 10px; }
 }
 
 .mb-actions {
