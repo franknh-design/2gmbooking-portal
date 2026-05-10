@@ -470,7 +470,16 @@ input, select, button { font-family: inherit; }
 /* v3.7.5: Ledige rom-seksjon over Tilgjengelighet + Ny bestilling, i 2-kol
    grid som mine bookinger. Skjules når mainLayout er hidden eller når
    seksjonen ikke har innhold. */
-.freerooms-top { margin-bottom: 1rem; }
+/* v3.7.6: bredden låst til samme som .mybookings-top så kortene over og
+   under hverandre justeres pent. */
+.freerooms-top {
+  max-width: 1280px;
+  margin: 0 auto 1rem;
+  padding: 0 24px;
+}
+@media (max-width: 900px) {
+  .freerooms-top { padding: 0 16px; }
+}
 .freerooms-top:has(#customerFreeRoomsSection[hidden]) { display: none; }
 .freerooms-top:has(+ #mainLayout[hidden]) { display: none; }
 .panel-freerooms { padding: 14px 16px; }
