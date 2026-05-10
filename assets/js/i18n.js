@@ -124,8 +124,12 @@
       "mybookings.code":          "Dørkode {code}",
       "mybookings.nightsOne":     "{n} natt",
       "mybookings.nightsMany":    "{n} netter",
+      "mybookings.lblAddress":    "Adresse",
+      "mybookings.lblCheckIn":    "Innsjekk",
+      "mybookings.lblCheckOut":   "Utsjekk",
+      "mybookings.lblReference":  "Referanse",
       "mybookings.doorCodeLabel": "Dørkode",
-      "mybookings.doorCodePending":"Dørkode kommer snart",
+      "mybookings.doorCodePending":"kommer snart",
       "mybookings.extend":        "Forleng oppholdet",
 
       // Forleng-dialog
@@ -265,8 +269,12 @@
       "mybookings.code":          "Door code {code}",
       "mybookings.nightsOne":     "{n} night",
       "mybookings.nightsMany":    "{n} nights",
+      "mybookings.lblAddress":    "Address",
+      "mybookings.lblCheckIn":    "Check-in",
+      "mybookings.lblCheckOut":   "Check-out",
+      "mybookings.lblReference":  "Reference",
       "mybookings.doorCodeLabel": "Door code",
-      "mybookings.doorCodePending":"Door code coming soon",
+      "mybookings.doorCodePending":"coming soon",
       "mybookings.extend":        "Extend stay",
 
       // Extend dialog
