@@ -53,6 +53,15 @@
         window.MyBookings.init({ token: session.token });
       }
 
+      // v3.7.2: Ledige rom under kalenderen — kun for kunder som eier rom
+      // (long-term/full-tenant). Tom respons = skjult seksjon.
+      if (session.token) {
+        loadCustomerFreeRooms(session.token);
+        // Re-load periodisk + ved språkbytte så lista holdes fersk.
+        setInterval(() => loadCustomerFreeRooms(session.token), 5 * 60 * 1000);
+        document.addEventListener("i18n:change", () => loadCustomerFreeRooms(session.token));
+      }
+
       window.Calendar.init({
         locationId: initialLocId,
         onSelect: (iso /* , avail */) => {
@@ -85,4 +94,52 @@
       });
     });
   });
+
+  async function loadCustomerFreeRooms(token) {
+    const section = document.getElementById("customerFreeRoomsSection");
+    const list = document.getElementById("customerFreeRoomsList");
+    if (!section || !list || !window.Api || !window.Api.getCustomerFreeRooms) return;
+    try {
+      const res = await window.Api.getCustomerFreeRooms(token);
+      const rooms = res && res.ok && Array.isArray(res.rooms) ? res.rooms : [];
+      if (!rooms.length) {
+        section.hidden = true;
+        list.innerHTML = "";
+        return;
+      }
+      const t = window.I18n ? window.I18n.t : (k) => k;
+      // Oppdater tittel ved språkbytte
+      const titleEl = section.querySelector(".customer-free-rooms-title");
+      if (titleEl) titleEl.textContent = t("freeRooms.title");
+      list.innerHTML = rooms.map(r => {
+        const when = r.currentlyFree
+          ? `<span class="customer-free-rooms-pill-now">${escapeHtml(t("freeRooms.now"))}</span>`
+          : `<span>${escapeHtml(t("freeRooms.from", { date: formatIsoDate(r.freeFrom) }))}</span>`;
+        const until = r.nextBookingCheckIn
+          ? ` <span>${escapeHtml(t("freeRooms.until", { date: formatIsoDate(r.nextBookingCheckIn) }))}</span>`
+          : "";
+        return `<li>
+          <span class="customer-free-rooms-room">${escapeHtml(r.title || "?")}</span>
+          <span class="customer-free-rooms-prop">· ${escapeHtml(r.property || "")}</span>
+          <span class="customer-free-rooms-when">${when}${until}</span>
+        </li>`;
+      }).join("");
+      section.hidden = false;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[free-rooms] load failed:", err);
+      section.hidden = true;
+    }
+  }
+
+  function formatIsoDate(iso) {
+    if (!iso) return "";
+    const [y, m, d] = String(iso).slice(0, 10).split("-");
+    if (!y || !m || !d) return iso;
+    return `${d}.${m}.${y}`;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
 })();

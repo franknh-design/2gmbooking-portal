@@ -455,6 +455,109 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   return { property: propertyName, days };
 }
 
+// v1.10: returnerer alle rom som tilhører kunden (LongTerm_Company eller
+// Property.FullTenant_Company matcher), på tvers av alle properties, med
+// "ledig fra"-dato. Brukt av portalens "Ledige rom"-seksjon under kalenderen.
+export async function getCustomerOwnedFreeRooms(env, customerCompany) {
+  const customerLower = String(customerCompany || "").trim().toLowerCase();
+  if (!customerLower) return [];
+
+  const todayUTC = new Date();
+  const today = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), todayUTC.getUTCDate()));
+
+  const [propertyMeta, allRooms, allBookings] = await Promise.all([
+    getPropertyMetaMap(env),
+    fetchAllItems(env, LIST_IDS.ROOMS),
+    fetchAllItems(env, LIST_IDS.BOOKINGS),
+  ]);
+
+  // 1. Filter rom kunden eier
+  const ownedRooms = [];
+  for (const r of allRooms) {
+    const f = r.fields || {};
+    if (f.Active === false) continue;
+    const ltCo = String(f.LongTerm_Company || "").trim().toLowerCase();
+    const propMeta = propertyMeta[f.PropertyLookupId] || {};
+    const ftCo = String(propMeta.fullTenantCompany || "").trim().toLowerCase();
+    if (ltCo !== customerLower && ftCo !== customerLower) continue;
+    ownedRooms.push({
+      id: String(r.id),
+      title: f.Title || String(r.id),
+      propertyName: propMeta.title || "",
+    });
+  }
+  if (!ownedRooms.length) return [];
+
+  // 2. Indekser bookinger per rom (kun Active/Upcoming, sortert på Check_In)
+  const bookingsByRoom = {};
+  const ACTIVE = new Set(["Active", "Upcoming"]);
+  for (const b of allBookings) {
+    const f = b.fields || {};
+    if (!ACTIVE.has(f.Status)) continue;
+    const rid = String(f.RoomLookupId || "");
+    if (!rid) continue;
+    if (!bookingsByRoom[rid]) bookingsByRoom[rid] = [];
+    bookingsByRoom[rid].push({
+      checkIn: parseDateUTC(f.Check_In),
+      checkOut: parseDateUTC(f.Check_Out),
+      personName: f.Person_Name || "",
+    });
+  }
+  for (const rid of Object.keys(bookingsByRoom)) {
+    bookingsByRoom[rid].sort((a, b) => (a.checkIn?.getTime() || 0) - (b.checkIn?.getTime() || 0));
+  }
+
+  // 3. For hvert eid rom: finn neste ledig dato
+  const result = [];
+  for (const room of ownedRooms) {
+    const bs = bookingsByRoom[room.id] || [];
+    // Sjekk om rom er okkupert nå (booking dekker today)
+    const currentBooking = bs.find(b => {
+      if (!b.checkIn) return false;
+      if (b.checkIn > today) return false;
+      if (!b.checkOut) return true; // open-ended
+      return today <= b.checkOut;
+    });
+    let freeFrom, currentGuest, nextBookingCheckIn = null;
+    if (currentBooking) {
+      if (!currentBooking.checkOut) {
+        // Open-ended og pågår — aldri ledig
+        continue;
+      }
+      // Ledig fra dagen ETTER checkOut (Check_Out = utflyttingsdag, rommet er
+      // tilgjengelig fra neste dag)
+      freeFrom = new Date(currentBooking.checkOut.getTime() + 24 * 60 * 60 * 1000);
+      currentGuest = currentBooking.personName || null;
+    } else {
+      // Ledig nå
+      freeFrom = today;
+      currentGuest = null;
+    }
+    // Finn neste booking som starter etter freeFrom
+    const nextBooking = bs.find(b => b.checkIn && b.checkIn >= freeFrom);
+    if (nextBooking && nextBooking.checkIn) {
+      // Hvis neste booking starter samme dag som freeFrom, rommet er ikke ledig
+      if (nextBooking.checkIn <= freeFrom) continue;
+      nextBookingCheckIn = nextBooking.checkIn.toISOString().slice(0, 10);
+    }
+    result.push({
+      title: room.title,
+      property: room.propertyName,
+      currentlyFree: !currentBooking,
+      freeFrom: freeFrom.toISOString().slice(0, 10),
+      nextBookingCheckIn,
+      currentGuest,
+    });
+  }
+
+  // Sort: currently free first, deretter på freeFrom
+  result.sort((a, b) => {
+    if (a.currentlyFree !== b.currentlyFree) return a.currentlyFree ? -1 : 1;
+    return a.freeFrom.localeCompare(b.freeFrom);
+  });
+  return result;
+}
+
 export async function checkCapacityConflict(env, propertyName, fromISO, toISO, roomCount, customerCompany) {
   const result = await calculateAvailability(env, propertyName, fromISO, toISO, customerCompany);
 

@@ -51,6 +51,10 @@
       "calendar.full":       "Fullt",
       "calendar.available":  "{n} ledig",
       "calendar.loading":    "laster…",
+      "freeRooms.title":     "Ledige rom",
+      "freeRooms.now":       "Ledig nå",
+      "freeRooms.from":      "Ledig fra {date}",
+      "freeRooms.until":     "frem til {date}",
       "calendar.footnote":   "Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.",
 
       // Booking form
@@ -210,6 +214,10 @@
       "calendar.full":       "Full",
       "calendar.available":  "{n} free",
       "calendar.loading":    "loading…",
+      "freeRooms.title":     "Available rooms",
+      "freeRooms.now":       "Free now",
+      "freeRooms.from":      "Free from {date}",
+      "freeRooms.until":     "until {date}",
       "calendar.footnote":   "Click a start date, then an end date. Click again to start over.",
 
       // Booking form

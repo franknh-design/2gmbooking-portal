@@ -257,6 +257,30 @@
   }
 
   // --------------------------------------------------------------------------
+  // customer-free-rooms — alle ledige rom kunden eier på tvers av properties
+  // --------------------------------------------------------------------------
+
+  async function getCustomerFreeRooms(token) {
+    if (!token) return { ok: false, error: "missing_token" };
+    try {
+      const response = await fetch(`${API_BASE}/customer-free-rooms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] customer-free-rooms exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // end-booking — kunden ber admin avslutte / forkorte oppholdet
   // --------------------------------------------------------------------------
 
@@ -291,6 +315,7 @@
     clearAvailabilityCache,
     submitBooking,
     getMyBookings,
+    getCustomerFreeRooms,
     requestExtension,
     requestEnd
   };
