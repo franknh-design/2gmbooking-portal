@@ -104,7 +104,7 @@ async function getPropertyLookupMap(env) {
 
 // v1.7: Properties-meta inkl. FullTenant_Company, brukt av availability
 // for å gi customer-eide bygg ledighet til kunden selv.
-async function getPropertyMetaMap(env) {
+export async function getPropertyMetaMap(env) {
   const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
   const map = {};
   for (const item of items) {
