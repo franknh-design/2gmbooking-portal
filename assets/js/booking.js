@@ -17,8 +17,9 @@
     onLocationChange: null,
     onDateChange: null,
 
-    init({ customer, onLocationChange, onDateChange }) {
+    init({ customer, preferredLocId, onLocationChange, onDateChange }) {
       this.customer = customer;
+      this.preferredLocId = preferredLocId || null;
       this.onLocationChange = onLocationChange;
       this.onDateChange = onDateChange;
 
@@ -70,6 +71,11 @@
         opt.value = loc.id;
         opt.textContent = loc.name;
         sel.appendChild(opt);
+      }
+      // v3.8.7: sett foretrukket default (typisk Rigg 44, valgt i app.js).
+      if (this.preferredLocId) {
+        const match = locations.find(l => l.id === this.preferredLocId);
+        if (match) sel.value = this.preferredLocId;
       }
     },
 

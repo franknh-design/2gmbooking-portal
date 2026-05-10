@@ -18,7 +18,9 @@
         customer ? customer.name : "Ukjent kunde";
 
       const locations = window.MockData.getLocationsForCustomer(customer);
-      const initialLocId = locations.length > 0 ? locations[0].id : null;
+      // v3.8.7: foretrukket default er "Rigg 44" hvis kunden har tilgang —
+      // ellers falle tilbake til første lokasjon i lista.
+      const initialLocId = pickDefaultLocationId(locations);
 
       // App.js holder kun "klikk-stadiet"; selve verdiene leses fra Booking.
       // pickStage = "from"  → neste klikk setter fra-dato (og tømmer til)
@@ -33,6 +35,7 @@
       // Booking først (fyller dropdown), deretter kalender (bruker valgt lokasjon).
       window.Booking.init({
         customer,
+        preferredLocId: initialLocId,
         onLocationChange: (locId) => {
           window.Calendar.setLocation(locId);
         },
@@ -226,6 +229,15 @@
     const parts = String(iso || "").slice(0, 10).split("-");
     const m = parts[1], d = parts[2];
     return d && m ? `${d}.${m}` : "";
+  }
+
+  // v3.8.7: velg default-lokasjon — foretrekker "Rigg 44" hvis kunden har
+  // tilgang, ellers første lokasjon i lista. Match er case-insensitive og
+  // tolererer ekstra mellomrom (f.eks. "rigg  44").
+  function pickDefaultLocationId(locations) {
+    if (!locations || !locations.length) return null;
+    const preferred = locations.find(l => /^\s*rigg\s*44\s*$/i.test(l.name || ""));
+    return (preferred || locations[0]).id;
   }
 
   // v3.8.3: format gjest-info som "Company (Person)", eller bare ett av
