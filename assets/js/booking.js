@@ -625,6 +625,13 @@
       submitBtn.textContent = tx("booking.submit");
 
       if (res.ok) {
+        // v3.8.4: bytt til "Kommende"-filter FØR refresh så den nye bookingen
+        // (Status: Upcoming + Pending_Confirmation) er synlig direkte når
+        // listen oppdateres — uten denne lander den under default "Aktive"
+        // som ikke matcher pending-statusen.
+        if (window.MyBookings && typeof window.MyBookings.setFilter === "function") {
+          window.MyBookings.setFilter("upcoming");
+        }
         // Oppdater "Mine bookinger"-listen så den nye bestillingen vises
         if (window.MyBookings && typeof window.MyBookings.refresh === "function") {
           window.MyBookings.refresh();

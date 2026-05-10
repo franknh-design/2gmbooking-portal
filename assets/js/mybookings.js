@@ -218,11 +218,29 @@
         upcoming: tx("mybookings.filterUpcoming"),
         all:      tx("mybookings.filterAll"),
       };
+      // v3.8.4: tell pending-bookinger så vi kan vise "n avventer"-badge på
+      // Kommende-pillen — gjør avventer-tilstanden synlig uten å bytte filter.
+      const pendingCount = bookings.filter(b => b.pendingConfirmation).length;
       document.querySelectorAll("#mybookings-filters [data-mb-filter]").forEach(btn => {
         const k = btn.getAttribute("data-mb-filter");
-        btn.innerHTML = `${escapeHtml(labels[k])} <span class="mb-filter-count">(${counts[k]})</span>`;
+        const pendingPill = (k === "upcoming" && pendingCount > 0)
+          ? ` <span class="mb-filter-pending">${escapeHtml(tx("mybookings.filterPending", { n: pendingCount }))}</span>`
+          : "";
+        btn.innerHTML = `${escapeHtml(labels[k])} <span class="mb-filter-count">(${counts[k]})</span>${pendingPill}`;
         btn.classList.toggle("is-active", k === this._filter);
       });
+    },
+
+    // v3.8.4: lar booking.js bytte filter etter en vellykket innsending så
+    // den nye bookingen er synlig uten at kunden må klikke "Kommende".
+    setFilter(name) {
+      if (name !== "active" && name !== "upcoming" && name !== "all") return;
+      if (name === this._filter) return;
+      this._filter = name;
+      // Re-render hvis vi har data; ellers blir filteret brukt ved neste render.
+      if (this._lastBookings && this._lastBookings.length) {
+        this._render(this._lastBookings, true);
+      }
     },
 
     _render(bookings, silent) {
