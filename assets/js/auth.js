@@ -265,8 +265,12 @@
     },
 
     _showError(msg) {
+      // v3.9.0: bruk innerHTML så <strong>/<br> i i18n-meldinger rendres som
+      // HTML i stedet for ren tekst. Trygt fordi alle msg-verdier kommer fra
+      // statiske i18n-keys (ingen brukerinput) — bekreftet av kallesteder
+      // som alle bruker tx("auth.xyz").
       const errEl = document.getElementById("auth-error");
-      errEl.textContent = msg;
+      errEl.innerHTML = msg;
       errEl.hidden = false;
     }
   };
