@@ -21,7 +21,7 @@ const LIST_IDS = {
   //   - FailedCount     (Tall)
   //   - LockedUntil     (Dato og klokkeslett)
   //   - LastAttempt     (Dato og klokkeslett)
-  PIN_ATTEMPTS: "",
+  PIN_ATTEMPTS: "9808abe5-8f13-4305-8840-e84c5721953b",
 };
 
 // v1.7: PIN-rate-limit-konfigurasjon. 5 mislykkede forsøk per token utløser
