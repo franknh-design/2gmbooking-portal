@@ -528,6 +528,9 @@
     if (!btn) return;
     btn.addEventListener("click", () => {
       setLayoutVisible(true);
+      // v3.4.3: kollaps Mine bookinger så kun kalender + skjema vises
+      // når kunden er i ferd med å lage en ny bestilling.
+      setPanelCollapsed(document.getElementById("mybookings-panel"), true);
       const layout = document.getElementById("mainLayout");
       if (layout && typeof layout.scrollIntoView === "function") {
         layout.scrollIntoView({ behavior: "smooth", block: "start" });
