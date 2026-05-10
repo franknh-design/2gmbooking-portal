@@ -386,15 +386,22 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       (!!ftCompany && ftCompany === customerLower)
     );
     return {
-      id: r.id,
+      id: String(r.id),
       longTermStart: isOwnLongTerm ? null : ltStart,
       longTermEnd:   null,
     };
   });
 
+  // v1.9: ta med roomLookupId i hver booking-periode så occupiedToday kan
+  // filtreres til kun bookinger på rom som er i den tellbare poolen. Tidligere
+  // ble alle bookinger på property-en talt med — også de på rom som var
+  // ekskludert fra activeRoomsToday (f.eks. Senja Kommunes leiligheter på
+  // Strandveien 112). Det gjorde at SalMar-bookingene "lekket" inn og pushet
+  // available til 0 selv når deres egne rom var tomme.
   const bookingPeriods = bookings.map(b => ({
     checkIn:  parseDateUTC(b.fields.Check_In),
     checkOut: parseDateUTC(b.fields.Check_Out),
+    roomId:   String(b.fields.RoomLookupId || ""),
   })).filter(b => b.checkIn !== null);
 
   const days = [];
@@ -403,14 +410,16 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   for (let t = fromDate.getTime(); t <= toDate.getTime(); t += oneDay) {
     const D = new Date(t);
 
-    let activeRoomsToday = 0;
+    const countableRoomIds = new Set();
     for (const r of roomLongTerm) {
       const onLongTerm = isDateInRangeInclusive(D, r.longTermStart, r.longTermEnd);
-      if (!onLongTerm) activeRoomsToday++;
+      if (!onLongTerm) countableRoomIds.add(r.id);
     }
+    const activeRoomsToday = countableRoomIds.size;
 
     let occupiedToday = 0;
     for (const b of bookingPeriods) {
+      if (!countableRoomIds.has(b.roomId)) continue;
       if (isDateInRangeInclusive(D, b.checkIn, b.checkOut)) {
         occupiedToday++;
       }
