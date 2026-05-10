@@ -1210,12 +1210,29 @@ input[type="date"]:disabled {
   font-size: 13px;
   color: var(--c-red-fg);
 }
+/* Stil A: to like-stilte knapper i 50/50 grid (Avbryt + Send forespørsel). */
 .extend-dlg-buttons {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 4px;
 }
+.extend-dlg-buttons button {
+  width: 100%;
+  height: auto;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: opacity .12s, transform .08s;
+  font-family: inherit;
+}
+.extend-dlg-buttons button:hover  { opacity: .85; }
+.extend-dlg-buttons button:active { transform: translateY(1px); }
 
 .mb-status {
   margin-left: auto;
