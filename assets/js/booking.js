@@ -50,6 +50,38 @@
       if (typeof this.onDateChange === "function") {
         this.onDateChange(this.getDateRange());
       }
+      // v3.9.1: hint kunden om å fylle inn navn når perioden er komplett.
+      this._maybeNudgeEmptyGuestName();
+    },
+
+    // v3.9.1: når begge datoer er satt (eller fra+open-ended) og første gjest
+    // mangler navn → auto-fokus + 2 raske amber pulses som visuell hint.
+    // Stjeler ikke fokus hvis kunden er midt i å skrive et annet sted.
+    // Re-nudger ikke samme felt innen 5 sek (unngår å mase ved små edits).
+    _maybeNudgeEmptyGuestName() {
+      const { from, to } = this.getDateRange();
+      if (!from) return;
+      const openEnded = this.isOpenEnded();
+      if (!openEnded && !to) return;
+      // Ikke avbryt aktiv input — med mindre fokus ER på datofeltene
+      // (i så fall er datovalget akkurat fullført og navne-fokus er trygt).
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+        if (active.id !== "f-from" && active.id !== "f-to") return;
+      }
+      const rows = document.querySelectorAll("#guests-list .guest-row");
+      for (const row of rows) {
+        const nameInp = row.querySelector("[data-field='name']");
+        if (!nameInp || nameInp.value.trim()) continue;
+        // Throttle: ikke re-nudg samme felt innenfor 5 sek
+        const lastNudge = Number(nameInp.dataset.nudgedAt || 0);
+        if (lastNudge && (Date.now() - lastNudge) < 5000) return;
+        nameInp.dataset.nudgedAt = String(Date.now());
+        nameInp.classList.add("name-nudge");
+        nameInp.focus();
+        setTimeout(() => nameInp.classList.remove("name-nudge"), 1200);
+        return;
+      }
     },
 
     _populateLocations() {

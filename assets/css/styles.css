@@ -612,23 +612,39 @@ input, select, button { font-family: inherit; }
 /* v3.7.3: "Tøm datoer"-knapp under Fra dato. Subtil tekst-knapp så den
    ikke konkurrerer med datoinput visuelt; matcher checkbox-stilen under
    Til dato. */
+/* v3.9.1: Tøm datoer i orange — admin-foreslått farge så knappen er
+   tydeligere mot tom-bakgrunnen. Hover demper litt for å gi affordance. */
 .btn-clear-dates {
   align-self: flex-start;
   margin-top: 6px;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid var(--color-border-tertiary);
+  padding: 4px 10px;
+  background: #EF9F27;
+  border: 1px solid #D88817;
   border-radius: var(--border-radius-sm);
-  color: var(--color-text-secondary);
+  color: #fff;
   font-size: 12px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: background .12s, color .12s, border-color .12s;
+  transition: background .12s, transform .08s;
 }
 .btn-clear-dates:hover {
-  background: var(--color-background-secondary);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-primary);
+  background: #D88817;
+}
+.btn-clear-dates:active {
+  transform: translateY(1px);
+}
+
+/* v3.9.1: name-nudge — kort amber pulse + auto-fokus når perioden er
+   komplett og navne-feltet fortsatt er tomt. 2 raske blink (0.5s × 2). */
+@keyframes name-nudge-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+  50%  { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.55); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+.guest-row [data-field='name'].name-nudge {
+  animation: name-nudge-pulse 0.5s ease-in-out 2;
+  border-color: #FBBF24 !important;
 }
 .cal-weekdays {
   margin-bottom: 6px;
