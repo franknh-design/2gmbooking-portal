@@ -273,8 +273,10 @@
       const propEl = document.createElement("div");
       propEl.className = "mb-card-prop";
       propEl.innerHTML = SVG_BUILDING + "<span></span>";
+      // v3.5.8: rom først, så property — kunden skanner etter romnummer
+      // (gruppe-headeren over viser allerede property-navnet med antall).
       const propTxt = b.roomNumber
-        ? `${b.property || "—"} · ${tx("mybookings.room", { n: b.roomNumber })}`
+        ? `${tx("mybookings.room", { n: b.roomNumber })} · ${b.property || "—"}`
         : (b.property || "—");
       propEl.querySelector("span").textContent = propTxt;
       left.appendChild(propEl);

@@ -1195,9 +1195,12 @@ input[type="date"]:disabled {
   text-overflow: ellipsis;
 }
 .mb-card-prop {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
+  /* v3.5.8: bumpet 11px→13px og weight 500→600 så romnummeret leses
+     først — kunden skanner etter rom, ikke gjeste-navn. */
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-top: 3px;
   display: flex;
   align-items: center;
   gap: 5px;
