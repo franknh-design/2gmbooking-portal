@@ -189,6 +189,16 @@ export async function updateBookingStatus(env, itemId, status) {
   });
 }
 
+// Generic PATCH av valgte felter på en booking-rad. Brukes av extend-booking.js
+// for å markere Pending_Confirmation + appende notat når kunden ber om forlengelse.
+export async function updateBookingFields(env, itemId, fields) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items/${itemId}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
+  });
+}
+
 // ============================================================================
 // Booking
 // ============================================================================

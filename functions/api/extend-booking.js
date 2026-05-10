@@ -1,7 +1,10 @@
 // functions/api/extend-booking.js
-// v1.0 - Forespørsel om å forlenge oppholdet på en aktiv booking.
-//        Skriver INGENTING til SharePoint — sender kun e-postvarsel
-//        til admin som tar avgjørelsen manuelt i admin-appen.
+// v1.1 - Forespørsel om å forlenge oppholdet på en aktiv booking.
+//        v1.1: PATCHer bookingen med Pending_Confirmation=true og appender
+//        "[Forlengelse forespurt YYYY-MM-DD: ny utflytting YYYY-MM-DD]" til
+//        Notes-feltet. Da dukker bookingen opp i admin-appens "Awaiting
+//        confirmation"-panel med konteksten i Notes. E-post sendes fortsatt
+//        som backup-varsel.
 //
 // POST /api/extend-booking
 // Body: {
@@ -17,7 +20,7 @@
 //   missing_token, invalid_token, missing_ref, invalid_date,
 //   booking_not_found, not_your_booking, internal_error
 
-import { findToken, getBookingsForCompany } from "../_utils/sharepoint.js";
+import { findToken, getBookingsForCompany, updateBookingFields } from "../_utils/sharepoint.js";
 import { sendEmail } from "../_utils/email.js";
 
 const NOTIFY_EMAIL = "frank@2gm.no";
@@ -70,8 +73,27 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Send e-post til admin — ingen SharePoint-skriv her, admin gjør
-    // selve oppdateringen i admin-appen så det blir registrert i historikken.
+    // v1.1: Marker bookingen som Pending_Confirmation og appende notat med
+    // forespurt dato. Best-effort — hvis PATCH'en feiler sender vi fortsatt
+    // e-posten så admin ikke mister forespørselen.
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const reqISO = String(requestedCheckOut).slice(0, 10);
+    const noteLine = `[Forlengelse forespurt ${todayISO}: ny utflytting ${reqISO}]`;
+    const existingNotes = (f.Notes || "").trim();
+    const newNotes = existingNotes
+      ? `${existingNotes}\n${noteLine}`
+      : noteLine;
+    try {
+      await updateBookingFields(env, match.id, {
+        Pending_Confirmation: true,
+        Notes: newNotes,
+      });
+    } catch (patchErr) {
+      // eslint-disable-next-line no-console
+      console.warn("[extend-booking] PATCH failed, falling back to email-only:", patchErr?.message || patchErr);
+    }
+
+    // Send e-post til admin som backup-varsel uavhengig av PATCH-resultatet.
     const emailResult = await sendExtensionRequest(env, {
       bookingRef,
       tokenRow,
