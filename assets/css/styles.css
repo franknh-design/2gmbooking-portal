@@ -494,14 +494,15 @@ input, select, button { font-family: inherit; }
   flex-wrap: wrap;
 }
 .customer-free-rooms-title {
-  font-size: 14px;
+  /* v3.7.7: tittel til VENSTRE og samme størrelse som .panel-title (Mine bookinger) */
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
-  order: 2;
+  order: 1;
 }
 .customer-free-rooms-count {
-  order: 1;
+  order: 2;
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
