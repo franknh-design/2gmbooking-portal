@@ -35,6 +35,27 @@
   }
 
   // --------------------------------------------------------------------------
+  // validate-pin
+  // --------------------------------------------------------------------------
+
+  async function validatePin(token, pin) {
+    if (!token || !pin) return { ok: false };
+    try {
+      const response = await fetch(`${API_BASE}/validate-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, pin })
+      });
+      const data = await response.json().catch(() => ({ ok: false }));
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] validate-pin exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // availability (med cache per propertyId+måned)
   // --------------------------------------------------------------------------
 
@@ -231,6 +252,7 @@
 
   window.Api = {
     validateToken,
+    validatePin,
     getAvailability,
     clearAvailabilityCache,
     submitBooking,

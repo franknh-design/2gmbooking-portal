@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.4.3 -->
+<!-- v3.5.0 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -23,42 +23,23 @@
       <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
       <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
-      <!-- Steg 1: telefonnummer -->
-      <form id="auth-phone-form" class="auth-form" novalidate>
+      <!-- v3.5.0: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
+      <form id="auth-pin-form" class="auth-form" novalidate>
         <label class="field">
-          <span class="field-label" data-i18n="auth.phoneLabel">Mobilnummer</span>
-          <input
-            type="tel"
-            id="auth-phone"
-            name="phone"
-            data-i18n-placeholder="auth.phonePlaceholder"
-            placeholder="+47 999 99 999"
-            autocomplete="tel"
-          />
-        </label>
-        <button type="submit" class="btn btn-primary" data-i18n="auth.sendCode">Send kode på SMS</button>
-        <p class="auth-hint" data-i18n="auth.codeHint">Du mottar en 6-sifret engangskode.</p>
-      </form>
-
-      <!-- Steg 2: kode -->
-      <form id="auth-code-form" class="auth-form" hidden novalidate>
-        <label class="field">
-          <span class="field-label" data-i18n="auth.codeLabel">Engangskode</span>
+          <span class="field-label" data-i18n="auth.pinLabel">PIN-kode</span>
           <input
             type="text"
-            id="auth-code"
-            name="code"
+            id="auth-pin"
+            name="pin"
             inputmode="numeric"
             maxlength="6"
-            data-i18n-placeholder="auth.codePlaceholder"
+            data-i18n-placeholder="auth.pinPlaceholder"
             placeholder="6 sifre"
-            autocomplete="one-time-code"
+            autocomplete="off"
           />
         </label>
-        <button type="submit" class="btn btn-primary" data-i18n="auth.confirm">Bekreft og logg inn</button>
-        <button type="button" class="btn btn-link" id="auth-back" data-i18n="auth.changeNumber">← Endre nummer</button>
-        <button type="button" class="btn btn-link" id="auth-skip" data-i18n="auth.skip">Hopp over (mock)</button>
-        <p class="auth-hint" id="auth-mock-hint"></p>
+        <button type="submit" class="btn btn-primary" data-i18n="auth.confirm">Logg inn</button>
+        <p class="auth-hint" data-i18n="auth.pinHint">PIN-koden får du av 2GM Eiendom.</p>
       </form>
 
       <p id="auth-error" class="auth-error" hidden></p>
@@ -205,7 +186,7 @@
     </main>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.4.3</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.5.0</small>
     </footer>
   </div>
 
