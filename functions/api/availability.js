@@ -20,6 +20,7 @@
 import {
   propertyIdToName,
   calculateAvailability,
+  findToken,
 } from "../_utils/sharepoint.js";
 
 // Maksimalt antall dager per spørring. Klienten bør be om én måned om gangen.
@@ -32,7 +33,7 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { property, fromDate, toDate } = body || {};
+    const { property, fromDate, toDate, token } = body || {};
 
     // Valider property-id mot kjent mapping
     const propertyName = propertyIdToName(property);
@@ -58,11 +59,22 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: "range_too_large", maxDays: MAX_DAYS }, 400);
     }
 
+    // v1.1: hvis token er gitt, slå opp kundens Firma så long-term-rom som
+    // tilhører dem selv blir behandlet som vanlig ledighet (ikke "fullt").
+    let customerCompany = null;
+    if (token && typeof token === "string") {
+      try {
+        const tokenRow = await findToken(env, token);
+        if (tokenRow) customerCompany = tokenRow.fields.Firma || null;
+      } catch (_) { /* token-feil: behandle som anonym, fortsett */ }
+    }
+
     const result = await calculateAvailability(
       env,
       propertyName,
       fromDate,
       toDate,
+      customerCompany,
     );
 
     return jsonResponse({

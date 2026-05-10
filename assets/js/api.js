@@ -86,12 +86,17 @@
     const lastDay  = new Date(year, month + 1, 0).getDate();
     const toDate   = isoDate(year, month, lastDay);
 
+    // v3.6.7: send token så availability vet hvilken kunde som spør —
+    // kunder som SELV er long-term-tenant på alle leiligheter (SalMar /
+    // Strandveien 112) skal se faktisk ledighet, ikke "fullt".
+    const token = (window.Auth && window.Auth.token) || null;
+
     const promise = (async () => {
       try {
         const response = await fetch(`${API_BASE}/availability`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ property: propertyId, fromDate, toDate })
+          body: JSON.stringify({ property: propertyId, fromDate, toDate, token })
         });
 
         const data = await response.json().catch(() => null);

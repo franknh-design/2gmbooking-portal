@@ -333,7 +333,7 @@ function isDateInRangeInclusive(D, start, end) {
   return D <= end;
 }
 
-export async function calculateAvailability(env, propertyName, fromISO, toISO) {
+export async function calculateAvailability(env, propertyName, fromISO, toISO, customerCompany) {
   const fromDate = parseDateUTC(fromISO);
   const toDate   = parseDateUTC(toISO);
 
@@ -347,11 +347,22 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO) {
     getBookingsForProperty(env, propertyName),
   ]);
 
-  const roomLongTerm = rooms.map(r => ({
-    id: r.id,
-    longTermStart: parseDateUTC(r.fields.LongTerm_StartDate),
-    longTermEnd:   null,
-  }));
+  // v1.7: hvis kunden SELV er long-term-tenanten på et rom (LongTerm_Company
+  // matcher Customer_Tokens.Firma), behandle rommet som vanlig — kunden ser
+  // ledighet basert på sine egne bookinger. Eksempel: SalMar leier alle
+  // leiligheter på Strandveien 112; uten denne sjekken viste portalen "fullt"
+  // selv om alle leilighetene var tomme av SalMars egne ansatte.
+  const customerLower = String(customerCompany || "").trim().toLowerCase();
+  const roomLongTerm = rooms.map(r => {
+    const ltStart = parseDateUTC(r.fields.LongTerm_StartDate);
+    const ltCompany = String(r.fields.LongTerm_Company || "").trim().toLowerCase();
+    const isOwnLongTerm = !!customerLower && !!ltCompany && ltCompany === customerLower;
+    return {
+      id: r.id,
+      longTermStart: isOwnLongTerm ? null : ltStart,
+      longTermEnd:   null,
+    };
+  });
 
   const bookingPeriods = bookings.map(b => ({
     checkIn:  parseDateUTC(b.fields.Check_In),
@@ -390,8 +401,8 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO) {
   return { property: propertyName, days };
 }
 
-export async function checkCapacityConflict(env, propertyName, fromISO, toISO, roomCount) {
-  const result = await calculateAvailability(env, propertyName, fromISO, toISO);
+export async function checkCapacityConflict(env, propertyName, fromISO, toISO, roomCount, customerCompany) {
+  const result = await calculateAvailability(env, propertyName, fromISO, toISO, customerCompany);
 
   const conflicts = [];
   for (const day of result.days) {

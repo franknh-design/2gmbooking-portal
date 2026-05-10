@@ -125,7 +125,10 @@ export async function onRequestPost(context) {
         propertyName,
         earliestCheckIn.slice(0, 10),
         latestCheckOut.slice(0, 10),
-        guests.length
+        guests.length,
+        // v1.1: gi capacity-sjekken kundens Firma så long-term-rom som
+        // tilhører dem selv ikke trekkes fra ledigheten.
+        tokenRow.fields.Firma || null
       );
 
       if (conflicts.length > 0) {
