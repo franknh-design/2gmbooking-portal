@@ -138,17 +138,36 @@
       // Oppdater tittel ved språkbytte
       const titleEl = section.querySelector(".customer-free-rooms-title");
       if (titleEl) titleEl.textContent = t("freeRooms.title");
-      // v3.7.4: count-summary venstre for tittel: "5 ledige rom | 1 ledig leilighet"
+      // v3.8.2: count-summary skiller "ledig nå" fra "kommende" (rom som blir
+      // ledig senere). Når en kategori har akkurat 1 element vises datoen i
+      // parens (kort format DD.MM) — ellers bare antall.
       const countEl = document.getElementById("customerFreeRoomsCount");
       if (countEl) {
-        let nRooms = 0, nApts = 0;
+        const buckets = { roomsNow: [], roomsUp: [], aptsNow: [], aptsUp: [] };
         for (const r of rooms) {
-          if (classifyRoomType(r.title)) nApts++;
-          else nRooms++;
+          const isApt = classifyRoomType(r.title);
+          if (r.currentlyFree) buckets[isApt ? "aptsNow"  : "roomsNow"].push(r);
+          else                 buckets[isApt ? "aptsUp"   : "roomsUp"].push(r);
         }
         const parts = [];
-        if (nRooms) parts.push(t(nRooms === 1 ? "freeRooms.countRoomsOne" : "freeRooms.countRoomsMany", { n: nRooms }));
-        if (nApts)  parts.push(t(nApts  === 1 ? "freeRooms.countAptsOne"  : "freeRooms.countAptsMany",  { n: nApts }));
+        if (buckets.roomsNow.length) {
+          const n = buckets.roomsNow.length;
+          parts.push(t(n === 1 ? "freeRooms.countRoomsOne" : "freeRooms.countRoomsMany", { n }));
+        }
+        if (buckets.aptsNow.length) {
+          const n = buckets.aptsNow.length;
+          parts.push(t(n === 1 ? "freeRooms.countAptsOne" : "freeRooms.countAptsMany", { n }));
+        }
+        if (buckets.roomsUp.length) {
+          const n = buckets.roomsUp.length;
+          const date = n === 1 ? shortDate(buckets.roomsUp[0].freeFrom) : "";
+          parts.push(t(n === 1 ? "freeRooms.countUpcomingRoomOne" : "freeRooms.countUpcomingRoomMany", { n, date }));
+        }
+        if (buckets.aptsUp.length) {
+          const n = buckets.aptsUp.length;
+          const date = n === 1 ? shortDate(buckets.aptsUp[0].freeFrom) : "";
+          parts.push(t(n === 1 ? "freeRooms.countUpcomingAptOne" : "freeRooms.countUpcomingAptMany", { n, date }));
+        }
         countEl.textContent = parts.join(" | ");
       }
       list.innerHTML = rooms.map(r => {
@@ -189,6 +208,13 @@
     const [y, m, d] = String(iso).slice(0, 10).split("-");
     if (!y || !m || !d) return iso;
     return `${d}.${m}.${y}`;
+  }
+
+  // v3.8.2: kort dato-format DD.MM for kompakt count-badge.
+  function shortDate(iso) {
+    const parts = String(iso || "").slice(0, 10).split("-");
+    const m = parts[1], d = parts[2];
+    return d && m ? `${d}.${m}` : "";
   }
 
   function escapeHtml(s) {

@@ -64,6 +64,10 @@
       "freeRooms.countRoomsMany":  "{n} ledige rom",
       "freeRooms.countAptsOne":    "1 ledig leilighet",
       "freeRooms.countAptsMany":   "{n} ledige leiligheter",
+      "freeRooms.countUpcomingRoomOne":  "1 kommende rom ({date})",
+      "freeRooms.countUpcomingRoomMany": "{n} kommende rom",
+      "freeRooms.countUpcomingAptOne":   "1 kommende leilighet ({date})",
+      "freeRooms.countUpcomingAptMany":  "{n} kommende leiligheter",
       "booking.clearDates":  "Tøm datoer",
       "calendar.footnote":   "Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.",
 
@@ -237,6 +241,10 @@
       "freeRooms.countRoomsMany":  "{n} free rooms",
       "freeRooms.countAptsOne":    "1 free apartment",
       "freeRooms.countAptsMany":   "{n} free apartments",
+      "freeRooms.countUpcomingRoomOne":  "1 upcoming room ({date})",
+      "freeRooms.countUpcomingRoomMany": "{n} upcoming rooms",
+      "freeRooms.countUpcomingAptOne":   "1 upcoming apartment ({date})",
+      "freeRooms.countUpcomingAptMany":  "{n} upcoming apartments",
       "booking.clearDates":  "Clear dates",
       "calendar.footnote":   "Click a start date, then an end date. Click again to start over.",
 
