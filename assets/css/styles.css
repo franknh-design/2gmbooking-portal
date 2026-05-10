@@ -474,12 +474,31 @@ input, select, button { font-family: inherit; }
   padding-top: 14px;
   border-top: 1px solid var(--color-border-tertiary);
 }
+.customer-free-rooms-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
 .customer-free-rooms-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin: 0 0 8px;
+  margin: 0;
+  order: 2;
 }
+.customer-free-rooms-count {
+  order: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: 3px 10px;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 10px;
+}
+.customer-free-rooms-count:empty { display: none; }
 .customer-free-rooms-list {
   list-style: none;
   margin: 0;

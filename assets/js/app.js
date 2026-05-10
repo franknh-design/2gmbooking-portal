@@ -122,6 +122,19 @@
       // Oppdater tittel ved språkbytte
       const titleEl = section.querySelector(".customer-free-rooms-title");
       if (titleEl) titleEl.textContent = t("freeRooms.title");
+      // v3.7.4: count-summary venstre for tittel: "5 ledige rom | 1 ledig leilighet"
+      const countEl = document.getElementById("customerFreeRoomsCount");
+      if (countEl) {
+        let nRooms = 0, nApts = 0;
+        for (const r of rooms) {
+          if (classifyRoomType(r.title)) nApts++;
+          else nRooms++;
+        }
+        const parts = [];
+        if (nRooms) parts.push(t(nRooms === 1 ? "freeRooms.countRoomsOne" : "freeRooms.countRoomsMany", { n: nRooms }));
+        if (nApts)  parts.push(t(nApts  === 1 ? "freeRooms.countAptsOne"  : "freeRooms.countAptsMany",  { n: nApts }));
+        countEl.textContent = parts.join(" | ");
+      }
       list.innerHTML = rooms.map(r => {
         const when = r.currentlyFree
           ? `<span class="customer-free-rooms-pill-now">${escapeHtml(t("freeRooms.now"))}</span>`
@@ -141,6 +154,18 @@
       console.error("[free-rooms] load failed:", err);
       section.hidden = true;
     }
+  }
+
+  // Returnerer true hvis rom-tittelen indikerer en leilighet, false ellers.
+  // Heuristikk: titler som starter med "L" + siffer (L201, L304) eller som
+  // inneholder "leilighet" regnes som leilighet. Alt annet (Hybel, Rom 304,
+  // osv.) regnes som "rom". Justér her hvis 2GM kategoriserer annerledes.
+  function classifyRoomType(title) {
+    const t = String(title || "").trim();
+    if (!t) return false;
+    if (/leilighet|apartment/i.test(t)) return true;
+    if (/^L\s*\d/i.test(t)) return true;
+    return false;
   }
 
   function formatIsoDate(iso) {
