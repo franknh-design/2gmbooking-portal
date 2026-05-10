@@ -131,6 +131,7 @@
       "mybookings.doorCodeLabel": "Dørkode",
       "mybookings.doorCodePending":"kommer snart",
       "mybookings.extend":        "Forleng oppholdet",
+      "mybookings.actionsTitle":  "Hva vil du gjøre?",
 
       // Forleng-dialog
       "extend.title":   "Forleng oppholdet",
@@ -276,6 +277,7 @@
       "mybookings.doorCodeLabel": "Door code",
       "mybookings.doorCodePending":"coming soon",
       "mybookings.extend":        "Extend stay",
+      "mybookings.actionsTitle":  "What would you like to do?",
 
       // Extend dialog
       "extend.title":   "Extend stay",

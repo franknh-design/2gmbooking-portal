@@ -1142,21 +1142,56 @@ input[type="date"]:disabled {
   display: flex;
   justify-content: flex-end;
 }
-/* Stil A: Forleng-knapp er svart outline (ikke brand-blå). */
-.mb-extend-btn {
+/* Stil A: klikkbar booking-card åpner action-meny. Subtilt hover-hint. */
+.mb-card-clickable {
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.mb-card-clickable:hover {
+  background: var(--color-background-tertiary);
+  border-color: var(--color-border-secondary);
+}
+.mb-card-clickable:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+/* Action-meny dialog (åpnes ved klikk på booking-card). */
+.action-menu-form {
+  gap: 16px;
+}
+.action-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.action-menu-btn {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
   background: transparent;
   color: var(--color-text-primary);
   border: 0.5px solid var(--color-border-secondary);
   border-radius: var(--border-radius-sm);
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
-  transition: background .12s, border-color .12s;
+  transition: background .12s, border-color .12s, opacity .12s;
+  font-family: inherit;
+  text-align: left;
 }
-.mb-extend-btn:hover {
+.action-menu-btn:hover {
   background: var(--color-background-secondary);
   border-color: var(--color-border-primary);
+}
+.action-menu-btn-primary {
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  border-color: var(--color-text-primary);
+}
+.action-menu-btn-primary:hover {
+  opacity: .85;
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
 }
 @media (max-width: 600px) {
   .mb-card-info-row { flex-direction: column; gap: 6px; }

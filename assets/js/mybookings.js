@@ -277,23 +277,80 @@
 
       row.appendChild(infoRow);
 
-      // ----- Forleng-knapp: Active eller Upcoming med satt utflytting -----
+      // ----- Klikkbar kort: åpner action-meny hvis det finnes valg å gjøre -----
       const canExtend = (b.status === "Active" || b.status === "Upcoming") && b.checkOut;
       if (canExtend) {
-        const actions = document.createElement("div");
-        actions.className = "mb-card-actions";
-        const extendBtn = document.createElement("button");
-        extendBtn.type = "button";
-        extendBtn.className = "mb-extend-btn";
-        extendBtn.textContent = tx("mybookings.extend");
-        extendBtn.addEventListener("click", () => openExtendDialog(b, this));
-        actions.appendChild(extendBtn);
-        row.appendChild(actions);
+        row.classList.add("mb-card-clickable");
+        row.setAttribute("role", "button");
+        row.setAttribute("tabindex", "0");
+        row.addEventListener("click", () => openActionMenu(b, this));
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openActionMenu(b, this);
+          }
+        });
       }
 
       return row;
     },
   };
+
+  // ---- Action-meny ----
+  // Åpnes når kunden klikker på en booking-card. Lister tilgjengelige valg
+  // (per nå kun Forleng oppholdet — utvidbart for fremtidige actions).
+  function openActionMenu(booking, mybookingsRef) {
+    const dlg = ensureActionMenu();
+    if (!dlg) {
+      // Fallback: bare åpne forleng-dialogen direkte
+      openExtendDialog(booking, mybookingsRef);
+      return;
+    }
+    dlg._booking = booking;
+    dlg._mybookingsRef = mybookingsRef;
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+  }
+
+  function ensureActionMenu() {
+    let dlg = document.getElementById("actionMenu");
+    if (dlg) {
+      // Re-render etiketter ved evt. språkbytte mellom kall
+      dlg.querySelector(".action-menu-title").textContent  = tx("mybookings.actionsTitle");
+      dlg.querySelector('[data-action="extend"]').textContent = tx("mybookings.extend");
+      dlg.querySelector('[data-action="close"]').textContent  = tx("extend.cancel");
+      return dlg;
+    }
+    if (typeof HTMLDialogElement === "undefined") return null;
+
+    dlg = document.createElement("dialog");
+    dlg.id = "actionMenu";
+    dlg.className = "extend-dlg action-menu";
+    dlg.innerHTML = `
+      <div class="extend-dlg-form action-menu-form">
+        <h3 class="extend-dlg-title action-menu-title">${tx("mybookings.actionsTitle")}</h3>
+        <div class="action-menu-buttons">
+          <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${tx("mybookings.extend")}</button>
+          <button type="button" data-action="close"  class="action-menu-btn">${tx("extend.cancel")}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dlg);
+
+    dlg.addEventListener("click", (e) => {
+      const action = e.target?.dataset?.action;
+      if (action === "close") {
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      } else if (action === "extend") {
+        const b = dlg._booking;
+        const ref = dlg._mybookingsRef;
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+        openExtendDialog(b, ref);
+      }
+    });
+
+    return dlg;
+  }
 
   // ---- Forleng-dialog ----
   // Åpnes som <dialog>-element; faller tilbake til prompt() hvis nettleseren
