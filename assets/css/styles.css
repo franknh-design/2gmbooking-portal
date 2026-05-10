@@ -587,6 +587,14 @@ input, select, button { font-family: inherit; }
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+/* v3.8.3: gjest-linje under hovedraden — wrapper til full bredde innenfor
+   li-en, slik at "Opptatt av Company (Person)" får sin egen linje. */
+.customer-free-rooms-guest {
+  flex: 1 0 100%;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
 .customer-free-rooms-when strong {
   color: var(--color-text-primary);
   font-weight: 600;

@@ -501,6 +501,7 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
       checkIn: parseDateUTC(f.Check_In),
       checkOut: parseDateUTC(f.Check_Out),
       personName: f.Person_Name || "",
+      company:    f.Company    || "",
     });
   }
   for (const rid of Object.keys(bookingsByRoom)) {
@@ -518,7 +519,8 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
       if (!b.checkOut) return true; // open-ended
       return today <= b.checkOut;
     });
-    let freeFrom, currentGuest, nextBookingCheckIn = null;
+    let freeFrom, currentGuest = null, currentGuestCompany = null;
+    let nextBookingCheckIn = null, nextGuest = null, nextGuestCompany = null;
     if (currentBooking) {
       if (!currentBooking.checkOut) {
         // Open-ended og pågår — aldri ledig
@@ -527,11 +529,11 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
       // Ledig fra dagen ETTER checkOut (Check_Out = utflyttingsdag, rommet er
       // tilgjengelig fra neste dag)
       freeFrom = new Date(currentBooking.checkOut.getTime() + 24 * 60 * 60 * 1000);
-      currentGuest = currentBooking.personName || null;
+      currentGuest        = currentBooking.personName || null;
+      currentGuestCompany = currentBooking.company    || null;
     } else {
       // Ledig nå
       freeFrom = today;
-      currentGuest = null;
     }
     // Finn neste booking som starter etter freeFrom
     const nextBooking = bs.find(b => b.checkIn && b.checkIn >= freeFrom);
@@ -539,6 +541,8 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
       // Hvis neste booking starter samme dag som freeFrom, rommet er ikke ledig
       if (nextBooking.checkIn <= freeFrom) continue;
       nextBookingCheckIn = nextBooking.checkIn.toISOString().slice(0, 10);
+      nextGuest          = nextBooking.personName || null;
+      nextGuestCompany   = nextBooking.company    || null;
     }
     result.push({
       title: room.title,
@@ -547,6 +551,9 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
       freeFrom: freeFrom.toISOString().slice(0, 10),
       nextBookingCheckIn,
       currentGuest,
+      currentGuestCompany,
+      nextGuest,
+      nextGuestCompany,
     });
   }
 

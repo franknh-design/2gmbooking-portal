@@ -177,10 +177,21 @@
         const until = r.nextBookingCheckIn
           ? ` <span>${escapeHtml(t("freeRooms.until", { date: formatIsoDate(r.nextBookingCheckIn) }))}</span>`
           : "";
+        // v3.8.3: ny linje under — viser hvem rommet er/blir opptatt av.
+        // currentGuest tar prioritet (rommet er opptatt nå); ellers nextGuest.
+        let guestLine = "";
+        if (r.currentGuest || r.currentGuestCompany) {
+          const who = formatGuest(r.currentGuestCompany, r.currentGuest);
+          guestLine = `<span class="customer-free-rooms-guest">${escapeHtml(t("freeRooms.occupiedBy", { who }))}</span>`;
+        } else if (r.nextGuest || r.nextGuestCompany) {
+          const who = formatGuest(r.nextGuestCompany, r.nextGuest);
+          guestLine = `<span class="customer-free-rooms-guest">${escapeHtml(t("freeRooms.nextGuest", { who }))}</span>`;
+        }
         return `<li>
           <span class="customer-free-rooms-room">${escapeHtml(r.title || "?")}</span>
           <span class="customer-free-rooms-prop">· ${escapeHtml(r.property || "")}</span>
           <span class="customer-free-rooms-when">${when}${until}</span>
+          ${guestLine}
         </li>`;
       }).join("");
       section.hidden = false;
@@ -215,6 +226,15 @@
     const parts = String(iso || "").slice(0, 10).split("-");
     const m = parts[1], d = parts[2];
     return d && m ? `${d}.${m}` : "";
+  }
+
+  // v3.8.3: format gjest-info som "Company (Person)", eller bare ett av
+  // feltene hvis det andre mangler.
+  function formatGuest(company, person) {
+    const c = (company || "").trim();
+    const p = (person  || "").trim();
+    if (c && p) return `${c} (${p})`;
+    return c || p || "";
   }
 
   function escapeHtml(s) {
