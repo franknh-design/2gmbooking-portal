@@ -270,15 +270,16 @@
       nameEl.textContent = b.guest || tx("mybookings.unnamed");
       left.appendChild(nameEl);
 
+      // v3.6.1: rom og lokasjon på hver sin linje — rom prominent (primær,
+      // 13/600), lokasjon mykere under (11/500, sekundær). Ikonet flankerer.
       const propEl = document.createElement("div");
       propEl.className = "mb-card-prop";
-      propEl.innerHTML = SVG_BUILDING + "<span></span>";
-      // v3.5.8: rom først, så property — kunden skanner etter romnummer
-      // (gruppe-headeren over viser allerede property-navnet med antall).
-      const propTxt = b.roomNumber
-        ? `${tx("mybookings.room", { n: b.roomNumber })} · ${b.property || "—"}`
-        : (b.property || "—");
-      propEl.querySelector("span").textContent = propTxt;
+      const roomTxt = b.roomNumber ? tx("mybookings.room", { n: b.roomNumber }) : "";
+      const locTxt  = b.property || "—";
+      const inner = b.roomNumber
+        ? `<span class="mb-card-prop-room">${escapeHtml(roomTxt)}</span><span class="mb-card-prop-loc">${escapeHtml(locTxt)}</span>`
+        : `<span class="mb-card-prop-room">${escapeHtml(locTxt)}</span>`;
+      propEl.innerHTML = SVG_BUILDING + `<span class="mb-card-prop-text">${inner}</span>`;
       left.appendChild(propEl);
 
       if (b.propertyAddress) {

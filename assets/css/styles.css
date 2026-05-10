@@ -1195,18 +1195,36 @@ input[type="date"]:disabled {
   text-overflow: ellipsis;
 }
 .mb-card-prop {
-  /* v3.5.8: bumpet 11px→13px og weight 500→600 så romnummeret leses
-     først — kunden skanner etter rom, ikke gjeste-navn. */
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  /* v3.6.1: ikon + to-linjet tekst (rom over, lokasjon under).
+     Ikonet sentreres mot teksten med align-items:center på flexen. */
   margin-top: 3px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  min-width: 0;
+}
+.mb-card-prop-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.mb-card-prop-room {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.mb-card-prop-loc {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
 }
 .mb-card-addr {
   font-size: 10px;
