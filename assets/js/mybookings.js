@@ -570,6 +570,36 @@
     if (toggle) toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
 
+  // v3.5.1: Lukk-knapp på Ny bestilling-panelet — skjuler skjemaet,
+  // utvider Mine bookinger og scroller opp så kunden ser lista igjen.
+  // Eksponert via MyBookings.collapseToList() så booking.js eller andre
+  // moduler kan trigge samme oppførsel ved behov.
+  function collapseToList() {
+    setLayoutVisible(false);
+    setPanelCollapsed(document.getElementById("mybookings-panel"), false);
+    const top = document.getElementById("mybookings-panel");
+    if (top && typeof top.scrollIntoView === "function") {
+      top.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  let _closeBtnWired = false;
+  function wireBookingCloseBtn() {
+    if (_closeBtnWired) return;
+    const btn = document.getElementById("booking-close-btn");
+    if (!btn) return;
+    btn.addEventListener("click", collapseToList);
+    _closeBtnWired = true;
+  }
+  // Wire up after DOM is parsed (script loads at end of body, but defensive).
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireBookingCloseBtn);
+  } else {
+    wireBookingCloseBtn();
+  }
+
+  MyBookings.collapseToList = collapseToList;
+
   // Re-rendre lista ved språkendring (status-tekster, knapper, tellere).
   document.addEventListener("i18n:change", () => {
     if (MyBookings.token) MyBookings.refresh();

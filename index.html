@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.5.0 -->
+<!-- v3.5.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -23,7 +23,7 @@
       <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
       <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
-      <!-- v3.5.0: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
+      <!-- v3.5.1: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
       <form id="auth-pin-form" class="auth-form" novalidate>
         <label class="field">
           <span class="field-label" data-i18n="auth.pinLabel">PIN-kode</span>
@@ -128,7 +128,10 @@
       <section class="panel panel-form" aria-label="Booking">
         <div class="panel-head">
           <h2 class="panel-title" data-i18n="booking.title">Ny bestilling</h2>
-          <span class="badge" id="avail-badge" data-i18n="booking.pickDate">Velg dato</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge" id="avail-badge" data-i18n="booking.pickDate">Velg dato</span>
+            <button type="button" id="booking-close-btn" class="booking-close-btn" data-i18n-aria="booking.close" aria-label="Lukk" title="Lukk">✕</button>
+          </div>
         </div>
 
         <form id="booking-form" class="booking-form" novalidate>
@@ -186,7 +189,7 @@
     </main>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.5.0</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.5.1</small>
     </footer>
   </div>
 

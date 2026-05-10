@@ -55,6 +55,7 @@
       // Booking form
       "booking.title":      "Ny bestilling",
       "booking.pickDate":   "Velg dato",
+      "booking.close":      "Lukk",
       "booking.fetching":   "Henter…",
       "booking.unknown":    "Ukjent",
       "booking.full":       "Fullt",
@@ -197,6 +198,7 @@
       // Booking form
       "booking.title":      "New booking",
       "booking.pickDate":   "Pick a date",
+      "booking.close":      "Close",
       "booking.fetching":   "Loading…",
       "booking.unknown":    "Unknown",
       "booking.full":       "Full",

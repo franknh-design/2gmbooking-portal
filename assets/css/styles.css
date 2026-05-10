@@ -1073,6 +1073,30 @@ input[type="date"]:disabled {
 .new-booking-cta-btn:hover  { opacity: .85; transform: translateY(-1px); }
 .new-booking-cta-btn:active { transform: translateY(0); }
 
+/* v3.5.1: Lukk-knapp i panel-form (Ny bestilling). Skjuler skjemaet og
+   utvider Mine bookinger igjen. Stil matcher modal-close-pattern fra admin. */
+.booking-close-btn {
+  background: transparent;
+  border: 1px solid var(--color-border-secondary);
+  color: var(--color-text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.booking-close-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+}
+
 /* List-wrapper: 720px single-col, 2-col grid over 752px */
 .mb-list {
   list-style: none;
