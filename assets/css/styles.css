@@ -467,12 +467,15 @@ input, select, button { font-family: inherit; }
   animation: cal-loading-pulse 1.1s ease-in-out infinite;
 }
 
-/* v3.7.2: Ledige rom-seksjon under kalenderen — viser kundens egne rom
-   med "ledig fra"-dato på tvers av alle properties. */
+/* v3.7.5: Ledige rom-seksjon over Tilgjengelighet + Ny bestilling, i 2-kol
+   grid som mine bookinger. Skjules når mainLayout er hidden eller når
+   seksjonen ikke har innhold. */
+.freerooms-top { margin-bottom: 1rem; }
+.freerooms-top:has(#customerFreeRoomsSection[hidden]) { display: none; }
+.freerooms-top:has(+ #mainLayout[hidden]) { display: none; }
+.panel-freerooms { padding: 14px 16px; }
 .customer-free-rooms {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--color-border-tertiary);
+  /* legacy klasse fra forrige plassering — ikke lenger brukt etter v3.7.5 */
 }
 .customer-free-rooms-header {
   display: flex;
@@ -505,14 +508,17 @@ input, select, button { font-family: inherit; }
   padding: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 8px;
+}
+@media (min-width: 752px) {
+  .customer-free-rooms-list { grid-template-columns: 1fr 1fr; }
 }
 .customer-free-rooms-list li {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 10px;
   align-items: baseline;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: var(--color-background-secondary);
   border: 1px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-sm);
