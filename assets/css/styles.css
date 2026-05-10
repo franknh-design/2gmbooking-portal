@@ -1145,20 +1145,23 @@ input[type="date"]:disabled {
 }
 
 /* =========================================================
-   Mine bookinger — vises over .layout når kunden har bookinger.
+   Mine bookinger — vises NEDERST under .layout og .freerooms-top.
+   v3.8.0: rekkefølgen er Tilgjengelighet/Ny bestilling → Ledige rom →
+   Mine bookinger. Trenger derfor egen bunn-padding så lista ikke sitter
+   klistret mot footer.
    ========================================================= */
 .mybookings-top {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 24px 0;
+  padding: 0 24px 24px;
 }
 /* Når selve panelet er hidden (demo-modus eller ingen token) skal wrapperen
-   kollapse helt så vi ikke får tom luft over kalender+skjema. */
+   kollapse helt så vi ikke får tom luft før footer. */
 .mybookings-top:has(#mybookings-panel[hidden]) {
   padding: 0;
 }
 @media (max-width: 900px) {
-  .mybookings-top { padding: 16px 16px 0; }
+  .mybookings-top { padding: 0 16px 16px; }
   .mybookings-top:has(#mybookings-panel[hidden]) { padding: 0; }
 }
 

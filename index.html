@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.7.9 -->
+<!-- v3.8.0 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -64,47 +64,9 @@
       </div>
     </header>
 
-    <!-- v3.7.9: +Ny bestilling-banneret er fjernet — Tilgjengelighet + Ny bestilling
-         er alltid åpne under Ledige rom, så banner-CTA er overflødig. -->
-
-    <!-- Mine bookinger over alt annet — kollapser via :has() når lista er hidden -->
-    <div class="mybookings-top">
-      <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
-        <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="true">
-          <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
-          <span class="badge" id="mybookings-count" hidden></span>
-          <span class="mb-chevron" aria-hidden="true">▾</span>
-        </button>
-        <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle -->
-        <div class="mb-filters" id="mybookings-filters" role="tablist" aria-label="Filter">
-          <button type="button" data-mb-filter="active"   class="mb-filter-btn is-active" data-i18n="mybookings.filterActive">Aktive</button>
-          <button type="button" data-mb-filter="upcoming" class="mb-filter-btn" data-i18n="mybookings.filterUpcoming">Kommende</button>
-          <button type="button" data-mb-filter="all"      class="mb-filter-btn" data-i18n="mybookings.filterAll">Alle</button>
-        </div>
-        <p class="mb-loading" id="mybookings-loading" data-i18n="mybookings.loading">Laster…</p>
-        <p class="mb-error"   id="mybookings-error"   data-i18n="mybookings.error" hidden>
-          Kunne ikke hente bookinger. Prøv å laste siden på nytt.
-        </p>
-        <p class="mb-empty"   id="mybookings-empty"   data-i18n="mybookings.empty" hidden>
-          Du har ingen aktive eller kommende bookinger.
-        </p>
-        <ul class="mb-list" id="mybookings-list" hidden></ul>
-      </section>
-    </div>
-
-    <!-- v3.7.9: Ledige rom — egen seksjon med trekkspill-knapp (samme mønster
-         som Mine bookinger). Tilgjengelighet + Ny bestilling vises alltid
-         under, så denne seksjonen kan kollapses uten at brukeren mister noe. -->
-    <div class="freerooms-top">
-      <section id="customerFreeRoomsSection" class="panel panel-freerooms" hidden>
-        <button type="button" class="customer-free-rooms-header fr-toggle" id="customerFreeRoomsToggle" aria-expanded="true">
-          <h3 class="customer-free-rooms-title" data-i18n="freeRooms.title">Ledige rom</h3>
-          <span id="customerFreeRoomsCount" class="customer-free-rooms-count"></span>
-          <span class="fr-chevron" aria-hidden="true">▾</span>
-        </button>
-        <ul id="customerFreeRoomsList" class="customer-free-rooms-list"></ul>
-      </section>
-    </div>
+    <!-- v3.8.0: Rekkefølge fra topp — Tilgjengelighet + Ny bestilling, så
+         Ledige rom, så Mine bookinger nederst. Alle tre er alltid synlige
+         (hver seksjon kan kollapses individuelt via egen trekkspill-knapp). -->
 
     <main class="layout" id="mainLayout">
       <!-- Venstre kolonne: kalender -->
@@ -209,8 +171,45 @@
       </section>
     </main>
 
+    <!-- v3.8.0: Ledige rom — under Tilgjengelighet + Ny bestilling. -->
+    <div class="freerooms-top">
+      <section id="customerFreeRoomsSection" class="panel panel-freerooms" hidden>
+        <button type="button" class="customer-free-rooms-header fr-toggle" id="customerFreeRoomsToggle" aria-expanded="true">
+          <h3 class="customer-free-rooms-title" data-i18n="freeRooms.title">Ledige rom</h3>
+          <span id="customerFreeRoomsCount" class="customer-free-rooms-count"></span>
+          <span class="fr-chevron" aria-hidden="true">▾</span>
+        </button>
+        <ul id="customerFreeRoomsList" class="customer-free-rooms-list"></ul>
+      </section>
+    </div>
+
+    <!-- v3.8.0: Mine bookinger nederst — kollapser via :has() når lista er hidden. -->
+    <div class="mybookings-top">
+      <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
+        <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="true">
+          <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
+          <span class="badge" id="mybookings-count" hidden></span>
+          <span class="mb-chevron" aria-hidden="true">▾</span>
+        </button>
+        <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle -->
+        <div class="mb-filters" id="mybookings-filters" role="tablist" aria-label="Filter">
+          <button type="button" data-mb-filter="active"   class="mb-filter-btn is-active" data-i18n="mybookings.filterActive">Aktive</button>
+          <button type="button" data-mb-filter="upcoming" class="mb-filter-btn" data-i18n="mybookings.filterUpcoming">Kommende</button>
+          <button type="button" data-mb-filter="all"      class="mb-filter-btn" data-i18n="mybookings.filterAll">Alle</button>
+        </div>
+        <p class="mb-loading" id="mybookings-loading" data-i18n="mybookings.loading">Laster…</p>
+        <p class="mb-error"   id="mybookings-error"   data-i18n="mybookings.error" hidden>
+          Kunne ikke hente bookinger. Prøv å laste siden på nytt.
+        </p>
+        <p class="mb-empty"   id="mybookings-empty"   data-i18n="mybookings.empty" hidden>
+          Du har ingen aktive eller kommende bookinger.
+        </p>
+        <ul class="mb-list" id="mybookings-list" hidden></ul>
+      </section>
+    </div>
+
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.7.9</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.8.0</small>
     </footer>
   </div>
 
