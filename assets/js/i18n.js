@@ -40,6 +40,7 @@
       "auth.confirm":         "Logg inn",
       "auth.codeMustBe6":     "PIN-koden må være 6 sifre.",
       "auth.pinWrong":        "Feil PIN. Prøv igjen.",
+      "auth.pinLocked":       "<strong>For mange mislykkede forsøk.</strong><br>Prøv igjen om en time, eller kontakt 2GM Eiendom.",
 
       // Calendar
       "calendar.title":      "Tilgjengelighet",
@@ -222,6 +223,7 @@
       "auth.confirm":         "Sign in",
       "auth.codeMustBe6":     "The PIN must be 6 digits.",
       "auth.pinWrong":        "Wrong PIN. Try again.",
+      "auth.pinLocked":       "<strong>Too many failed attempts.</strong><br>Try again in an hour, or contact 2GM Eiendom.",
 
       // Calendar
       "calendar.title":      "Availability",

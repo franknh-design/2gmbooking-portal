@@ -14,7 +14,20 @@ const LIST_IDS = {
   ROOMS:      "bfa962a0-5eb2-416c-abe8-adba06558c11",
   BOOKINGS:   "fe1dfe34-23df-4864-b0b1-b01bf60bfb75",
   PROPERTIES: "d842d574-f238-442a-be3d-77334727e89f",
+  // v1.7: PIN-rate-limit. Sett til SharePoint-list-GUID for 'Pin_Attempts'
+  // når listen er opprettet. Tom streng = rate-limiting deaktivert (graceful
+  // degradation). Kolonner som forventes:
+  //   - Title           (Tekst, default — token-strengen brukes som key)
+  //   - FailedCount     (Tall)
+  //   - LockedUntil     (Dato og klokkeslett)
+  //   - LastAttempt     (Dato og klokkeslett)
+  PIN_ATTEMPTS: "",
 };
+
+// v1.7: PIN-rate-limit-konfigurasjon. 5 mislykkede forsøk per token utløser
+// 1 times lockout. Justér her hvis admin ber om strammere/løsere policy.
+const PIN_MAX_ATTEMPTS = 5;
+const PIN_LOCKOUT_MS = 60 * 60 * 1000;
 
 const PROPERTY_MAP = {
   rigg44:         "Rigg 44",
@@ -183,6 +196,79 @@ export function maskPhone(phone) {
   if (!phone || phone.length < 4) return "";
   const last3 = phone.slice(-3);
   return `+47 ••• •• ${last3}`;
+}
+
+// ============================================================================
+// PIN-rate-limit (v1.7)
+// ============================================================================
+//
+// Begrenser brute-force mot validate-pin. Per token:
+//   - Telleren økes for hvert mislykket PIN-forsøk
+//   - Når telleren når PIN_MAX_ATTEMPTS settes LockedUntil = now + 1t,
+//     telleren nullstilles
+//   - Suksess nullstiller telleren + LockedUntil umiddelbart
+//
+// Designvalg:
+//   - Egen liste (Pin_Attempts) heller enn kolonner på Customer_Tokens —
+//     holder sikkerhetsstate adskilt fra forretnings-data, lettere å rotere.
+//   - Title-kolonnen brukes som primærnøkkel (token-strengen). Færre rader
+//     enn tokens (kun de som har feilet noen gang), så fetchAllItems-skanning
+//     er rask.
+//   - Når PIN_ATTEMPTS-GUID-en mangler degraderer alle helpers stille til
+//     "ingen rate-limit" — gjør at koden kan deployes før admin har opprettet
+//     listen i SharePoint.
+
+async function _findPinAttemptRow(env, token) {
+  if (!LIST_IDS.PIN_ATTEMPTS) return null;
+  const items = await fetchAllItems(env, LIST_IDS.PIN_ATTEMPTS);
+  return items.find(it => it.fields && it.fields.Title === token) || null;
+}
+
+export async function isPinTokenLocked(env, token) {
+  if (!LIST_IDS.PIN_ATTEMPTS) return false;
+  const row = await _findPinAttemptRow(env, token);
+  if (!row || !row.fields.LockedUntil) return false;
+  const until = new Date(row.fields.LockedUntil);
+  return until.getTime() > Date.now();
+}
+
+export async function recordFailedPinAttempt(env, token) {
+  if (!LIST_IDS.PIN_ATTEMPTS) return { locked: false };
+  const row = await _findPinAttemptRow(env, token);
+  const now = new Date();
+  const prevCount = (row && row.fields.FailedCount) || 0;
+  const newCount = prevCount + 1;
+  const willLock = newCount >= PIN_MAX_ATTEMPTS;
+  const fields = {
+    Title: token,
+    FailedCount: willLock ? 0 : newCount,
+    LastAttempt: now.toISOString(),
+    LockedUntil: willLock ? new Date(now.getTime() + PIN_LOCKOUT_MS).toISOString() : null,
+  };
+  if (row) {
+    const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PIN_ATTEMPTS}/items/${row.id}/fields`;
+    await graphRequest(env, path, { method: "PATCH", body: JSON.stringify(fields) });
+  } else {
+    const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PIN_ATTEMPTS}/items`;
+    await graphRequest(env, path, { method: "POST", body: JSON.stringify({ fields }) });
+  }
+  return {
+    locked: willLock,
+    attemptsRemaining: willLock ? 0 : (PIN_MAX_ATTEMPTS - newCount),
+  };
+}
+
+export async function clearPinAttempts(env, token) {
+  if (!LIST_IDS.PIN_ATTEMPTS) return;
+  const row = await _findPinAttemptRow(env, token);
+  if (!row) return;
+  // Skip skrivekall hvis det ikke er noe å fjerne
+  if (!row.fields.FailedCount && !row.fields.LockedUntil) return;
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PIN_ATTEMPTS}/items/${row.id}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify({ FailedCount: 0, LockedUntil: null }),
+  });
 }
 
 // ============================================================================

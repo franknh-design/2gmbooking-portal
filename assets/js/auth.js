@@ -226,6 +226,12 @@
           // umiddelbart gyldig mot evt. PIN-endring som skjedde nå nettopp.
           if (result.tokenStamp) this._currentStamp = result.tokenStamp;
           this._completeLogin();
+        } else if (result && result.locked) {
+          // v3.8.8: backend signaliserer at token er midlertidig låst pga.
+          // for mange mislykkede PIN-forsøk. Vi tømmer feltet og forteller
+          // kunden at de må vente — lockout-vinduet er 1 time.
+          this._showError(window.I18n ? window.I18n.t("auth.pinLocked") : "For mange mislykkede forsøk. Prøv igjen om en time.");
+          if (pinEl) { pinEl.value = ""; pinEl.blur(); }
         } else {
           this._showError(window.I18n ? window.I18n.t("auth.pinWrong") : "Feil PIN. Prøv igjen.");
           if (pinEl) { pinEl.value = ""; pinEl.focus(); }
