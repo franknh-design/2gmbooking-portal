@@ -708,9 +708,25 @@
         <p class="thanks-ref">${tx("booking.thanksRef", { ref: escapeHtml(bookingRef) })}</p>
         <p class="thanks-sub">${tx("booking.thanksSub")}</p>
         ${warning ? `<p class="thanks-warning">${escapeHtml(warning)}</p>` : ""}
+        <button type="button" class="thanks-see-booking-btn" id="thanks-see-booking">
+          ${escapeHtml(tx("booking.thanksSeeBooking"))}
+        </button>
         <p class="thanks-foot">${tx("booking.thanksFoot")}</p>
       `;
       panel.appendChild(thanks);
+
+      // v3.8.5: scroll til Mine bookinger ved klikk — Mine bookinger ligger
+      // nederst, og filteret er allerede satt til "Kommende" så den nye
+      // bookingen er den første kunden ser når lista kommer i view.
+      const seeBtn = thanks.querySelector("#thanks-see-booking");
+      if (seeBtn) {
+        seeBtn.addEventListener("click", () => {
+          const mb = document.getElementById("mybookings-panel");
+          if (mb && typeof mb.scrollIntoView === "function") {
+            mb.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
     }
   };
 

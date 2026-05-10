@@ -1308,6 +1308,25 @@ input[type="date"]:disabled {
 /* v3.7.9: .new-booking-cta-bar / .booking-close-btn-stilene er fjernet —
    banneret og lukk-knappen er borte fra DOM. */
 
+/* v3.8.5: "Se din booking ↓"-knapp i Takk-skjermen som scroller til
+   Mine bookinger nederst på siden. Solid mørk bg matcher andre primary-CTAs. */
+.thanks-see-booking-btn {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 20px;
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity .12s, transform .08s;
+}
+.thanks-see-booking-btn:hover  { opacity: .85; transform: translateY(-1px); }
+.thanks-see-booking-btn:active { transform: translateY(0); }
+
 /* v3.5.3: gruppe-header i Mine bookinger — strekker seg over begge kolonner
    i 2-col grid og viser lokasjons-navn + antall. Cards under arver vanlig
    list-styling. */
