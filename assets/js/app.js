@@ -62,6 +62,17 @@
         document.addEventListener("i18n:change", () => loadCustomerFreeRooms(session.token));
       }
 
+      // v3.7.3: "Tøm datoer"-knapp under Fra dato — nullstiller fra+til
+       // og resetter kalender-valg så kunden kan starte velgingen på nytt.
+      const clearBtn = document.getElementById("f-clear-dates");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+          window.Booking.setDateRange("", "");
+          window.Calendar.setRange(null, null);
+          pickStage = "from";
+        });
+      }
+
       window.Calendar.init({
         locationId: initialLocId,
         onSelect: (iso /* , avail */) => {

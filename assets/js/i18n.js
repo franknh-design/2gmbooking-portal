@@ -55,6 +55,7 @@
       "freeRooms.now":       "Ledig nå",
       "freeRooms.from":      "Ledig fra {date}",
       "freeRooms.until":     "frem til {date}",
+      "booking.clearDates":  "Tøm datoer",
       "calendar.footnote":   "Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.",
 
       // Booking form
@@ -218,6 +219,7 @@
       "freeRooms.now":       "Free now",
       "freeRooms.from":      "Free from {date}",
       "freeRooms.until":     "until {date}",
+      "booking.clearDates":  "Clear dates",
       "calendar.footnote":   "Click a start date, then an end date. Click again to start over.",
 
       // Booking form
