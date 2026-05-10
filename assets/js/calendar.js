@@ -177,7 +177,13 @@
       if (!grid || !monthEl) return;
 
       const ms = months();
-      monthEl.textContent = `${ms[month]} ${year}`;
+      // v3.5.6: badge ved siden av månedsnavn når vi henter kapasitet,
+      // så det er tydelig at siden faktisk laster (ikke bare frosset UI).
+      const loadingTxt = window.I18n ? window.I18n.t("calendar.loading") : "laster…";
+      const loadingBadge = this.isLoading
+        ? ` <span class="cal-loading-tag">${loadingTxt}</span>`
+        : "";
+      monthEl.innerHTML = `${ms[month]} ${year}${loadingBadge}`;
       grid.innerHTML = "";
 
       // Fyll ukedags-headerne (én eller to grids).

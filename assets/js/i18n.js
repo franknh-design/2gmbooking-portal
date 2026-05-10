@@ -50,6 +50,7 @@
       "calendar.next":       "Neste måned",
       "calendar.full":       "Fullt",
       "calendar.available":  "{n} ledig",
+      "calendar.loading":    "laster…",
       "calendar.footnote":   "Klikk på startdato, deretter sluttdato. Klikk på nytt for å starte over.",
 
       // Booking form
@@ -208,6 +209,7 @@
       "calendar.next":       "Next month",
       "calendar.full":       "Full",
       "calendar.available":  "{n} free",
+      "calendar.loading":    "loading…",
       "calendar.footnote":   "Click a start date, then an end date. Click again to start over.",
 
       // Booking form
