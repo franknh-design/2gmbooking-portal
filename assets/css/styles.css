@@ -1251,6 +1251,12 @@ input[type="date"]:disabled {
   color: var(--color-text-tertiary);
   font-style: italic;
   font-size: 12px;
+  /* v3.6.2: bryt på 2 linjer ved skråstreken så teksten leses som
+     "Kode kommer snart / eller er allerede gitt" stablet. Centered. */
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 130px;
 }
 
 .mb-card-dates {
