@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debug — Availability</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #faf9f5;
+      color: #2C2C2A;
+      margin: 0;
+      padding: 24px;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: #888; font-size: 13px; margin-bottom: 20px; }
+    .row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 16px; }
+    .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+    label { font-size: 12px; font-weight: 600; color: #5F5E5A; }
+    input, select {
+      padding: 8px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid rgba(0,0,0,.18);
+      border-radius: 8px;
+      background: #fff;
+    }
+    button {
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      background: #2C2C2A;
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { opacity: .85; }
+    button.secondary {
+      background: #fff;
+      color: #2C2C2A;
+      border: 1px solid rgba(0,0,0,.2);
+    }
+    .summary {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .summary strong { color: #1B4F72; }
+    .ok { color: #0F6E56; font-weight: 600; }
+    .fail { color: #A32D2D; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #f5f4ef; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 12px; color: #5F5E5A; }
+    td { padding: 8px 10px; border-top: 1px solid rgba(0,0,0,.08); }
+    tr.row-own { background: rgba(15,110,86,.06); }
+    tr.row-excluded { background: rgba(163,45,45,.06); }
+    pre {
+      background: #2C2C2A;
+      color: #d6d3c8;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.4;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .pill {
+      display: inline-block;
+      padding: 1px 8px;
+      font-size: 11px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .pill-ok { background: rgba(15,110,86,.15); color: #0F6E56; }
+    .pill-fail { background: rgba(163,45,45,.12); color: #A32D2D; }
+    .pill-warn { background: rgba(239,159,39,.18); color: #854F0B; }
+    .muted { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>🔬 Debug — Availability long-term match</h1>
+  <p class="sub">Sjekker hvorfor et rom blir flagget som "fullt" for en spesifikk kunde, ved å dumpe long-term/full-tenant-tilstanden per rom på en property.</p>
+
+  <div class="row">
+    <div class="field">
+      <label for="d-token">Customer token</label>
+      <input id="d-token" type="text" placeholder="f.eks. salmar-7f3a9c" />
+    </div>
+    <div class="field" style="max-width:240px">
+      <label for="d-property">Property</label>
+      <select id="d-property">
+        <option value="strandveien112">Strandveien 112</option>
+        <option value="rigg24">Rigg 24</option>
+        <option value="rigg44">Rigg 44</option>
+        <option value="riggbotnhagen">Rigg Botnhågen</option>
+        <option value="andslimoen">Rigg Andslimoen</option>
+      </select>
+    </div>
+    <button id="d-run">🔬 Kjør diagnostikk</button>
+    <button class="secondary" id="d-copy">📋 Kopier råsvar</button>
+  </div>
+
+  <div id="d-output"></div>
+  <pre id="d-raw" style="display:none"></pre>
+
+  <script>
+    // Auto-fyll token fra URL hvis ?token=
+    const params = new URLSearchParams(location.search);
+    const tokenInput = document.getElementById('d-token');
+    if (params.get('token')) tokenInput.value = params.get('token');
+    if (params.get('property')) document.getElementById('d-property').value = params.get('property');
+
+    let _lastJson = null;
+
+    document.getElementById('d-run').addEventListener('click', async () => {
+      const token = tokenInput.value.trim();
+      const property = document.getElementById('d-property').value;
+      const out = document.getElementById('d-output');
+      const raw = document.getElementById('d-raw');
+      out.innerHTML = '<div class="summary muted">Henter…</div>';
+      raw.style.display = 'none';
+
+      try {
+        const r = await fetch('/api/debug-availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, property })
+        });
+        const data = await r.json();
+        _lastJson = data;
+        renderResult(data);
+        raw.textContent = JSON.stringify(data, null, 2);
+        raw.style.display = 'block';
+      } catch (e) {
+        out.innerHTML = `<div class="summary fail">Feil: ${escapeHtml(e.message)}</div>`;
+      }
+    });
+
+    document.getElementById('d-copy').addEventListener('click', () => {
+      if (!_lastJson) { alert('Kjør diagnostikk først.'); return; }
+      navigator.clipboard.writeText(JSON.stringify(_lastJson, null, 2))
+        .then(() => alert('✓ Kopiert til utklippstavle.'))
+        .catch(() => alert('Kunne ikke kopiere automatisk — marker råsvaret manuelt.'));
+    });
+
+    function renderResult(data) {
+      const out = document.getElementById('d-output');
+      if (!data || data.ok === false) {
+        out.innerHTML = `<div class="summary fail">Feil: ${escapeHtml((data && data.error) || 'ukjent')}</div>`;
+        return;
+      }
+      const p = data.property || {};
+      const s = data.summary || {};
+      const ftPill = p.ftMatch
+        ? '<span class="pill pill-ok">match</span>'
+        : '<span class="pill pill-fail">ingen match</span>';
+      const tokenPill = data.tokenProvided
+        ? (data.customerFirma ? '<span class="pill pill-ok">OK</span>' : '<span class="pill pill-fail">token funnet ikke</span>')
+        : '<span class="pill pill-warn">ingen token</span>';
+
+      let html = '';
+      html += `<div class="summary">`;
+      html += `<div><strong>Customer Firma fra token:</strong> ${escapeHtml(data.customerFirma || '(ingen)')} ${tokenPill}</div>`;
+      html += `<div style="margin-top:6px"><strong>Property:</strong> ${escapeHtml(p.name || '?')} · FullTenant_Company = "${escapeHtml(p.fullTenantCompany || '')}" ${ftPill}</div>`;
+      html += `<div style="margin-top:6px"><strong>Sammendrag:</strong> ${s.roomsTotal} rom totalt · ${s.roomsOwnLongTerm} regnes som kundens egen long-term · ${s.roomsExcluded} ekskludert fra ledighet</div>`;
+      html += `</div>`;
+
+      html += `<table><thead><tr>`;
+      html += `<th>Rom</th><th>LongTerm_Company</th><th>LongTerm_Start</th><th>ltMatch</th><th>ftMatch</th><th>isOwnLongTerm</th><th>Ekskludert</th>`;
+      html += `</tr></thead><tbody>`;
+      for (const r of data.rooms || []) {
+        const cls = r.isOwnLongTerm ? 'row-own' : (r.excludedFromAvailability ? 'row-excluded' : '');
+        html += `<tr class="${cls}">`;
+        html += `<td><strong>${escapeHtml(r.title || '?')}</strong></td>`;
+        html += `<td>${r.longTermCompany ? escapeHtml(r.longTermCompany) : '<span class="muted">(tom)</span>'}</td>`;
+        html += `<td>${r.longTermStart ? escapeHtml(String(r.longTermStart).slice(0,10)) : '<span class="muted">(tom)</span>'}</td>`;
+        html += `<td>${r.ltMatch ? '<span class="ok">✓</span>' : '<span class="muted">—</span>'}</td>`;
+        html += `<td>${r.ftMatch ? '<span class="ok">✓</span>' : '<span class="muted">—</span>'}</td>`;
+        html += `<td>${r.isOwnLongTerm ? '<span class="pill pill-ok">ja</span>' : '<span class="pill pill-fail">nei</span>'}</td>`;
+        html += `<td>${r.excludedFromAvailability ? '<span class="pill pill-fail">ja</span>' : '<span class="muted">nei</span>'}</td>`;
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      out.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // Auto-kjør hvis token er satt fra URL
+    if (params.get('token') && params.get('autorun') !== 'false') {
+      document.getElementById('d-run').click();
+    }
+  </script>
+</body>
+</html>
