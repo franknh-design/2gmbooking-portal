@@ -216,8 +216,37 @@
 
       this.listEl.innerHTML = "";
 
+      // v3.5.3: gruppér på lokasjon (b.property) og sorter rom stigende
+      // innenfor hver gruppe. Hjelper kunder med mange bookinger spredt
+      // over flere bygg å lese lista raskt.
+      const groups = new Map();
       for (const b of bookings) {
-        this.listEl.appendChild(this._renderBookingCard(b));
+        const key = (b.property || "").trim() || tx("mybookings.noLocation");
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(b);
+      }
+      const sortedKeys = Array.from(groups.keys())
+        .sort((a, b) => a.localeCompare(b, "nb", { sensitivity: "base" }));
+      for (const key of sortedKeys) {
+        groups.get(key).sort((a, b) => {
+          const an = String(a.roomNumber || "");
+          const bn = String(b.roomNumber || "");
+          if (!an && !bn) return 0;
+          if (!an) return 1;
+          if (!bn) return -1;
+          return an.localeCompare(bn, undefined, { numeric: true });
+        });
+      }
+
+      for (const key of sortedKeys) {
+        const group = groups.get(key);
+        const header = document.createElement("li");
+        header.className = "mb-group-header";
+        header.textContent = `${key} · ${group.length}`;
+        this.listEl.appendChild(header);
+        for (const b of group) {
+          this.listEl.appendChild(this._renderBookingCard(b));
+        }
       }
     },
 

@@ -130,6 +130,7 @@
       "mybookings.extend":        "Forleng oppholdet",
       "mybookings.endRental":     "Avslutt leien",
       "mybookings.actionsTitle":  "Hva vil du gjøre?",
+      "mybookings.noLocation":    "Uten lokasjon",
 
       // Forleng-dialog
       "extend.title":   "Forleng oppholdet",
@@ -287,6 +288,7 @@
       "mybookings.extend":        "Extend stay",
       "mybookings.endRental":     "End rental",
       "mybookings.actionsTitle":  "What would you like to do?",
+      "mybookings.noLocation":    "No location",
 
       // Extend dialog
       "extend.title":   "Extend stay",

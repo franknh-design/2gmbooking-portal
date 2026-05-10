@@ -1097,6 +1097,22 @@ input[type="date"]:disabled {
   border-color: var(--color-border-primary);
 }
 
+/* v3.5.3: gruppe-header i Mine bookinger — strekker seg over begge kolonner
+   i 2-col grid og viser lokasjons-navn + antall. Cards under arver vanlig
+   list-styling. */
+.mb-group-header {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 14px 0 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: .02em;
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+.mb-group-header:first-child { margin-top: 0; }
+
 /* List-wrapper: 720px single-col, 2-col grid over 752px */
 .mb-list {
   list-style: none;
