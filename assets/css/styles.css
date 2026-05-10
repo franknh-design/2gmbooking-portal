@@ -504,6 +504,9 @@ input, select, button { font-family: inherit; }
   color: inherit;
 }
 .fr-chevron {
+  /* v3.8.1: order:3 så chevron havner sist (etter title order:1 + count order:2)
+     — uten det havnet chevron først og dyttet tittel + count til høyre. */
+  order: 3;
   margin-left: auto;
   width: 28px;
   height: 28px;
