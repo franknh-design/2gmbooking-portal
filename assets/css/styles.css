@@ -1043,106 +1043,154 @@ input[type="date"]:disabled {
   gap: 8px;
 }
 
-/* Booking-card v3.3.5: 2-kolonne flex-layout — datoer venstre, dørkode høyre.
-   Header har navn venstre, status·ref høyre. Adresse merges inn i subline. */
-.mb-row,
-.mb-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+/* Booking-card v3.4.0: 3-kolonne grid (venstre info | midt dørkode | høyre dato).
+   Listen er enten 1 eller 2 kort per rad avhengig av wrapper-bredde. */
+
+/* +Ny bestilling-banner under topbar */
+.new-booking-cta-bar {
+  background: var(--color-background-secondary);
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+  padding: 10px 16px;
 }
-.mb-card-head {
+.new-booking-cta-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 1px;
+  justify-content: flex-end;
 }
-.mb-card-head-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.mb-card-name {
-  margin: 0;
-  font-size: 14px;
+.new-booking-cta-btn {
+  background: var(--color-text-primary);
+  color: var(--color-background-primary);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  padding: 8px 16px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--c-text);
-  line-height: 1.2;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .12s, transform .08s;
 }
-.mb-card-sub {
-  font-size: 12px;
-  color: var(--c-muted);
-  margin-bottom: 6px;
-}
-.mb-card-info-row {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  margin-top: 4px;
-}
-.mb-card-info-stack {
-  flex: 1 1 auto;
+.new-booking-cta-btn:hover  { opacity: .85; transform: translateY(-1px); }
+.new-booking-cta-btn:active { transform: translateY(0); }
+
+/* List-wrapper: 720px single-col, 2-col grid over 752px */
+.mb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 12px;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+@media (min-width: 752px) {
+  .mb-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1200px;
+  }
+}
+
+.mb-row,
+.mb-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.mb-card-col-left  { min-width: 0; }
+.mb-card-col-mid   {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+}
+.mb-card-col-right {
+  text-align: right;
   min-width: 0;
 }
-.mb-card-info-stack-right {
-  flex: 0 0 auto;
-  align-items: flex-end;
-}
-.mb-card-info-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.3;
-}
-.mb-card-info-label {
-  color: var(--c-muted);
-  font-size: 11px;
+
+.mb-card-name {
+  font-size: 14px;
   font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.2;
   white-space: nowrap;
-  min-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.mb-card-info-value {
-  color: var(--c-text);
-  font-variant-numeric: tabular-nums;
+.mb-card-prop {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.mb-card-addr {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mb-icon { display: inline-block; flex-shrink: 0; }
+.mb-icon-building { color: var(--color-text-secondary); }
+.mb-icon-key      { color: var(--color-text-secondary); }
+
 .mb-card-doorcode-value {
   font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: .1em;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 4px;
   color: var(--color-text-primary);
-  background: var(--color-background-tertiary);
-  border: 0.5px solid var(--color-border-tertiary);
-  padding: 1px 8px;
-  border-radius: var(--border-radius-sm);
-  display: inline-block;
+  white-space: nowrap;
 }
 .mb-card-doorcode-pending {
   color: var(--color-text-tertiary);
   font-style: italic;
   font-size: 12px;
 }
-.mb-card-ref {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
+
+.mb-card-dates {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
-.mb-card-actions {
-  margin-top: 8px;
-  display: flex;
+.mb-card-nights {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
+.mb-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
   justify-content: flex-end;
 }
-/* Stil A: klikkbar booking-card åpner action-meny. Subtilt hover-hint. */
+.mb-card-ref {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+/* Klikkbart kort: cursor + subtil hover */
 .mb-card-clickable {
   cursor: pointer;
   transition: background .12s, border-color .12s;
@@ -1154,6 +1202,17 @@ input[type="date"]:disabled {
 .mb-card-clickable:focus-visible {
   outline: 2px solid var(--color-text-primary);
   outline-offset: 2px;
+}
+
+/* Mobil ≤600px: behold 3 kolonner men strammere padding/gap */
+@media (max-width: 600px) {
+  .mb-row,
+  .mb-card {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .mb-card-doorcode-value { letter-spacing: 3px; font-size: 20px; }
+  .mb-card-nights { display: none; }
 }
 
 /* Action-meny dialog (åpnes ved klikk på booking-card). */
@@ -1278,15 +1337,20 @@ input[type="date"]:disabled {
   letter-spacing: .2px;
   text-transform: uppercase;
 }
+/* v3.4.0: Aktiv blir blå (info-palette), Bekreftet beholder grønn (success). */
 .mb-status-active {
-  background: var(--c-green-bg);
-  color: var(--c-green-fg);
+  background: var(--c-blue-100);
+  color: var(--c-blue-900);
 }
 .mb-status-upcoming {
-  background: var(--c-green-bg);
-  color: var(--c-green-fg);
+  background: var(--color-background-success);
+  color: var(--color-text-success);
 }
 .mb-status-pending {
-  background: var(--c-amber-bg);
-  color: var(--c-amber-fg);
+  background: var(--color-background-warning);
+  color: var(--color-text-warning);
+}
+.mb-status-cancelled {
+  background: var(--color-background-danger);
+  color: var(--color-text-danger);
 }

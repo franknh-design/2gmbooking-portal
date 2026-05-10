@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.3.9 -->
+<!-- v3.4.0 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -78,11 +78,17 @@
           <button type="button" data-lang-btn="nb" class="lang-btn">NB</button>
           <button type="button" data-lang-btn="en" class="lang-btn">EN</button>
         </div>
-        <button type="button" class="topbar-cta" id="topbar-new-booking" data-i18n="topbar.newBooking" hidden>+ Ny bestilling</button>
         <span class="badge badge-customer" id="customer-badge">—</span>
         <button type="button" class="topbar-logout" id="btn-logout" data-i18n="topbar.logout" hidden>Logg ut</button>
       </div>
     </header>
+
+    <!-- + Ny bestilling: separat banner-knapp under topbar (flyttet ut av topbar i v3.4.0) -->
+    <div class="new-booking-cta-bar" id="newBookingCtaBar" hidden>
+      <div class="new-booking-cta-wrap">
+        <button type="button" class="new-booking-cta-btn" id="topbar-new-booking" data-i18n="topbar.newBooking">+ Ny bestilling</button>
+      </div>
+    </div>
 
     <!-- Mine bookinger over alt annet — kollapser via :has() når lista er hidden -->
     <div class="mybookings-top">
@@ -199,7 +205,7 @@
     </main>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.3.9</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.4.0</small>
     </footer>
   </div>
 

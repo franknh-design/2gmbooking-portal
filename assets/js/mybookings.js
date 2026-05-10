@@ -18,6 +18,10 @@
   "use strict";
 
   function tx(key, vars) { return window.I18n ? window.I18n.t(key, vars) : key; }
+
+  // Tabler-style inline SVG-ikoner. Inline så vi unngår icon-bibliotek.
+  const SVG_BUILDING = '<svg class="mb-icon mb-icon-building" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/></svg>';
+  const SVG_KEY = '<svg class="mb-icon mb-icon-key" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z"/><path d="M15 9h.01"/></svg>';
   function shortMonths() {
     return (window.I18n && window.I18n.t("months.short")) || [
       "jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"
@@ -87,6 +91,9 @@
     } else if (status === "Upcoming") {
       wrap.classList.add("mb-status-upcoming");
       wrap.textContent = tx("mybookings.statusUpcoming");
+    } else if (status === "Cancelled") {
+      wrap.classList.add("mb-status-cancelled");
+      wrap.textContent = tx("mybookings.statusCancelled");
     } else {
       wrap.textContent = status || "—";
     }
@@ -218,64 +225,79 @@
       const row = document.createElement("li");
       row.className = "mb-row mb-card";
 
-      // ----- Header: navn + status·ref til høyre -----
-      const head = document.createElement("div");
-      head.className = "mb-card-head";
+      // ----- VENSTRE: navn + property/rom + adresse -----
+      const left = document.createElement("div");
+      left.className = "mb-card-col-left";
 
-      const nameEl = document.createElement("h3");
+      const nameEl = document.createElement("div");
       nameEl.className = "mb-card-name";
       nameEl.textContent = b.guest || tx("mybookings.unnamed");
-      head.appendChild(nameEl);
+      left.appendChild(nameEl);
 
+      const propEl = document.createElement("div");
+      propEl.className = "mb-card-prop";
+      propEl.innerHTML = SVG_BUILDING + "<span></span>";
+      const propTxt = b.roomNumber
+        ? `${b.property || "—"} · ${tx("mybookings.room", { n: b.roomNumber })}`
+        : (b.property || "—");
+      propEl.querySelector("span").textContent = propTxt;
+      left.appendChild(propEl);
+
+      if (b.propertyAddress) {
+        const addrEl = document.createElement("div");
+        addrEl.className = "mb-card-addr";
+        addrEl.textContent = b.propertyAddress;
+        left.appendChild(addrEl);
+      }
+      row.appendChild(left);
+
+      // ----- MIDT: dørkode med nøkkel-ikon (auto-bredde) -----
+      const mid = document.createElement("div");
+      mid.className = "mb-card-col-mid";
+      if (b.roomNumber) {
+        mid.innerHTML = SVG_KEY;
+        const codeSpan = document.createElement("span");
+        if (b.doorCode) {
+          codeSpan.className = "mb-card-doorcode-value";
+          codeSpan.textContent = formatDoorCodeDigits(b.doorCode);
+        } else {
+          codeSpan.className = "mb-card-doorcode-pending";
+          codeSpan.textContent = tx("mybookings.doorCodePending");
+        }
+        mid.appendChild(codeSpan);
+      }
+      row.appendChild(mid);
+
+      // ----- HØYRE: dato + netter + status·ref -----
       const right = document.createElement("div");
-      right.className = "mb-card-head-right";
-      right.appendChild(statusBadge(b.status, b.pendingConfirmation));
+      right.className = "mb-card-col-right";
+
+      const datesEl = document.createElement("div");
+      datesEl.className = "mb-card-dates";
+      datesEl.textContent = formatBookingDates(b.checkIn, b.checkOut);
+      right.appendChild(datesEl);
+
+      const nightsEl = document.createElement("div");
+      nightsEl.className = "mb-card-nights";
+      if (b.checkOut) {
+        const n = nightsBetween(b.checkIn, b.checkOut);
+        nightsEl.textContent = tx(n === 1 ? "mybookings.nightsOne" : "mybookings.nightsMany", { n });
+      } else {
+        nightsEl.textContent = tx("mybookings.openPeriod");
+      }
+      right.appendChild(nightsEl);
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "mb-card-meta";
+      metaEl.appendChild(statusBadge(b.status, b.pendingConfirmation));
       if (b.ref) {
         const refEl = document.createElement("span");
         refEl.className = "mb-card-ref";
         refEl.textContent = b.ref;
-        right.appendChild(refEl);
+        metaEl.appendChild(refEl);
       }
-      head.appendChild(right);
-      row.appendChild(head);
-
-      // ----- Subline: property · rom · adresse (alt på én linje) -----
-      const subParts = [b.property || "—"];
-      if (b.roomNumber) subParts.push(tx("mybookings.room", { n: b.roomNumber }));
-      if (b.propertyAddress) subParts.push(b.propertyAddress);
-      const sub = document.createElement("div");
-      sub.className = "mb-card-sub";
-      sub.textContent = subParts.join(" · ");
-      row.appendChild(sub);
-
-      // ----- Info-flex: venstre stack (datoer) + høyre stack (dørkode) -----
-      const infoRow = document.createElement("div");
-      infoRow.className = "mb-card-info-row";
-
-      const leftStack = document.createElement("div");
-      leftStack.className = "mb-card-info-stack";
-      leftStack.appendChild(_infoItem(tx("mybookings.lblCheckIn"), _formatDateNb(b.checkIn) || "—"));
-
-      let outVal;
-      if (b.checkOut) {
-        const n = nightsBetween(b.checkIn, b.checkOut);
-        const nightsTxt = tx(n === 1 ? "mybookings.nightsOne" : "mybookings.nightsMany", { n });
-        outVal = `${_formatDateNb(b.checkOut)} · ${nightsTxt}`;
-      } else {
-        outVal = tx("mybookings.openPeriod");
-      }
-      leftStack.appendChild(_infoItem(tx("mybookings.lblCheckOut"), outVal));
-      infoRow.appendChild(leftStack);
-
-      // Høyre stack: Dørkode (kun når rom er tildelt — uten rom ingen kode)
-      if (b.roomNumber) {
-        const rightStack = document.createElement("div");
-        rightStack.className = "mb-card-info-stack mb-card-info-stack-right";
-        rightStack.appendChild(_doorCodeItem(b.doorCode));
-        infoRow.appendChild(rightStack);
-      }
-
-      row.appendChild(infoRow);
+      right.appendChild(metaEl);
+      row.appendChild(right);
 
       // ----- Klikkbar kort: åpner action-meny hvis det finnes valg å gjøre -----
       const canExtend = (b.status === "Active" || b.status === "Upcoming") && b.checkOut;
@@ -495,43 +517,8 @@
     return p ? ddmmyyyy(p) : "";
   }
 
-  function _infoItem(label, value) {
-    const wrap = document.createElement("div");
-    wrap.className = "mb-card-info-item";
-    const lbl = document.createElement("span");
-    lbl.className = "mb-card-info-label";
-    lbl.textContent = label;
-    const val = document.createElement("span");
-    val.className = "mb-card-info-value";
-    val.textContent = value;
-    wrap.appendChild(lbl);
-    wrap.appendChild(val);
-    return wrap;
-  }
-
-  function _doorCodeItem(code) {
-    const wrap = document.createElement("div");
-    wrap.className = "mb-card-info-item mb-card-info-item-doorcode";
-    const lbl = document.createElement("span");
-    lbl.className = "mb-card-info-label";
-    lbl.textContent = "🔑 " + tx("mybookings.doorCodeLabel");
-    const val = document.createElement("span");
-    val.className = "mb-card-info-value";
-    if (code) {
-      const span = document.createElement("span");
-      span.className = "mb-card-doorcode-value";
-      span.textContent = formatDoorCodeDigits(code);
-      val.appendChild(span);
-    } else {
-      const span = document.createElement("span");
-      span.className = "mb-card-doorcode-pending";
-      span.textContent = tx("mybookings.doorCodePending");
-      val.appendChild(span);
-    }
-    wrap.appendChild(lbl);
-    wrap.appendChild(val);
-    return wrap;
-  }
+  // v3.4.0: _infoItem / _doorCodeItem ble fjernet — kortet bygges nå
+  // direkte i _renderBookingCard med 3-kolonne grid.
 
   // ---- Toggle-håndtering: topbar-CTA, layout, panel-collapse ----
   let _topbarWired = false;
@@ -568,8 +555,9 @@
   }
 
   function setTopbarCtaVisible(visible) {
-    const btn = document.getElementById("topbar-new-booking");
-    if (btn) btn.hidden = !visible;
+    // v3.4.0: toggler hele banner-baren under topbar, ikke bare knappen.
+    const bar = document.getElementById("newBookingCtaBar");
+    if (bar) bar.hidden = !visible;
   }
 
   function setPanelCollapsed(panel, collapsed) {
