@@ -605,6 +605,19 @@ input, select, button { font-family: inherit; }
   gap: 14px;
 }
 
+/* v3.6.4: visuelt grupperer Lokasjon + Fra/Til dato — disse styrer hele
+   bestillingen og må trekke blikket. Soft warm bakgrunn + tynnt border, så
+   den skiller seg fra resten av skjemaet uten å bli "støy". */
+.booking-key-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 14px 16px;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--radius-md);
+}
+
 .field {
   display: flex;
   flex-direction: column;

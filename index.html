@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.6.3 -->
+<!-- v3.6.4 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -23,7 +23,7 @@
       <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
       <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
-      <!-- v3.6.3: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
+      <!-- v3.6.4: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
       <form id="auth-pin-form" class="auth-form" novalidate>
         <label class="field">
           <span class="field-label" data-i18n="auth.pinLabel">PIN-kode</span>
@@ -135,23 +135,28 @@
         </div>
 
         <form id="booking-form" class="booking-form" novalidate>
-          <label class="field">
-            <span class="field-label" data-i18n="booking.location">Lokasjon</span>
-            <select id="f-location" name="location" required></select>
-          </label>
-
-          <div class="field-row">
+          <!-- v3.6.4: Lokasjon + Fra/Til dato i en visuell gruppe — dette er
+               grunnvalgene som styrer hele bestillingen, så de fortjener et
+               eget fremhevet felt så kunden ikke hopper rett til gjeste-listen. -->
+          <div class="booking-key-fields">
             <label class="field">
-              <span class="field-label" data-i18n="booking.from">Fra dato</span>
-              <input type="date" id="f-from" name="from" required />
+              <span class="field-label" data-i18n="booking.location">Lokasjon</span>
+              <select id="f-location" name="location" required></select>
             </label>
-            <div class="field">
-              <label class="field-label" for="f-to" data-i18n="booking.to">Til dato</label>
-              <input type="date" id="f-to" name="to" />
-              <label class="checkbox" for="f-open-ended">
-                <input type="checkbox" id="f-open-ended" name="openEnded" />
-                <span data-i18n="booking.openEnded">Vet ikke utflyttingsdato (open-ended)</span>
+
+            <div class="field-row">
+              <label class="field">
+                <span class="field-label" data-i18n="booking.from">Fra dato</span>
+                <input type="date" id="f-from" name="from" required />
               </label>
+              <div class="field">
+                <label class="field-label" for="f-to" data-i18n="booking.to">Til dato</label>
+                <input type="date" id="f-to" name="to" />
+                <label class="checkbox" for="f-open-ended">
+                  <input type="checkbox" id="f-open-ended" name="openEnded" />
+                  <span data-i18n="booking.openEnded">Vet ikke utflyttingsdato (open-ended)</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -189,7 +194,7 @@
     </main>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.6.3</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.6.4</small>
     </footer>
   </div>
 
