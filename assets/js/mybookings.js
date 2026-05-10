@@ -40,6 +40,40 @@
     return `${fromTxt} → ${toTxt}`;
   }
 
+  // Kortere format for booking-card: "10.05 → 24.05.2026"
+  // Innen samme år: kort start (DD.MM) + full slutt (DD.MM.YYYY).
+  // Ved årsskifte: full DD.MM.YYYY på begge for å unngå tvetydighet.
+  function formatBookingDates(checkIn, checkOut) {
+    if (!checkIn) return "";
+    const d1 = parseIso(checkIn);
+    if (!d1) return "";
+    if (!checkOut) return `${ddmmyyyy(d1)} → ${tx("mybookings.openPeriod")}`;
+    const d2 = parseIso(checkOut);
+    if (!d2) return "";
+    if (d1.y === d2.y) return `${ddmm(d1)} → ${ddmmyyyy(d2)}`;
+    return `${ddmmyyyy(d1)} → ${ddmmyyyy(d2)}`;
+  }
+
+  function parseIso(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? { y: m[1], m: m[2], d: m[3] } : null;
+  }
+  function ddmm(p)     { return `${p.d}.${p.m}`; }
+  function ddmmyyyy(p) { return `${p.d}.${p.m}.${p.y}`; }
+
+  function nightsBetween(checkIn, checkOut) {
+    if (!checkIn || !checkOut) return null;
+    const d1 = new Date(checkIn);
+    const d2 = new Date(checkOut);
+    if (isNaN(d1) || isNaN(d2)) return null;
+    return Math.max(0, Math.round((d2 - d1) / 86400000));
+  }
+
+  function formatDoorCodeDigits(code) {
+    if (!code) return "";
+    return String(code).split("").join(" ");
+  }
+
   function statusBadge(status, pending) {
     const wrap = document.createElement("span");
     wrap.className = "mb-status";
@@ -176,82 +210,108 @@
       this.listEl.innerHTML = "";
 
       for (const b of bookings) {
-        const row = document.createElement("li");
-        row.className = "mb-row";
-
-        const main = document.createElement("div");
-        main.className = "mb-row-main";
-
-        const guestEl = document.createElement("span");
-        guestEl.className = "mb-guest";
-        guestEl.textContent = b.guest || tx("mybookings.unnamed");
-        main.appendChild(guestEl);
-
-        const periodEl = document.createElement("span");
-        periodEl.className = "mb-period";
-        periodEl.textContent = formatPeriod(b.checkIn, b.checkOut);
-        main.appendChild(periodEl);
-
-        row.appendChild(main);
-
-        const meta = document.createElement("div");
-        meta.className = "mb-row-meta";
-
-        const propEl = document.createElement("span");
-        propEl.className = "mb-property";
-        propEl.textContent = b.property || "—";
-        meta.appendChild(propEl);
-
-        if (b.ref) {
-          const refEl = document.createElement("span");
-          refEl.className = "mb-ref";
-          refEl.textContent = b.ref;
-          meta.appendChild(refEl);
-        }
-
-        if (b.roomNumber) {
-          const roomEl = document.createElement("span");
-          roomEl.className = "mb-room";
-          roomEl.textContent = tx("mybookings.room", { n: b.roomNumber });
-          meta.appendChild(roomEl);
-        }
-
-        if (b.doorCode) {
-          const codeEl = document.createElement("span");
-          codeEl.className = "mb-doorcode";
-          codeEl.textContent = tx("mybookings.code", { code: b.doorCode });
-          meta.appendChild(codeEl);
-        }
-
-        meta.appendChild(statusBadge(b.status, b.pendingConfirmation));
-
-        row.appendChild(meta);
-
-        if (b.propertyAddress) {
-          const addrEl = document.createElement("div");
-          addrEl.className = "mb-address";
-          addrEl.textContent = b.propertyAddress;
-          row.appendChild(addrEl);
-        }
-
-        // Forleng-knapp kun på aktive bookinger med satt utflytting.
-        // Open-ended (Check_Out null) trenger ikke forlengelse.
-        if (b.status === "Active" && b.checkOut) {
-          const actions = document.createElement("div");
-          actions.className = "mb-actions";
-
-          const extendBtn = document.createElement("button");
-          extendBtn.type = "button";
-          extendBtn.className = "btn btn-ghost mb-extend-btn";
-          extendBtn.textContent = tx("mybookings.extend");
-          extendBtn.addEventListener("click", () => openExtendDialog(b, this));
-          actions.appendChild(extendBtn);
-
-          row.appendChild(actions);
-        }
-
-        this.listEl.appendChild(row);
+        this.listEl.appendChild(this._renderBookingCard(b));
       }
+    },
+
+    _renderBookingCard(b) {
+      const row = document.createElement("li");
+      row.className = "mb-row mb-card";
+
+      // ----- Top: 2-kolonne grid -----
+      const grid = document.createElement("div");
+      grid.className = "mb-card-grid";
+
+      // Venstre: navn + property/rom + adresse
+      const left = document.createElement("div");
+      left.className = "mb-card-left";
+
+      const nameEl = document.createElement("h3");
+      nameEl.className = "mb-card-name";
+      nameEl.textContent = b.guest || tx("mybookings.unnamed");
+      left.appendChild(nameEl);
+
+      const locEl = document.createElement("div");
+      locEl.className = "mb-card-loc";
+      locEl.textContent = b.roomNumber
+        ? `${b.property || "—"} · ${tx("mybookings.room", { n: b.roomNumber })}`
+        : (b.property || "—");
+      left.appendChild(locEl);
+
+      if (b.propertyAddress) {
+        const addrEl = document.createElement("div");
+        addrEl.className = "mb-card-addr";
+        addrEl.textContent = b.propertyAddress;
+        left.appendChild(addrEl);
+      }
+
+      // Høyre: dato + netter + status·ref
+      const right = document.createElement("div");
+      right.className = "mb-card-right";
+
+      const datesEl = document.createElement("div");
+      datesEl.className = "mb-card-dates";
+      datesEl.textContent = formatBookingDates(b.checkIn, b.checkOut);
+      right.appendChild(datesEl);
+
+      const nightsEl = document.createElement("div");
+      nightsEl.className = "mb-card-nights";
+      if (b.checkOut) {
+        const n = nightsBetween(b.checkIn, b.checkOut);
+        nightsEl.textContent = tx(n === 1 ? "mybookings.nightsOne" : "mybookings.nightsMany", { n });
+      } else {
+        nightsEl.textContent = tx("mybookings.openPeriod");
+      }
+      right.appendChild(nightsEl);
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "mb-card-meta";
+      metaEl.appendChild(statusBadge(b.status, b.pendingConfirmation));
+      if (b.ref) {
+        const sep = document.createElement("span");
+        sep.className = "mb-card-meta-sep";
+        sep.textContent = " · ";
+        metaEl.appendChild(sep);
+        const refEl = document.createElement("span");
+        refEl.className = "mb-card-ref";
+        refEl.textContent = b.ref;
+        metaEl.appendChild(refEl);
+      }
+      right.appendChild(metaEl);
+
+      grid.appendChild(left);
+      grid.appendChild(right);
+      row.appendChild(grid);
+
+      // ----- Bunn: dørkode-sone -----
+      const code = document.createElement("div");
+      code.className = "mb-card-doorcode" + (b.doorCode ? "" : " empty");
+      const codeVal = document.createElement("div");
+      codeVal.className = "mb-card-doorcode-value";
+      codeVal.textContent = b.doorCode
+        ? `🔑 ${formatDoorCodeDigits(b.doorCode)}`
+        : tx("mybookings.doorCodePending");
+      const codeLbl = document.createElement("div");
+      codeLbl.className = "mb-card-doorcode-label";
+      codeLbl.textContent = tx("mybookings.doorCodeLabel");
+      code.appendChild(codeVal);
+      code.appendChild(codeLbl);
+      row.appendChild(code);
+
+      // ----- Forleng-knapp på aktive bookinger med satt utflytting -----
+      if (b.status === "Active" && b.checkOut) {
+        const actions = document.createElement("div");
+        actions.className = "mb-actions mb-card-actions";
+        const extendBtn = document.createElement("button");
+        extendBtn.type = "button";
+        extendBtn.className = "btn btn-ghost mb-extend-btn";
+        extendBtn.textContent = tx("mybookings.extend");
+        extendBtn.addEventListener("click", () => openExtendDialog(b, this));
+        actions.appendChild(extendBtn);
+        row.appendChild(actions);
+      }
+
+      return row;
     },
   };
 
