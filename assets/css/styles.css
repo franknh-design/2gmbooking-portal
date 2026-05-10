@@ -1,28 +1,156 @@
 /* =========================================================
    2GM Eiendom – Bestillingsportal
+   v3.3.6: Adopterer Anthropic-inspirert palette (9 fargefamilier × 7 stops
+   + semantiske aliaser + dark mode). 2GM-blå beholdes som brand.
+   Eldre --c-* variabler er bevart som aliaser så ingen eksisterende regler
+   brytes — nye regler bør bruke --color-*-tokens.
    ========================================================= */
 
 :root {
-  --c-brand: #1B4F72;
-  --c-brand-dark: #143a55;
-  --c-brand-light: #2a6a98;
+  /* ====== Fargestops — 9 familier × 7 stops ====== */
 
-  --c-text: #1f2937;
-  --c-muted: #6b7280;
-  --c-border: #e5e7eb;
-  --c-bg: #f5f7fa;
-  --c-surface: #ffffff;
+  /* Purple — primær aksent */
+  --c-purple-50:  #EEEDFE;
+  --c-purple-100: #CECBF6;
+  --c-purple-200: #AFA9EC;
+  --c-purple-400: #7F77DD;
+  --c-purple-600: #534AB7;
+  --c-purple-800: #3C3489;
+  --c-purple-900: #26215C;
 
-  --c-green-bg: #EAF3DE;
-  --c-green-fg: #3B6D11;
-  --c-amber-bg: #FAEEDA;
-  --c-amber-fg: #854F0B;
-  --c-red-bg:   #FCEBEB;
-  --c-red-fg:   #A32D2D;
+  /* Teal — alternativ aksent */
+  --c-teal-50:  #E1F5EE;
+  --c-teal-100: #9FE1CB;
+  --c-teal-200: #5DCAA5;
+  --c-teal-400: #1D9E75;
+  --c-teal-600: #0F6E56;
+  --c-teal-800: #085041;
+  --c-teal-900: #04342C;
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
+  /* Coral — varm aksent */
+  --c-coral-50:  #FAECE7;
+  --c-coral-100: #F5C4B3;
+  --c-coral-200: #F0997B;
+  --c-coral-400: #D85A30;
+  --c-coral-600: #993C1D;
+  --c-coral-800: #712B13;
+  --c-coral-900: #4A1B0C;
+
+  /* Pink */
+  --c-pink-50:  #FBEAF0;
+  --c-pink-100: #F4C0D1;
+  --c-pink-200: #ED93B1;
+  --c-pink-400: #D4537E;
+  --c-pink-600: #993556;
+  --c-pink-800: #72243E;
+  --c-pink-900: #4B1528;
+
+  /* Gray — nøytral */
+  --c-gray-50:  #F1EFE8;
+  --c-gray-100: #D3D1C7;
+  --c-gray-200: #B4B2A9;
+  --c-gray-400: #888780;
+  --c-gray-600: #5F5E5A;
+  --c-gray-800: #444441;
+  --c-gray-900: #2C2C2A;
+
+  /* Blue — info */
+  --c-blue-50:  #E6F1FB;
+  --c-blue-100: #B5D4F4;
+  --c-blue-200: #85B7EB;
+  --c-blue-400: #378ADD;
+  --c-blue-600: #185FA5;
+  --c-blue-800: #0C447C;
+  --c-blue-900: #042C53;
+
+  /* Green — suksess */
+  --c-green-50:  #EAF3DE;
+  --c-green-100: #C0DD97;
+  --c-green-200: #97C459;
+  --c-green-400: #639922;
+  --c-green-600: #3B6D11;
+  --c-green-800: #27500A;
+  --c-green-900: #173404;
+
+  /* Amber — advarsel */
+  --c-amber-50:  #FAEEDA;
+  --c-amber-100: #FAC775;
+  --c-amber-200: #EF9F27;
+  --c-amber-400: #BA7517;
+  --c-amber-600: #854F0B;
+  --c-amber-800: #633806;
+  --c-amber-900: #412402;
+
+  /* Red — feil/fare */
+  --c-red-50:  #FCEBEB;
+  --c-red-100: #F7C1C1;
+  --c-red-200: #F09595;
+  --c-red-400: #E24B4A;
+  --c-red-600: #A32D2D;
+  --c-red-800: #791F1F;
+  --c-red-900: #501313;
+
+  /* ====== Brand — 2GM ====== */
+  --color-brand:        #1B4F72;
+  --color-brand-light:  #2C6A95;
+  --color-brand-dark:   #143850;
+
+  /* ====== Semantiske aliaser ====== */
+  --color-background-primary:   #FFFFFF;
+  --color-background-secondary: #F7F5F0;
+  --color-background-tertiary:  #FAF9F5;
+  --color-background-info:      var(--c-blue-50);
+  --color-background-success:   var(--c-green-50);
+  --color-background-warning:   var(--c-amber-50);
+  --color-background-danger:    var(--c-red-50);
+
+  --color-text-primary:   #2C2C2A;
+  --color-text-secondary: #5F5E5A;
+  --color-text-tertiary:  #888780;
+  --color-text-info:      var(--c-blue-800);
+  --color-text-success:   var(--c-green-900);
+  --color-text-warning:   var(--c-amber-900);
+  --color-text-danger:    var(--c-red-900);
+  --color-text-on-brand:  #FFFFFF;
+
+  --color-border-tertiary:  rgba(0, 0, 0, 0.08);
+  --color-border-secondary: rgba(0, 0, 0, 0.15);
+  --color-border-primary:   rgba(0, 0, 0, 0.25);
+  --color-border-info:      var(--c-blue-200);
+  --color-border-success:   var(--c-green-200);
+  --color-border-warning:   var(--c-amber-200);
+  --color-border-danger:    var(--c-red-200);
+
+  /* ====== Layout ====== */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "Monaco", "Consolas", "Courier New", monospace;
+
+  /* ====== Bakoverkompatibilitet — eldre --c-* aliaser ====== */
+  --c-brand:       var(--color-brand);
+  --c-brand-light: var(--color-brand-light);
+  --c-brand-dark:  var(--color-brand-dark);
+
+  --c-text:    var(--color-text-primary);
+  --c-muted:   var(--color-text-tertiary);
+  --c-border:  var(--color-border-tertiary);
+  --c-bg:      var(--color-background-secondary);
+  --c-surface: var(--color-background-primary);
+
+  --c-green-bg: var(--color-background-success);
+  --c-green-fg: var(--color-text-success);
+  --c-amber-bg: var(--color-background-warning);
+  --c-amber-fg: var(--color-text-warning);
+  --c-red-bg:   var(--color-background-danger);
+  --c-red-fg:   var(--color-text-danger);
+
+  --radius:    var(--border-radius-lg);
+  --radius-sm: var(--border-radius-sm);
+  --shadow:    0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -30,6 +158,31 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+}
+
+/* ====== Dark mode ====== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary:   #1F1E1B;
+    --color-background-secondary: #2C2B27;
+    --color-background-tertiary:  #181816;
+    --color-background-info:      var(--c-blue-900);
+    --color-background-success:   var(--c-green-900);
+    --color-background-warning:   var(--c-amber-900);
+    --color-background-danger:    var(--c-red-900);
+
+    --color-text-primary:   #F1EFE8;
+    --color-text-secondary: #B4B2A9;
+    --color-text-tertiary:  #888780;
+    --color-text-info:      var(--c-blue-100);
+    --color-text-success:   var(--c-green-100);
+    --color-text-warning:   var(--c-amber-100);
+    --color-text-danger:    var(--c-red-100);
+
+    --color-border-tertiary:  rgba(255, 255, 255, 0.08);
+    --color-border-secondary: rgba(255, 255, 255, 0.15);
+    --color-border-primary:   rgba(255, 255, 255, 0.25);
+  }
 }
 
 * { box-sizing: border-box; }
