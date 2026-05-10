@@ -250,6 +250,34 @@
     }
   }
 
+  // --------------------------------------------------------------------------
+  // end-booking — kunden ber admin avslutte / forkorte oppholdet
+  // --------------------------------------------------------------------------
+
+  async function requestEnd({ token, bookingRef, requestedCheckOut }) {
+    if (!token || !bookingRef || !requestedCheckOut) {
+      return { ok: false, error: "missing_arguments" };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/end-booking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, bookingRef, requestedCheckOut })
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] end-booking feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] end-booking exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   window.Api = {
     validateToken,
     validatePin,
@@ -257,6 +285,7 @@
     clearAvailabilityCache,
     submitBooking,
     getMyBookings,
-    requestExtension
+    requestExtension,
+    requestEnd
   };
 })();

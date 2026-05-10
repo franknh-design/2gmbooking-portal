@@ -300,8 +300,11 @@
       row.appendChild(right);
 
       // ----- Klikkbar kort: åpner action-meny hvis det finnes valg å gjøre -----
-      const canExtend = (b.status === "Active" || b.status === "Upcoming") && b.checkOut;
-      if (canExtend) {
+      // v3.5.2: åpner menyen for ALLE Active/Upcoming-bookinger, også
+      // open-ended (uten checkOut) — kunden trenger Avslutt-handlingen
+      // selv (kanskje særlig) når oppholdet er åpent.
+      const canEdit = (b.status === "Active" || b.status === "Upcoming");
+      if (canEdit) {
         row.classList.add("mb-card-clickable");
         row.setAttribute("role", "button");
         row.setAttribute("tabindex", "0");
@@ -340,6 +343,8 @@
       // Re-render etiketter ved evt. språkbytte mellom kall
       dlg.querySelector(".action-menu-title").textContent  = tx("mybookings.actionsTitle");
       dlg.querySelector('[data-action="extend"]').textContent = tx("mybookings.extend");
+      const endBtn = dlg.querySelector('[data-action="end"]');
+      if (endBtn) endBtn.textContent = tx("mybookings.endRental");
       dlg.querySelector('[data-action="close"]').textContent  = tx("extend.cancel");
       return dlg;
     }
@@ -353,6 +358,7 @@
         <h3 class="extend-dlg-title action-menu-title">${tx("mybookings.actionsTitle")}</h3>
         <div class="action-menu-buttons">
           <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${tx("mybookings.extend")}</button>
+          <button type="button" data-action="end"    class="action-menu-btn">${tx("mybookings.endRental")}</button>
           <button type="button" data-action="close"  class="action-menu-btn">${tx("extend.cancel")}</button>
         </div>
       </div>
@@ -368,10 +374,141 @@
         const ref = dlg._mybookingsRef;
         dlg.close ? dlg.close() : dlg.removeAttribute("open");
         openExtendDialog(b, ref);
+      } else if (action === "end") {
+        const b = dlg._booking;
+        const ref = dlg._mybookingsRef;
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+        openEndDialog(b, ref);
       }
     });
 
     return dlg;
+  }
+
+  // ---- Avslutt-leien-dialog (v3.5.2) ----
+  // Brukt både for open-ended bookinger (sett ny utflyttingsdato) og for
+  // å forkorte et eksisterende opphold. API'et er separat fra extend så
+  // valideringen kan være motsatt: req må være >= i dag og >= check-in,
+  // men kan godt være FØR nåværende Check_Out.
+  function openEndDialog(booking, mybookingsRef) {
+    const dlg = ensureEndDialog();
+    if (!dlg) {
+      const ans = window.prompt(
+        tx("end.fallbackPrompt", { ref: booking.ref }),
+        new Date().toISOString().slice(0, 10)
+      );
+      if (ans) submitEnd(booking, ans, mybookingsRef);
+      return;
+    }
+
+    const refTxt     = booking.ref;
+    const currentTxt = booking.checkOut
+      ? (formatIso(booking.checkOut) || booking.checkOut)
+      : tx("end.openEnded");
+    const subRaw     = tx("end.subPart", { ref: "{REF}", current: "{CUR}" });
+    const subSafe    = subRaw
+      .replace("{REF}",  `<strong>${escapeHtml(refTxt)}</strong>`)
+      .replace("{CUR}",  `<strong>${escapeHtml(String(currentTxt))}</strong>`);
+    dlg.querySelector(".extend-dlg-sub").innerHTML = subSafe;
+
+    dlg.querySelector(".extend-dlg-title").textContent = tx("end.title");
+    dlg.querySelector(".extend-dlg-newdate-label").textContent = tx("end.newDate");
+    dlg.querySelector('[data-action="cancel"]').textContent = tx("extend.cancel");
+    dlg.querySelector('[data-action="submit"]').textContent = tx("end.send");
+
+    const input = dlg.querySelector("input[name=newDate]");
+    const todayIso = new Date().toISOString().slice(0, 10);
+    // Min: enten check-in (hvis i fremtiden) eller i dag
+    const minIso = (booking.checkIn && booking.checkIn > todayIso) ? booking.checkIn : todayIso;
+    input.min = minIso;
+    input.value = todayIso > minIso ? todayIso : minIso;
+    dlg.querySelector(".extend-dlg-msg").textContent = "";
+
+    dlg._booking = booking;
+    dlg._mybookingsRef = mybookingsRef;
+
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+  }
+
+  function ensureEndDialog() {
+    let dlg = document.getElementById("endDialog");
+    if (dlg) return dlg;
+
+    if (typeof HTMLDialogElement === "undefined") return null;
+
+    dlg = document.createElement("dialog");
+    dlg.id = "endDialog";
+    dlg.className = "extend-dlg";
+    dlg.innerHTML = `
+      <form method="dialog" class="extend-dlg-form">
+        <h3 class="extend-dlg-title"></h3>
+        <p class="extend-dlg-sub"></p>
+        <label class="field">
+          <span class="field-label extend-dlg-newdate-label"></span>
+          <input type="date" name="newDate" required />
+        </label>
+        <p class="extend-dlg-msg" aria-live="polite"></p>
+        <div class="extend-dlg-buttons">
+          <button type="button" class="btn btn-ghost" data-action="cancel"></button>
+          <button type="button" class="btn btn-primary" data-action="submit"></button>
+        </div>
+      </form>
+    `;
+    document.body.appendChild(dlg);
+
+    dlg.addEventListener("click", (e) => {
+      const action = e.target?.dataset?.action;
+      if (action === "cancel") {
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      } else if (action === "submit") {
+        const input = dlg.querySelector("input[name=newDate]");
+        const value = input.value;
+        const booking = dlg._booking;
+        if (!value) {
+          dlg.querySelector(".extend-dlg-msg").textContent = tx("extend.errPick");
+          return;
+        }
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const minIso = (booking.checkIn && booking.checkIn > todayIso) ? booking.checkIn : todayIso;
+        if (value < minIso) {
+          dlg.querySelector(".extend-dlg-msg").textContent =
+            tx("end.errMin", { date: formatIso(minIso) || minIso });
+          return;
+        }
+        submitEnd(booking, value, dlg._mybookingsRef, dlg);
+      }
+    });
+
+    return dlg;
+  }
+
+  async function submitEnd(booking, requestedCheckOut, mybookingsRef, dlg) {
+    const msgEl = dlg ? dlg.querySelector(".extend-dlg-msg") : null;
+    const submitBtn = dlg ? dlg.querySelector('[data-action="submit"]') : null;
+
+    if (msgEl) msgEl.textContent = tx("end.sending");
+    if (submitBtn) submitBtn.disabled = true;
+
+    const res = await window.Api.requestEnd({
+      token: mybookingsRef.token,
+      bookingRef: booking.ref,
+      requestedCheckOut,
+    });
+
+    if (submitBtn) submitBtn.disabled = false;
+
+    if (!res || !res.ok) {
+      const err = (res && res.error) || "unknown";
+      if (msgEl) msgEl.textContent = tx("end.errFail", { err });
+      else window.alert(tx("end.fallbackFail", { err }));
+      return;
+    }
+
+    if (dlg) {
+      dlg.close ? dlg.close() : dlg.removeAttribute("open");
+    }
+    window.alert(tx("end.success"));
   }
 
   // ---- Forleng-dialog ----

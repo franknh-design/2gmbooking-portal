@@ -128,6 +128,7 @@
       "mybookings.doorCodeLabel": "Dørkode",
       "mybookings.doorCodePending":"kommer snart",
       "mybookings.extend":        "Forleng oppholdet",
+      "mybookings.endRental":     "Avslutt leien",
       "mybookings.actionsTitle":  "Hva vil du gjøre?",
 
       // Forleng-dialog
@@ -143,6 +144,19 @@
       "extend.success": "Takk! Forespørselen er sendt til 2GM. Du får tilbakemelding så snart admin har sett på den.",
       "extend.fallbackPrompt":"Ny utflyttingsdato for {ref} (YYYY-MM-DD), tidligst {min}:",
       "extend.fallbackFail":"Kunne ikke sende forespørselen ({err}).",
+
+      // Avslutt-leien-dialog (v3.5.2)
+      "end.title":      "Avslutt leien",
+      "end.subPart":    "Booking {ref}, nåværende utflytting {current}.",
+      "end.openEnded":  "ikke satt (åpent opphold)",
+      "end.newDate":    "Utflyttingsdato",
+      "end.send":       "Send forespørsel",
+      "end.sending":    "Sender …",
+      "end.errMin":     "Datoen må være {date} eller senere.",
+      "end.errFail":    "Kunne ikke sende: {err}",
+      "end.success":    "Takk! Forespørselen er sendt til 2GM. Du får tilbakemelding så snart admin har sett på den.",
+      "end.fallbackPrompt":"Ønsket utflyttingsdato for {ref} (YYYY-MM-DD):",
+      "end.fallbackFail":"Kunne ikke sende forespørselen ({err}).",
 
       // Update banner
       "update.text":   "🔄 Ny versjon tilgjengelig — kjører {old} → {new}",
@@ -271,6 +285,7 @@
       "mybookings.doorCodeLabel": "Door code",
       "mybookings.doorCodePending":"coming soon",
       "mybookings.extend":        "Extend stay",
+      "mybookings.endRental":     "End rental",
       "mybookings.actionsTitle":  "What would you like to do?",
 
       // Extend dialog
@@ -286,6 +301,19 @@
       "extend.success": "Thanks! The request has been sent to 2GM. You'll hear back as soon as admin has reviewed it.",
       "extend.fallbackPrompt":"New check-out date for {ref} (YYYY-MM-DD), earliest {min}:",
       "extend.fallbackFail":"Could not send the request ({err}).",
+
+      // End rental dialog (v3.5.2)
+      "end.title":      "End rental",
+      "end.subPart":    "Booking {ref}, current check-out {current}.",
+      "end.openEnded":  "not set (open-ended stay)",
+      "end.newDate":    "Check-out date",
+      "end.send":       "Send request",
+      "end.sending":    "Sending …",
+      "end.errMin":     "Date must be {date} or later.",
+      "end.errFail":    "Could not send: {err}",
+      "end.success":    "Thanks! The request has been sent to 2GM. You'll hear back as soon as admin has reviewed it.",
+      "end.fallbackPrompt":"Desired check-out date for {ref} (YYYY-MM-DD):",
+      "end.fallbackFail":"Could not send the request ({err}).",
 
       // Update banner
       "update.text":   "🔄 New version available — running {old} → {new}",
