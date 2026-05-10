@@ -121,7 +121,7 @@
       "mybookings.statusActive":  "Aktiv",
       "mybookings.statusUpcoming":"Bekreftet",
       "mybookings.room":          "Rom {n}",
-      "mybookings.code":          "Kode {code}",
+      "mybookings.code":          "Dørkode {code}",
       "mybookings.extend":        "Forleng oppholdet",
 
       // Forleng-dialog
@@ -258,7 +258,7 @@
       "mybookings.statusActive":  "Active",
       "mybookings.statusUpcoming":"Confirmed",
       "mybookings.room":          "Room {n}",
-      "mybookings.code":          "Code {code}",
+      "mybookings.code":          "Door code {code}",
       "mybookings.extend":        "Extend stay",
 
       // Extend dialog
