@@ -1074,28 +1074,28 @@ input[type="date"]:disabled {
 .new-booking-cta-btn:active { transform: translateY(0); }
 
 /* v3.5.1: Lukk-knapp i panel-form (Ny bestilling). Skjuler skjemaet og
-   utvider Mine bookinger igjen. Stil matcher modal-close-pattern fra admin. */
+   utvider Mine bookinger igjen.
+   v3.5.5: solid mørk bg + hvit X — den forrige transparente versjonen
+   forsvant mot panel-bakgrunnen. Matcher +Ny bestilling-CTA's vekt. */
 .booking-close-btn {
-  background: transparent;
-  border: 1px solid var(--color-border-secondary);
-  color: var(--color-text-secondary);
+  background: var(--color-text-primary);
+  border: 0;
+  color: var(--color-background-primary);
   width: 28px;
   height: 28px;
   border-radius: 50%;
   font-size: 14px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   font-family: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background .12s, color .12s, border-color .12s;
+  transition: opacity .12s, transform .08s;
 }
-.booking-close-btn:hover {
-  background: var(--color-background-secondary);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-primary);
-}
+.booking-close-btn:hover  { opacity: .82; transform: translateY(-1px); }
+.booking-close-btn:active { transform: translateY(0); }
 
 /* v3.5.3: gruppe-header i Mine bookinger — strekker seg over begge kolonner
    i 2-col grid og viser lokasjons-navn + antall. Cards under arver vanlig
