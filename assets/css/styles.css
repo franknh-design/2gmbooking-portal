@@ -527,9 +527,11 @@ input, select, button { font-family: inherit; }
   font-size: 14px;
 }
 .cal-cell .cal-rooms {
-  font-size: 11px;
-  font-weight: 500;
-  opacity: .85;
+  /* v3.5.7: bumpet fra 11px → 14px og opacity 1 — kapasiteten er det
+     kunden faktisk skanner etter, og 11px var for spinkelt på laptop. */
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 1;
 }
 .cal-cell.is-today .cal-date::after {
   content: "";
