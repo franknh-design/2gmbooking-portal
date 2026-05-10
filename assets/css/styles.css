@@ -468,8 +468,8 @@ input, select, button { font-family: inherit; }
 }
 
 /* v3.7.5: Ledige rom-seksjon over Tilgjengelighet + Ny bestilling, i 2-kol
-   grid som mine bookinger. Skjules når mainLayout er hidden eller når
-   seksjonen ikke har innhold. */
+   grid som mine bookinger. Skjules når seksjonen ikke har innhold.
+   v3.7.9: layout er alltid synlig — fjernet :has(+ #mainLayout[hidden])-regel. */
 /* v3.7.6: bredden låst til samme som .mybookings-top så kortene over og
    under hverandre justeres pent. */
 .freerooms-top {
@@ -481,17 +481,54 @@ input, select, button { font-family: inherit; }
   .freerooms-top { padding: 0 16px; }
 }
 .freerooms-top:has(#customerFreeRoomsSection[hidden]) { display: none; }
-.freerooms-top:has(+ #mainLayout[hidden]) { display: none; }
 .panel-freerooms { padding: 14px 16px; }
 .customer-free-rooms {
   /* legacy klasse fra forrige plassering — ikke lenger brukt etter v3.7.5 */
 }
+/* v3.7.9: header er nå en <button> som fungerer som trekkspill-knapp. */
 .customer-free-rooms-header {
   display: flex;
   align-items: baseline;
   gap: 12px;
   margin-bottom: 8px;
   flex-wrap: wrap;
+}
+.fr-toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.fr-chevron {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
+  transition: transform .2s, background .12s;
+}
+.fr-toggle:hover .fr-chevron {
+  background: var(--color-background-secondary);
+}
+#customerFreeRoomsSection.collapsed .fr-chevron {
+  transform: rotate(-90deg);
+}
+#customerFreeRoomsSection.collapsed .customer-free-rooms-header {
+  margin-bottom: 0;
+}
+#customerFreeRoomsSection.collapsed .customer-free-rooms-list {
+  display: none !important;
 }
 .customer-free-rooms-title {
   /* v3.7.7: tittel til VENSTRE og samme størrelse som .panel-title (Mine bookinger) */
@@ -1236,56 +1273,8 @@ input[type="date"]:disabled {
 /* Booking-card v3.4.0: 3-kolonne grid (venstre info | midt dørkode | høyre dato).
    Listen er enten 1 eller 2 kort per rad avhengig av wrapper-bredde. */
 
-/* +Ny bestilling-banner under topbar */
-.new-booking-cta-bar {
-  background: var(--color-background-secondary);
-  border-bottom: 0.5px solid var(--color-border-tertiary);
-  padding: 10px 16px;
-}
-.new-booking-cta-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: flex-end;
-}
-.new-booking-cta-btn {
-  background: var(--color-text-primary);
-  color: var(--color-background-primary);
-  border: 0;
-  border-radius: var(--border-radius-sm);
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: opacity .12s, transform .08s;
-}
-.new-booking-cta-btn:hover  { opacity: .85; transform: translateY(-1px); }
-.new-booking-cta-btn:active { transform: translateY(0); }
-
-/* v3.5.1: Lukk-knapp i panel-form (Ny bestilling). Skjuler skjemaet og
-   utvider Mine bookinger igjen.
-   v3.5.5: solid mørk bg + hvit X — den forrige transparente versjonen
-   forsvant mot panel-bakgrunnen. Matcher +Ny bestilling-CTA's vekt. */
-.booking-close-btn {
-  background: var(--color-text-primary);
-  border: 0;
-  color: var(--color-background-primary);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity .12s, transform .08s;
-}
-.booking-close-btn:hover  { opacity: .82; transform: translateY(-1px); }
-.booking-close-btn:active { transform: translateY(0); }
+/* v3.7.9: .new-booking-cta-bar / .booking-close-btn-stilene er fjernet —
+   banneret og lukk-knappen er borte fra DOM. */
 
 /* v3.5.3: gruppe-header i Mine bookinger — strekker seg over begge kolonner
    i 2-col grid og viser lokasjons-navn + antall. Cards under arver vanlig

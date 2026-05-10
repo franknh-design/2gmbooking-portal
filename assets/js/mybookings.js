@@ -121,25 +121,20 @@
       this.errorEl   = document.getElementById("mybookings-error");
       this.countEl   = document.getElementById("mybookings-count");
 
-      wireTopbarCta();
       wirePanelToggle();
       this._wireFilters();
 
       if (!this.container || !this.token) {
         if (this.container) this.container.hidden = true;
-        // Demo / ingen token: layout skal være synlig, ingen topbar-CTA.
+        // Demo / ingen token: layout skal være synlig.
         setLayoutVisible(true);
-        setTopbarCtaVisible(false);
         return;
       }
 
       this.container.hidden = false;
-      // Mens vi laster: skjul layout for å unngå flash hvis kunden har
-      // bookinger. Vises igjen i _render hvis lista er tom eller ved feil.
-      setLayoutVisible(false);
-      // Topbar-CTA er alltid synlig når kunden er logget inn (har token);
-      // slik at det er en konsekvent vei til ny bestilling uavhengig av modus.
-      setTopbarCtaVisible(true);
+      // v3.7.9: Tilgjengelighet + Ny bestilling er alltid åpne under Mine
+      // bookinger — vi skjuler ikke layout lenger og har ikke topbar-CTA.
+      setLayoutVisible(true);
       this.refresh();
 
       // v1.6: Lytt etter admin-godkjenninger så portalen reflekterer endringer
@@ -239,13 +234,10 @@
       this._updateFilterButtons(this._lastBookings);
 
       if (totalCount === 0) {
-        // Ingen bookinger overhodet → empty-state, layout synlig
+        // Ingen bookinger overhodet → empty-state. Layout er alltid synlig.
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
-        if (!silent) {
-          setPanelCollapsed(this.container, false);
-          setLayoutVisible(true);
-        }
+        if (!silent) setPanelCollapsed(this.container, false);
         return;
       }
 
@@ -266,23 +258,13 @@
 
       this._setState("list");
 
-      if (this.countEl) {
-        this.countEl.textContent = tx(count === 1 ? "mybookings.rowsOne" : "mybookings.rowsMany", { n: count });
-      }
+      // v3.7.9: vis bare antallet — header er kompakt nok at "55 row" ble støy.
+      if (this.countEl) this.countEl.textContent = String(count);
 
-      // 1–2 bookinger: panel sammentrukket over layout (begge synlige).
-      // 3+ bookinger:  panel utvidet, layout skjult bak topbar-CTA.
-      // v3.5.4: Bakgrunns-poll (silent=true) endrer IKKE layout/panel-state.
-      // Ellers ville Ny bestilling-skjemaet plutselig forsvinne mens kunden
-      // fyller det ut hvis ny booking dukket opp og pushed count til 3+.
-      // v3.7.8: bruker totalCount (ikke filtered count) som heuristikk for
-      // heavy-mode — filtervalg endrer ikke layout-stilen.
-      if (!silent) {
-        const heavy = totalCount > 2;
-        setPanelCollapsed(this.container, !heavy);
-        setLayoutVisible(!heavy);
-      }
-      // Topbar-CTA forblir synlig (satt i init).
+      // v3.7.9: Mine bookinger er alltid utvidet ved første render. Layout er
+      // alltid synlig — ingen heavy-mode lenger. Brukeren kan kollapse panelet
+      // manuelt via trekkspill-knappen i headeren.
+      if (!silent) setPanelCollapsed(this.container, false);
 
       this.listEl.innerHTML = "";
 
@@ -759,25 +741,10 @@
   // v3.4.0: _infoItem / _doorCodeItem ble fjernet — kortet bygges nå
   // direkte i _renderBookingCard med 3-kolonne grid.
 
-  // ---- Toggle-håndtering: topbar-CTA, layout, panel-collapse ----
-  let _topbarWired = false;
-  function wireTopbarCta() {
-    if (_topbarWired) return;
-    const btn = document.getElementById("topbar-new-booking");
-    if (!btn) return;
-    btn.addEventListener("click", () => {
-      setLayoutVisible(true);
-      // v3.4.3: kollaps Mine bookinger så kun kalender + skjema vises
-      // når kunden er i ferd med å lage en ny bestilling.
-      setPanelCollapsed(document.getElementById("mybookings-panel"), true);
-      const layout = document.getElementById("mainLayout");
-      if (layout && typeof layout.scrollIntoView === "function") {
-        layout.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-    _topbarWired = true;
-  }
-
+  // ---- Toggle-håndtering: layout + panel-collapse ----
+  // v3.7.9: topbar-CTA og Ny bestilling-lukk-knappen er fjernet — Tilgjengelighet
+  // og Ny bestilling er alltid synlige. setLayoutVisible kalles fortsatt fra
+  // gamle stier (loading/feil) men gjør nå alltid layout synlig.
   let _toggleWired = false;
   function wirePanelToggle() {
     if (_toggleWired) return;
@@ -791,15 +758,11 @@
     _toggleWired = true;
   }
 
-  function setLayoutVisible(visible) {
+  function setLayoutVisible(_visible) {
+    // v3.7.9: layout er alltid synlig — funksjonen finnes for bakoverkompatibilitet
+    // med gamle kall, men ignorerer argumentet.
     const layout = document.getElementById("mainLayout");
-    if (layout) layout.hidden = !visible;
-  }
-
-  function setTopbarCtaVisible(visible) {
-    // v3.4.0: toggler hele banner-baren under topbar, ikke bare knappen.
-    const bar = document.getElementById("newBookingCtaBar");
-    if (bar) bar.hidden = !visible;
+    if (layout && layout.hidden) layout.hidden = false;
   }
 
   function setPanelCollapsed(panel, collapsed) {
@@ -808,39 +771,6 @@
     const toggle = document.getElementById("mybookings-toggle");
     if (toggle) toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
-
-  // v3.5.1: Lukk-knapp på Ny bestilling-panelet — skjuler skjemaet,
-  // utvider Mine bookinger og scroller opp så kunden ser lista igjen.
-  // Eksponert via MyBookings.collapseToList() så booking.js eller andre
-  // moduler kan trigge samme oppførsel ved behov.
-  function collapseToList() {
-    setLayoutVisible(false);
-    setPanelCollapsed(document.getElementById("mybookings-panel"), false);
-    // v3.6.5: scroll helt til topps i portalen, ikke bare til mybookings-
-    // panelet — kunden vil se topbar/banneret igjen etter Lukk.
-    try {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (_) {
-      window.scrollTo(0, 0);
-    }
-  }
-
-  let _closeBtnWired = false;
-  function wireBookingCloseBtn() {
-    if (_closeBtnWired) return;
-    const btn = document.getElementById("booking-close-btn");
-    if (!btn) return;
-    btn.addEventListener("click", collapseToList);
-    _closeBtnWired = true;
-  }
-  // Wire up after DOM is parsed (script loads at end of body, but defensive).
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wireBookingCloseBtn);
-  } else {
-    wireBookingCloseBtn();
-  }
-
-  MyBookings.collapseToList = collapseToList;
 
   // Re-rendre lista ved språkendring (status-tekster, knapper, tellere).
   document.addEventListener("i18n:change", () => {

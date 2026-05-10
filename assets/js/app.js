@@ -106,10 +106,26 @@
     });
   });
 
+  // v3.7.9: trekkspill-knapp på Ledige rom-headeren — samme mønster som
+  // Mine bookinger. Wires én gang ved første kall.
+  let _frToggleWired = false;
+  function wireFreeRoomsToggle() {
+    if (_frToggleWired) return;
+    const toggle = document.getElementById("customerFreeRoomsToggle");
+    const section = document.getElementById("customerFreeRoomsSection");
+    if (!toggle || !section) return;
+    toggle.addEventListener("click", () => {
+      const collapsed = section.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    _frToggleWired = true;
+  }
+
   async function loadCustomerFreeRooms(token) {
     const section = document.getElementById("customerFreeRoomsSection");
     const list = document.getElementById("customerFreeRoomsList");
     if (!section || !list || !window.Api || !window.Api.getCustomerFreeRooms) return;
+    wireFreeRoomsToggle();
     try {
       const res = await window.Api.getCustomerFreeRooms(token);
       const rooms = res && res.ok && Array.isArray(res.rooms) ? res.rooms : [];
