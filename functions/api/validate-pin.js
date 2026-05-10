@@ -11,7 +11,7 @@
 // Best-effort: ved suksess oppdaterer vi SistBrukt + AntallBestillinger
 // asynkront — failure her stopper ikke innlogging.
 
-import { findToken, logTokenUsage } from "../_utils/sharepoint.js";
+import { findToken, logTokenUsage, computeTokenStamp } from "../_utils/sharepoint.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -48,7 +48,12 @@ export async function onRequestPost(context) {
       console.error("logTokenUsage failed:", err);
     });
 
-    return jsonResponse({ ok: true });
+    // v1.1: returner samme tokenStamp som validate-token så klienten kan
+    // lagre fersk verdi rett etter PIN-bekreftelse.
+    return jsonResponse({
+      ok: true,
+      tokenStamp: await computeTokenStamp(match.fields),
+    });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("validate-pin error:", err);

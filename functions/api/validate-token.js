@@ -1,7 +1,7 @@
 // functions/api/validate-token.js
 // v1.0 - Token validation endpoint for booking portal
 
-import { findToken, logTokenUsage, maskPhone } from "../_utils/sharepoint.js";
+import { findToken, logTokenUsage, maskPhone, computeTokenStamp } from "../_utils/sharepoint.js";
 
 /**
  * POST /api/validate-token
@@ -49,6 +49,11 @@ export async function onRequestPost(context) {
       telefon_maskert: maskPhone(fields.Telefon),
       tillatte_lokasjoner: tillatteLokasjoner,
       maks_rom: fields.MaksRomPerBestilling || 1,
+      // v1.1: token-stempel = hash av Pin+Aktiv+Token+Lokasjoner.
+      // Klienten lagrer dette i sesjonen og logger ut hvis det endrer
+      // seg mellom kall — gjør at PIN-rotering, token-rotering og andre
+      // admin-endringer tvinger fersk innlogging umiddelbart.
+      tokenStamp: await computeTokenStamp(fields),
     });
   } catch (err) {
     console.error("validate-token error:", err);

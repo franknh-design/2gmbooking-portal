@@ -34,11 +34,12 @@
     }
   }
 
-  function saveSession(token) {
+  function saveSession(token, tokenStamp) {
     if (!token) return;
     try {
       localStorage.setItem(SESSION_PREFIX + token, JSON.stringify({
         verifiedAt: Date.now(),
+        tokenStamp: tokenStamp || null,
       }));
     } catch (_) {}
   }
@@ -89,16 +90,26 @@
           locations: result.tillatte_lokasjoner || [],
           maxRooms: result.maks_rom || 1
         };
+        this._currentStamp = result.tokenStamp || null;
 
         // eslint-disable-next-line no-console
         console.log("[AUTH] Token gyldig for:", this.customer.name);
 
         const session = loadSession(this.token);
         if (session) {
-          // eslint-disable-next-line no-console
-          console.log("[AUTH] Gyldig sesjon (24t) — hopper over PIN.");
-          this._completeLogin();
-          return;
+          // v3.5.9: invalidér sesjonen hvis admin har endret noe på
+          // Customer_Tokens-raden (PIN, token, Aktiv, lokasjoner) siden
+          // sist innlogging. Da må kunden taste PIN på nytt.
+          if (session.tokenStamp && this._currentStamp && session.tokenStamp !== this._currentStamp) {
+            // eslint-disable-next-line no-console
+            console.log("[AUTH] Token-stempel endret — sesjonen er ugyldig, krever ny PIN.");
+            clearSession(this.token);
+          } else {
+            // eslint-disable-next-line no-console
+            console.log("[AUTH] Gyldig sesjon (24t) — hopper over PIN.");
+            this._completeLogin();
+            return;
+          }
         }
 
         this._showAuthScreen();
@@ -211,6 +222,9 @@
       try {
         const result = await window.Api.validatePin(this.token, pin);
         if (result && result.ok) {
+          // Lagre fersk stempel fra validate-pin-respons så sesjonen er
+          // umiddelbart gyldig mot evt. PIN-endring som skjedde nå nettopp.
+          if (result.tokenStamp) this._currentStamp = result.tokenStamp;
           this._completeLogin();
         } else {
           this._showError(window.I18n ? window.I18n.t("auth.pinWrong") : "Feil PIN. Prøv igjen.");
@@ -226,7 +240,7 @@
     },
 
     _completeLogin() {
-      saveSession(this.token);
+      saveSession(this.token, this._currentStamp);
 
       document.getElementById("auth-screen").hidden = true;
       document.getElementById("portal").hidden = false;

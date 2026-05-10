@@ -120,7 +120,36 @@ export async function findToken(env, token) {
     if (expiry < new Date()) return null;
   }
 
-  return { id: match.id, fields: match.fields };
+  return {
+    id: match.id,
+    fields: match.fields,
+  };
+}
+
+// v1.6: Stempel som klienten lagrer i sesjonen for å oppdage at admin
+// har endret PIN/token/Aktiv/lokasjoner siden sist innlogging. Bygges av
+// kun de sikkerhets-relevante feltene — IKKE SistBrukt/AntallBestillinger
+// (som logTokenUsage bumper hver gang) så stempelet er stabilt mellom
+// innlogginger inntil admin faktisk endrer noe.
+//
+// Sikkerhet: hashen er trunkert SHA-256 av {Pin|Aktiv|Token|Lokasjoner}.
+// Den eksponeres i validate-token-respons. En angriper med URL'en kan i
+// teori brute-force PIN ved å regne hash for hver av 10⁶ verdier, så
+// validate-pin bør rate-limites separat (TODO).
+export async function computeTokenStamp(fields) {
+  const parts = [
+    String(fields.Pin || ""),
+    fields.Aktiv === true ? "1" : "0",
+    String(fields.Token || ""),
+    String(fields.TillatteLokasjoner || ""),
+    String(fields.MaksRomPerBestilling || ""),
+  ].join("|");
+  const buf = new TextEncoder().encode(parts);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash))
+    .slice(0, 8)
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export async function logTokenUsage(env, itemId, currentCount) {
