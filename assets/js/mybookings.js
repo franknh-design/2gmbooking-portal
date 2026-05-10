@@ -177,7 +177,7 @@
       }
 
       const bookings = Array.isArray(res.bookings) ? res.bookings : [];
-      this._render(bookings);
+      this._render(bookings, !!silent);
     },
 
     _setState(state) {
@@ -188,7 +188,7 @@
       if (this.countEl)   this.countEl.hidden   = state !== "list";
     },
 
-    _render(bookings) {
+    _render(bookings, silent) {
       const count = bookings.length;
 
       if (count === 0) {
@@ -196,8 +196,10 @@
         // Topbar-CTA forblir synlig (satt i init) som konsistent inngang.
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
-        setPanelCollapsed(this.container, false);
-        setLayoutVisible(true);
+        if (!silent) {
+          setPanelCollapsed(this.container, false);
+          setLayoutVisible(true);
+        }
         return;
       }
 
@@ -209,9 +211,14 @@
 
       // 1–2 bookinger: panel sammentrukket over layout (begge synlige).
       // 3+ bookinger:  panel utvidet, layout skjult bak topbar-CTA.
-      const heavy = count > 2;
-      setPanelCollapsed(this.container, !heavy);
-      setLayoutVisible(!heavy);
+      // v3.5.4: Bakgrunns-poll (silent=true) endrer IKKE layout/panel-state.
+      // Ellers ville Ny bestilling-skjemaet plutselig forsvinne mens kunden
+      // fyller det ut hvis ny booking dukket opp og pushed count til 3+.
+      if (!silent) {
+        const heavy = count > 2;
+        setPanelCollapsed(this.container, !heavy);
+        setLayoutVisible(!heavy);
+      }
       // Topbar-CTA forblir synlig (satt i init).
 
       this.listEl.innerHTML = "";
