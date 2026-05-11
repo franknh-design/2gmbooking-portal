@@ -74,35 +74,47 @@ export async function onRequestPost(context) {
       getPropertiesByIdMap(env),
     ]);
 
-    // Group by month-of-last-night. For open-ended bookinger uten Check_Out,
-    // grupperer vi på Check_In-måneden — kunden trenger fortsatt å se dem.
+    // v3.10.5: Split per måned med admin-appens natt-konvensjon.
+    // Tidligere bukketerte vi hver booking i ÉN måned (måneden den endte i),
+    // og åpne bookinger uten Check_Out fikk nights=null → ingen sum. Det
+    // var misvisende for langtidsboere: en arbeider som har bodd hele april
+    // dukket bare opp i mars (Check_In-måneden) uten beløp.
+    //
+    // Ny logikk: for hver booking iterer vi alle måneder mellom Check_In og
+    // Check_Out (eller dagens dato for åpne bookinger), og legger en rad i
+    // hver måned med nights = antall netter som ender i den måneden.
+    //
+    // Admin-konvensjon: April-grunnlaget dekker [31.03 00:00, 30.04 00:00].
+    // Nattens 31.03 → 01.04 telles i april (natten ender i april).
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const byMonth = new Map();
+    const ONE_DAY = 86400000;
+
     for (const it of items) {
       const f = it.fields || {};
       if (!f.Check_In) continue;
-      const ci = String(f.Check_In).slice(0, 10);
-      // Siste natt = Check_Out - 1 dag. Hvis Check_Out mangler, bruk Check_In.
-      let bucketDate;
+      const ci = new Date(f.Check_In);
+      ci.setHours(0, 0, 0, 0);
+      if (isNaN(ci.getTime())) continue;
+
+      let co, isOngoing = false;
       if (f.Check_Out) {
-        const co = new Date(f.Check_Out);
-        co.setDate(co.getDate() - 1);
-        bucketDate = co;
+        co = new Date(f.Check_Out);
+        co.setHours(0, 0, 0, 0);
       } else {
-        bucketDate = new Date(ci + "T00:00:00");
+        // Åpen booking — anta at gjesten fortsatt bor og bruk dagens dato som
+        // foreløpig sluttdato. Beløpene for inneværende måned er da et estimat
+        // som vokser etter hvert som månedene går.
+        co = new Date(today);
+        isOngoing = true;
       }
-      if (isNaN(bucketDate.getTime())) continue;
-      const y = bucketDate.getFullYear();
-      const m = bucketDate.getMonth(); // 0-indexed
-      const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+      if (isNaN(co.getTime()) || co < ci) continue;
 
       const roomId = f.RoomLookupId ? String(f.RoomLookupId) : null;
       const room = roomId ? roomsById[roomId] : null;
-      const nights = (f.Check_Out)
-        ? Math.max(0, Math.round((new Date(f.Check_Out) - new Date(f.Check_In)) / 86400000))
-        : null;
 
-      // v3.10.4: Beregn pris (nights × rate). Bruker effektivt selskap
-      // (Billing_Company > Company). Sett til null hvis vi ikke kan beregne.
       const effectiveCompany = (f.Billing_Company || f.Company || "").trim();
       const rateInfo = getDailyRate({
         personName: f.Person_Name,
@@ -114,37 +126,72 @@ export async function onRequestPost(context) {
         propertiesById,
       });
       const rate = rateInfo.rate || 0;
-      const total = (nights != null && rate) ? Math.round(nights * rate) : null;
 
-      const bookingObj = {
-        ref: f.Title || "",
-        property: f.Property_Name || "",
-        roomNumber: room ? room.title : null,
-        guest: f.Person_Name || "",
-        checkIn: f.Check_In || null,
-        checkOut: f.Check_Out || null,
-        nights,
-        status: f.Status || "",
-        rate: rate || null,
-        total,
-      };
+      const totalNightsBooking = Math.max(0, Math.round((co - ci) / ONE_DAY));
 
-      if (!byMonth.has(key)) {
-        byMonth.set(key, {
-          period: key,
-          label: `${MONTHS_EN[m]} ${y}`,
-          labelNb: `${MONTHS_NB[m]} ${y}`,
-          bookings: [],
-          totalNights: 0,
-          totalAmount: 0,
-          bookingCount: 0,
-        });
+      // Iterer hver måned bookingen overlapper. monthFrom for måned M =
+      // siste dag i (M-1) 00:00; monthTo = siste dag i M 00:00.
+      // Start fra måned for første natt (kan være Check_In-måneden) og gå
+      // til måned for siste natt.
+      const startCursor = new Date(ci.getFullYear(), ci.getMonth(), 1);
+      const endCursor = new Date(co.getFullYear(), co.getMonth(), 1);
+      // Hvis Check_Out er på dag 1 i en måned, siste natt sluttet i forrige
+      // måned ikke i Check_Out-måneden. Da skal vi ikke iterere Check_Out-måneden.
+      const lastNightDate = new Date(co.getTime() - ONE_DAY);
+      const stopCursor = new Date(lastNightDate.getFullYear(), lastNightDate.getMonth(), 1);
+
+      let cursor = new Date(startCursor);
+      while (cursor <= stopCursor) {
+        const y = cursor.getFullYear();
+        const m = cursor.getMonth();
+        const monthFrom = new Date(y, m, 0); // siste dag forrige måned 00:00
+        monthFrom.setHours(0, 0, 0, 0);
+        const monthTo = new Date(y, m + 1, 0); // siste dag denne måneden 00:00
+        monthTo.setHours(0, 0, 0, 0);
+
+        const start = ci > monthFrom ? ci : monthFrom;
+        const end = co < monthTo ? co : monthTo;
+        const nights = Math.max(0, Math.round((end - start) / ONE_DAY));
+
+        if (nights > 0) {
+          const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+          const total = rate ? Math.round(nights * rate) : null;
+          const bookingObj = {
+            ref: f.Title || "",
+            property: f.Property_Name || "",
+            roomNumber: room ? room.title : null,
+            guest: f.Person_Name || "",
+            checkIn: f.Check_In || null,
+            checkOut: f.Check_Out || null,
+            nights,
+            totalNightsBooking,
+            status: f.Status || "",
+            rate: rate || null,
+            total,
+            isOngoing,
+            isPartialMonth: nights !== totalNightsBooking,
+          };
+
+          if (!byMonth.has(key)) {
+            byMonth.set(key, {
+              period: key,
+              label: `${MONTHS_EN[m]} ${y}`,
+              labelNb: `${MONTHS_NB[m]} ${y}`,
+              bookings: [],
+              totalNights: 0,
+              totalAmount: 0,
+              bookingCount: 0,
+            });
+          }
+          const bucket = byMonth.get(key);
+          bucket.bookings.push(bookingObj);
+          bucket.totalNights += nights;
+          bucket.totalAmount += (total || 0);
+          bucket.bookingCount += 1;
+        }
+
+        cursor = new Date(y, m + 1, 1);
       }
-      const bucket = byMonth.get(key);
-      bucket.bookings.push(bookingObj);
-      bucket.totalNights += (nights || 0);
-      bucket.totalAmount += (total || 0);
-      bucket.bookingCount += 1;
     }
 
     // Sort hver gruppes bookinger på check-in stigende

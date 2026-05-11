@@ -1864,6 +1864,21 @@ input[type="date"]:disabled {
 .inv-booking-row { cursor: pointer; transition: background .12s; }
 .inv-booking-row:hover { background: var(--color-background-tertiary); }
 
+/* v3.10.5: liten badge for pågående opphold (Check_Out mangler). */
+.inv-ongoing-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  background: var(--c-amber-50);
+  color: var(--c-amber-800);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 .inv-guest-dlg {
   border: 0;
   border-radius: var(--border-radius-lg);

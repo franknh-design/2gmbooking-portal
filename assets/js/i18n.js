@@ -223,6 +223,8 @@
       "invoices.totalAmount":    "{n} kr",
       "invoices.noRate":         "—",
       "invoices.amountNote":     "Beløp = netter × døgnpris (eks. gebyrer/mva)",
+      "invoices.ongoingBadge":   "pågående",
+      "invoices.ongoingNote":    "Pågående opphold — netter og sum oppdateres etter hvert som månedene går.",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Bestillingsportal",
@@ -442,6 +444,8 @@
       "invoices.totalAmount":    "{n} kr",
       "invoices.noRate":         "—",
       "invoices.amountNote":     "Amount = nights × rate (excl. fees/VAT)",
+      "invoices.ongoingBadge":   "ongoing",
+      "invoices.ongoingNote":    "Ongoing stay — nights and amount will grow as months pass.",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Booking Portal",

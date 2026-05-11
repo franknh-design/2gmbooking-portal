@@ -264,17 +264,22 @@
           <th class="num">${tx("invoices.colRate")}</th>
           <th class="num">${tx("invoices.colAmount")}</th>
         </tr>`;
-      const body = g.bookings.map((b, idx) => `
-        <tr class="inv-booking-row" data-period="${escapeHtml(g.period)}" data-idx="${idx}" title="${escapeHtml(tx("invoices.viewSheet"))}">
+      const body = g.bookings.map((b, idx) => {
+        const ongoingTag = b.isOngoing
+          ? ` <span class="inv-ongoing-badge" title="${escapeHtml(tx("invoices.ongoingNote"))}">${escapeHtml(tx("invoices.ongoingBadge"))}</span>`
+          : "";
+        return `
+        <tr class="inv-booking-row${b.isOngoing ? " is-ongoing" : ""}" data-period="${escapeHtml(g.period)}" data-idx="${idx}" title="${escapeHtml(tx("invoices.viewSheet"))}">
           <td>${escapeHtml(b.roomNumber || "—")}</td>
-          <td>${escapeHtml(b.guest || "—")}</td>
+          <td>${escapeHtml(b.guest || "—")}${ongoingTag}</td>
           <td>${escapeHtml(b.property || "—")}</td>
           <td>${escapeHtml(formatIsoDate(b.checkIn))}</td>
           <td>${escapeHtml(b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded"))}</td>
           <td class="num">${b.nights == null ? "—" : b.nights}</td>
           <td class="num">${escapeHtml(formatKr(b.rate))}</td>
           <td class="num">${escapeHtml(formatKr(b.total))}</td>
-        </tr>`).join("");
+        </tr>`;
+      }).join("");
       const footer = `
         <tr class="inv-detail-foot">
           <td colspan="5" style="text-align:right;font-weight:500">${escapeHtml(tx("invoices.colAmount"))}:</td>
