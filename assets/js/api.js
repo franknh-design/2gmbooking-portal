@@ -311,6 +311,35 @@
     }
   }
 
+  // --------------------------------------------------------------------------
+  // invoice-archive — historiske opphold gruppert per måned
+  // --------------------------------------------------------------------------
+
+  async function getInvoiceArchive(token) {
+    if (!token || typeof token !== "string") {
+      return { ok: false, error: "missing_token" };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/invoice-archive`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] invoice-archive feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] invoice-archive exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   window.Api = {
     validateToken,
     validatePin,
@@ -320,6 +349,7 @@
     getMyBookings,
     getCustomerFreeRooms,
     requestExtension,
-    requestEnd
+    requestEnd,
+    getInvoiceArchive
   };
 })();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.9.2 -->
+<!-- v3.10.0 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -208,8 +208,42 @@
       </section>
     </div>
 
+    <!-- v3.10.0: Fakturaarkiv nederst — historiske opphold gruppert per måned,
+         sortbart, søkbart, med PDF/CSV-nedlasting. -->
+    <div class="invoices-top">
+      <section class="panel panel-invoices" id="invoices-panel" aria-label="Fakturaarkiv" hidden>
+        <button type="button" class="panel-head inv-toggle" id="invoices-toggle" aria-expanded="true">
+          <h2 class="panel-title" data-i18n="invoices.title">Fakturaarkiv</h2>
+          <span class="badge" id="invoices-count" hidden></span>
+          <span class="mb-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="inv-search-row">
+          <input type="search" id="invoices-search" class="inv-search"
+                 data-i18n-placeholder="invoices.search"
+                 placeholder="Søk navn, rom eller måned…">
+        </div>
+        <p class="inv-loading" id="invoices-loading" data-i18n="invoices.loading">Laster fakturaarkiv…</p>
+        <p class="inv-error"   id="invoices-error"   data-i18n="invoices.error" hidden>Kunne ikke laste arkiv. Prøv igjen senere.</p>
+        <p class="inv-empty"   id="invoices-empty"   data-i18n="invoices.empty" hidden>Fakturaarkivet er tomt — ingen tidligere opphold registrert.</p>
+        <div class="inv-table-wrap" id="invoices-table-wrap">
+          <table id="invoices-table" class="inv-table">
+            <thead>
+              <tr>
+                <th data-sort-key="period"   class="inv-sort-active inv-sort-desc"><span data-i18n="invoices.colPeriod">Periode</span></th>
+                <th data-sort-key="bookings" class="num"><span data-i18n="invoices.colBookings">Bookinger</span></th>
+                <th data-sort-key="nights"   class="num"><span data-i18n="invoices.colNights">Netter</span></th>
+                <th data-sort-key="property"><span data-i18n="invoices.colProperty">Eiendom</span></th>
+                <th><span data-i18n="invoices.colActions">Last ned</span></th>
+              </tr>
+            </thead>
+            <tbody id="invoices-list" hidden></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.9.2</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.0</small>
     </footer>
   </div>
 
@@ -221,6 +255,7 @@
   <script src="assets/js/calendar.js"></script>
   <script src="assets/js/booking.js"></script>
   <script src="assets/js/mybookings.js"></script>
+  <script src="assets/js/invoices.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

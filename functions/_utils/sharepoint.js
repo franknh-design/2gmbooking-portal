@@ -359,6 +359,27 @@ export async function getBookingsForCompany(env, companyName) {
   });
 }
 
+// v3.10.0: All-status variant — brukes av fakturaarkivet i portalen så
+// kunden ser tidligere (Completed) opphold gruppert per måned.
+// Active og Upcoming inkluderes ikke automatisk — kalleren bestemmer
+// hvilke statuser den vil ha med via inkluderingsfilter.
+export async function getAllBookingsForCompany(env, companyName, includeStatuses) {
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  const target = String(companyName || "").trim().toLowerCase();
+  if (!target) return [];
+  const allow = includeStatuses && includeStatuses.length
+    ? new Set(includeStatuses)
+    : null; // null = aksepter alt unntatt Cancelled
+  return items.filter(item => {
+    const f = item.fields;
+    const company = String(f.Company || "").trim().toLowerCase();
+    if (company !== target) return false;
+    if (f.Status === "Cancelled") return false;
+    if (allow && !allow.has(f.Status)) return false;
+    return true;
+  });
+}
+
 export function generateBookingRef() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let suffix = "";

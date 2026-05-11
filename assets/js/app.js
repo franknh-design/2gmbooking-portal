@@ -56,6 +56,12 @@
         window.MyBookings.init({ token: session.token });
       }
 
+      // v3.10.0: Fakturaarkiv — historiske opphold gruppert per måned.
+      // Samme token-krav som Mine bookinger.
+      if (window.Invoices && session.token) {
+        window.Invoices.init({ token: session.token });
+      }
+
       // v3.7.2: Ledige rom under kalenderen — kun for kunder som eier rom
       // (long-term/full-tenant). Tom respons = skjult seksjon.
       if (session.token) {

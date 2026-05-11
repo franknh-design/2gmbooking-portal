@@ -1678,3 +1678,146 @@ input[type="date"]:disabled {
   background: var(--color-background-danger);
   color: var(--color-text-danger);
 }
+
+/* =========================================================
+   Fakturaarkiv (v3.10.0) — nederst, under Mine bookinger.
+   Sortbart, søkbart, ekspanderbare rader pr. måned.
+   ========================================================= */
+.invoices-top {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 24px;
+}
+.invoices-top:has(#invoices-panel[hidden]) { padding: 0; }
+@media (max-width: 900px) {
+  .invoices-top { padding: 0 16px 16px; }
+  .invoices-top:has(#invoices-panel[hidden]) { padding: 0; }
+}
+
+.inv-toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 0 14px;
+  font: inherit;
+  color: inherit;
+}
+.panel-invoices.collapsed .mb-chevron { transform: rotate(-90deg); }
+.panel-invoices.collapsed .panel-head { margin-bottom: 0; }
+.panel-invoices.collapsed .inv-search-row,
+.panel-invoices.collapsed .inv-table-wrap,
+.panel-invoices.collapsed .inv-loading,
+.panel-invoices.collapsed .inv-error,
+.panel-invoices.collapsed .inv-empty {
+  display: none !important;
+}
+.panel-invoices.collapsed { padding: 14px 20px; }
+
+.inv-search-row { margin: 0 0 12px; }
+.inv-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 14px;
+  background: var(--c-surface);
+}
+.inv-search:focus { outline: 2px solid var(--c-brand-light); outline-offset: 1px; }
+
+.inv-loading, .inv-error, .inv-empty {
+  margin: 12px 0;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+.inv-error { color: var(--c-red-fg); }
+
+.inv-table-wrap { overflow-x: auto; }
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.inv-table th, .inv-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: .5px solid var(--c-border);
+  vertical-align: top;
+}
+.inv-table th {
+  background: var(--c-bg);
+  font-weight: 600;
+  color: var(--c-brand-dark);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.inv-table th:hover { background: #eef1f5; }
+.inv-table th.num, .inv-table td.num { text-align: right; }
+.inv-table th[data-sort-key]::after {
+  content: " ";
+  display: inline-block;
+  width: 0.7em;
+  opacity: .4;
+}
+.inv-table th.inv-sort-asc::after  { content: " ▲"; opacity: 1; }
+.inv-table th.inv-sort-desc::after { content: " ▼"; opacity: 1; }
+.inv-table tbody tr:last-child td { border-bottom: 0; }
+.inv-table tbody tr:hover { background: rgba(27, 79, 114, .03); }
+
+.inv-expand-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--c-brand-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.inv-chevron { color: var(--c-muted); font-size: 12px; }
+
+.inv-cell-bookings, .inv-cell-nights { font-variant-numeric: tabular-nums; }
+.inv-cell-property { color: var(--c-muted); }
+
+.inv-cell-actions { white-space: nowrap; }
+.inv-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-brand);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  margin-right: 4px;
+}
+.inv-btn:hover { background: var(--c-brand); color: #fff; }
+.inv-btn-pdf  { /* default brand */ }
+.inv-btn-xlsx { border-color: var(--c-green-fg); color: var(--c-green-fg); }
+.inv-btn-xlsx:hover { background: var(--c-green-fg); color: #fff; }
+
+/* Detalj-rad — bookings under en utvidet måned. */
+.inv-detail-row > td {
+  background: rgba(27, 79, 114, .04);
+  padding: 8px 12px;
+}
+.inv-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 4px 0;
+}
+.inv-detail-table th, .inv-detail-table td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: .5px dashed var(--c-border);
+}
+.inv-detail-table th { color: var(--c-muted); font-weight: 500; }
+.inv-detail-table th.num, .inv-detail-table td.num { text-align: right; }
+.inv-detail-table tbody tr:last-child td { border-bottom: 0; }
