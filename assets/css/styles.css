@@ -1814,7 +1814,11 @@ input[type="date"]:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-.inv-cell-actions { white-space: nowrap; }
+/* v3.10.6: Last ned-kolonnen høyrejusteres så knappene legger seg ute mot
+   høyre kant — bedre balanse mot tabellens venstre-side. */
+.inv-cell-actions { white-space: nowrap; text-align: right; }
+.inv-table th[data-sort-key]:last-of-type ~ th,
+.inv-table thead th:last-child { text-align: right; }
 .inv-btn {
   padding: 6px 12px;
   border: 0.5px solid var(--color-border-secondary);
@@ -1825,9 +1829,10 @@ input[type="date"]:disabled {
   font: inherit;
   font-size: 12px;
   font-weight: 500;
-  margin-right: 4px;
+  margin-left: 4px;
   transition: background .12s, border-color .12s;
 }
+.inv-cell-actions .inv-btn:first-child { margin-left: 0; }
 .inv-btn:hover {
   background: var(--color-background-secondary);
   border-color: var(--color-border-primary);
