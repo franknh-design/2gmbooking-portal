@@ -85,16 +85,34 @@
       window.Calendar.init({
         locationId: initialLocId,
         onSelect: (iso /* , avail */) => {
-          // Open-ended: bare én dato — hver klikk setter ny fra.
+          // Open-ended: bare én dato — hver klikk setter ny fra,
+          // og klikk på samme dato igjen tømmer valget (toggle off).
           if (window.Booking.isOpenEnded()) {
-            window.Booking.setDateRange(iso, "");
-            pickStage = "from"; // forblir én-dato-modus
+            const { from: openFrom } = window.Booking.getDateRange();
+            if (openFrom === iso) {
+              window.Booking.setDateRange("", "");
+            } else {
+              window.Booking.setDateRange(iso, "");
+            }
+            pickStage = "from";
+            syncCalendarFromBooking();
+            return;
+          }
+
+          // v3.10.1: tre-stegs toggle på samme dato — Fra → 1 dag → tomt → Fra…
+          // Etter at andre klikk har satt rangeTo === rangeFrom, sitter vi i
+          // pickStage = "from" med begge endepunkter på samme dato. Tredje klikk
+          // på den datoen tømmer hele valget i stedet for å starte ny "Fra".
+          const cur = window.Booking.getDateRange();
+          if (pickStage === "from" && cur.from === iso && cur.to === iso) {
+            window.Booking.setDateRange("", "");
+            pickStage = "from";
             syncCalendarFromBooking();
             return;
           }
 
           if (pickStage === "from") {
-            // 1. eller 3. klikk → start ny periode
+            // 1. klikk (eller etter en komplett periode på en annen dato)
             window.Booking.setDateRange(iso, "");
             pickStage = "to";
           } else {
