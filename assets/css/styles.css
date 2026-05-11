@@ -249,7 +249,9 @@ input, select, button { font-family: inherit; }
 /* =========================================================
    Topbar
    ========================================================= */
-/* Stil A: nøytral beige topbar, ingen brand-farger her. */
+/* Stil A: nøytral beige topbar, ingen brand-farger her.
+   v3.10.10: sticky så tab-knappene alltid er synlige; tab-raden lever
+   sentrert inni topbaren. */
 .topbar {
   background: var(--color-background-tertiary);
   color: var(--color-text-primary);
@@ -257,7 +259,12 @@ input, select, button { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   border-bottom: 0.5px solid var(--color-border-tertiary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px -2px rgba(0,0,0,.08);
 }
 .topbar-left {
   display: flex;
@@ -352,26 +359,26 @@ input, select, button { font-family: inherit; }
 /* =========================================================
    Layout
    ========================================================= */
-/* v3.10.8: Tab-nav rett under banneret — hopper til + åpner seksjonen. */
+/* v3.10.10: Tab-nav inni topbaren, sentrert. */
 .portal-nav {
   display: flex;
   justify-content: center;
   gap: 6px;
-  padding: 16px 24px 0;
-  max-width: 1280px;
-  margin: 0 auto;
   flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .portal-nav-btn {
   background: transparent;
   border: 0.5px solid var(--color-border-secondary);
   color: var(--color-text-secondary);
-  padding: 8px 16px;
+  padding: 6px 14px;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
   border-radius: 999px;
   cursor: pointer;
+  white-space: nowrap;
   transition: background .12s, color .12s, border-color .12s;
 }
 .portal-nav-btn:hover {
@@ -385,8 +392,9 @@ input, select, button { font-family: inherit; }
   border-color: var(--color-text-primary);
 }
 @media (max-width: 600px) {
-  .portal-nav { padding: 12px 12px 0; gap: 4px; }
-  .portal-nav-btn { padding: 7px 12px; font-size: 12px; }
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+  .portal-nav { order: 3; width: 100%; gap: 4px; }
+  .portal-nav-btn { padding: 6px 10px; font-size: 12px; }
 }
 
 /* v3.10.8: Bestilling-seksjonen er et samlet trekkspill for Kalender + Ny

@@ -295,9 +295,10 @@
 
       if (totalCount === 0) {
         // Ingen bookinger overhodet → empty-state. Layout er alltid synlig.
+        // v3.10.10: ikke utvid panelet automatisk — det starter kollapset, og
+        // åpnes kun når brukeren klikker på tab/chevron.
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
-        if (!silent) setPanelCollapsed(this.container, false);
         return;
       }
 
@@ -321,10 +322,9 @@
       // v3.7.9: vis bare antallet — header er kompakt nok at "55 row" ble støy.
       if (this.countEl) this.countEl.textContent = String(count);
 
-      // v3.7.9: Mine bookinger er alltid utvidet ved første render. Layout er
-      // alltid synlig — ingen heavy-mode lenger. Brukeren kan kollapse panelet
-      // manuelt via trekkspill-knappen i headeren.
-      if (!silent) setPanelCollapsed(this.container, false);
+      // v3.10.10: ikke utvid panelet automatisk — kun "+ Ny bestilling" er
+      // åpen som default. Brukeren åpner Mine bookinger ved å klikke tab
+      // eller chevron i headeren.
 
       this.listEl.innerHTML = "";
 
