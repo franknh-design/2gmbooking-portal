@@ -213,6 +213,11 @@
       "invoices.totalBookings":  "{n} bookinger",
       "invoices.totalNights":    "{n} netter",
       "invoices.openEnded":      "åpent",
+      "invoices.guestSheet":     "Grunnlag — {guest}",
+      "invoices.colRef":         "Bookingref.",
+      "invoices.colStatus":      "Status",
+      "invoices.close":          "Lukk",
+      "invoices.viewSheet":      "Vis grunnlag",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Bestillingsportal",
@@ -422,6 +427,11 @@
       "invoices.totalBookings":  "{n} bookings",
       "invoices.totalNights":    "{n} nights",
       "invoices.openEnded":      "open",
+      "invoices.guestSheet":     "Statement — {guest}",
+      "invoices.colRef":         "Booking ref.",
+      "invoices.colStatus":      "Status",
+      "invoices.close":          "Close",
+      "invoices.viewSheet":      "View statement",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Booking Portal",

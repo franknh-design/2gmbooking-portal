@@ -1,6 +1,7 @@
 /* =========================================================
    Fakturaarkiv (Invoice archive).
-   v1.0
+   v1.1 (portal v3.10.2): klikk på booking-rad åpner grunnlags-dialog med
+   per-gjest PDF/XLSX-eksport.
    - Henter historiske opphold for innlogget kunde via Api.getInvoiceArchive
    - Tabell gruppert per måned med antall bookinger + totale netter
    - Klikk på rad → utvider og viser detaljerte bookinger (rom, gjest, dato)
@@ -214,6 +215,7 @@
       this._updateSortIndicators();
       this._wireExpandClicks();
       this._wireActionButtons();
+      this._wireBookingRowClicks();
     },
 
     _renderGroupRow(g) {
@@ -252,8 +254,8 @@
           <th>${tx("invoices.colCheckOut")}</th>
           <th class="num">${tx("invoices.colNightsOne")}</th>
         </tr>`;
-      const body = g.bookings.map(b => `
-        <tr>
+      const body = g.bookings.map((b, idx) => `
+        <tr class="inv-booking-row" data-period="${escapeHtml(g.period)}" data-idx="${idx}" title="${escapeHtml(tx("invoices.viewSheet"))}">
           <td>${escapeHtml(b.roomNumber || "—")}</td>
           <td>${escapeHtml(b.guest || "—")}</td>
           <td>${escapeHtml(b.property || "—")}</td>
@@ -306,6 +308,139 @@
           else if (action === "xlsx") this._downloadXlsx(group);
         });
       });
+    },
+
+    _wireBookingRowClicks() {
+      const rows = this.listEl.querySelectorAll(".inv-booking-row");
+      rows.forEach(tr => {
+        tr.addEventListener("click", () => {
+          const period = tr.getAttribute("data-period");
+          const idx = parseInt(tr.getAttribute("data-idx"), 10);
+          const group = this._archive.find(g => g.period === period);
+          if (!group) return;
+          const booking = group.bookings[idx];
+          if (!booking) return;
+          this._openGuestSheet(group, booking);
+        });
+      });
+    },
+
+    _openGuestSheet(group, booking) {
+      const dlgId = "inv-guest-dlg";
+      let dlg = document.getElementById(dlgId);
+      if (!dlg) {
+        dlg = document.createElement("dialog");
+        dlg.id = dlgId;
+        dlg.className = "inv-guest-dlg";
+        document.body.appendChild(dlg);
+      }
+      const monthLabel = localizedMonthLabel(group);
+      const checkOutLabel = booking.checkOut ? formatIsoDate(booking.checkOut) : tx("invoices.openEnded");
+      const rows = [
+        [tx("invoices.colRef"),       booking.ref || "—"],
+        [tx("invoices.colGuest"),     booking.guest || "—"],
+        [tx("invoices.colProperty"),  booking.property || "—"],
+        [tx("invoices.colRoom"),      booking.roomNumber || "—"],
+        [tx("invoices.colCheckIn"),   formatIsoDate(booking.checkIn)],
+        [tx("invoices.colCheckOut"),  checkOutLabel],
+        [tx("invoices.colNightsOne"), booking.nights == null ? "—" : String(booking.nights)],
+        [tx("invoices.colPeriod"),    monthLabel],
+        [tx("invoices.colStatus"),    booking.status || "—"],
+      ];
+      const rowsHtml = rows.map(([k, v]) => `
+        <tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>
+      `).join("");
+      dlg.innerHTML = `
+        <form method="dialog" class="inv-guest-form">
+          <h3 class="inv-guest-title">${escapeHtml(tx("invoices.guestSheet", { guest: booking.guest || "—" }))}</h3>
+          <table class="inv-guest-table"><tbody>${rowsHtml}</tbody></table>
+          <div class="inv-guest-actions">
+            <button type="button" class="inv-btn inv-btn-pdf"  data-action="pdf">${tx("invoices.btnPdf")}</button>
+            <button type="button" class="inv-btn inv-btn-xlsx" data-action="xlsx">${tx("invoices.btnXlsx")}</button>
+            <button type="submit" class="inv-btn inv-btn-close">${tx("invoices.close")}</button>
+          </div>
+        </form>`;
+      dlg.querySelector('[data-action="pdf"]').addEventListener("click", () => {
+        this._downloadGuestPdf(group, booking);
+      });
+      dlg.querySelector('[data-action="xlsx"]').addEventListener("click", () => {
+        this._downloadGuestXlsx(group, booking);
+      });
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else dlg.setAttribute("open", "");
+    },
+
+    _downloadGuestPdf(group, b) {
+      const label = localizedMonthLabel(group);
+      const customer = document.getElementById("customer-badge")?.textContent || "";
+      const co = b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded");
+      const rows = [
+        [tx("invoices.colRef"),       b.ref || "—"],
+        [tx("invoices.colGuest"),     b.guest || "—"],
+        [tx("invoices.colProperty"),  b.property || "—"],
+        [tx("invoices.colRoom"),      b.roomNumber || "—"],
+        [tx("invoices.colCheckIn"),   formatIsoDate(b.checkIn)],
+        [tx("invoices.colCheckOut"),  co],
+        [tx("invoices.colNightsOne"), b.nights == null ? "—" : String(b.nights)],
+        [tx("invoices.colPeriod"),    label],
+        [tx("invoices.colStatus"),    b.status || "—"],
+      ].map(([k, v]) => `<tr><th style="text-align:left;background:#f5f7fa;padding:6px 10px;border-bottom:.5px solid #e5e7eb;width:35%">${escapeHtml(k)}</th><td style="padding:6px 10px;border-bottom:.5px solid #e5e7eb">${escapeHtml(v)}</td></tr>`).join("");
+
+      const html = `<!DOCTYPE html><html><head><title>${escapeHtml(tx("invoices.guestSheet", { guest: b.guest || "—" }))}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:24px;color:#1f2937}
+  h1{font-size:18pt;margin:0 0 4px;color:#1B4F72}
+  .meta{color:#6b7280;font-size:11pt;margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;font-size:11pt}
+  tr:last-child th,tr:last-child td{border-bottom:0}
+  .footer{margin-top:18px;color:#6b7280;font-size:9pt;text-align:center}
+  .print-btn{position:fixed;top:16px;right:16px;padding:8px 14px;background:#1B4F72;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12pt}
+  @media print { .print-btn{display:none} }
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+<h1>${escapeHtml(tx("invoices.guestSheet", { guest: b.guest || "—" }))}</h1>
+<div class="meta">${escapeHtml(customer)} · ${escapeHtml(label)}</div>
+<table><tbody>${rows}</tbody></table>
+<div class="footer">2GM Eiendom AS · ${new Date().toLocaleDateString("nb-NO")}</div>
+</body></html>`;
+
+      const w = window.open("", "_blank");
+      if (!w) { alert("Popup blocked. Allow popups to download PDF."); return; }
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
+    },
+
+    _downloadGuestXlsx(group, b) {
+      const sep = ";";
+      const co = b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded");
+      const rows = [
+        [tx("invoices.colRef"),       b.ref || ""],
+        [tx("invoices.colGuest"),     b.guest || ""],
+        [tx("invoices.colProperty"),  b.property || ""],
+        [tx("invoices.colRoom"),      b.roomNumber || ""],
+        [tx("invoices.colCheckIn"),   formatIsoDate(b.checkIn)],
+        [tx("invoices.colCheckOut"),  co],
+        [tx("invoices.colNightsOne"), b.nights == null ? "" : String(b.nights)],
+        [tx("invoices.colPeriod"),    localizedMonthLabel(group)],
+        [tx("invoices.colStatus"),    b.status || ""],
+      ];
+      const esc = (v) => {
+        const s = String(v == null ? "" : v);
+        return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = rows.map(r => r.map(esc).join(sep));
+      const csv = "﻿" + lines.join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = String(b.guest || "gjest").replace(/[^\w\d-]+/g, "_").slice(0, 40) || "gjest";
+      a.download = `grunnlag-${safeName}-${group.period}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
 
     _downloadPdf(group) {

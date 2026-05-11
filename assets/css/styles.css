@@ -1821,3 +1821,59 @@ input[type="date"]:disabled {
 .inv-detail-table th { color: var(--c-muted); font-weight: 500; }
 .inv-detail-table th.num, .inv-detail-table td.num { text-align: right; }
 .inv-detail-table tbody tr:last-child td { border-bottom: 0; }
+
+/* v3.10.2: klikkbar booking-rad → åpner grunnlags-dialog. */
+.inv-booking-row { cursor: pointer; transition: background .12s; }
+.inv-booking-row:hover { background: rgba(27, 79, 114, .08); }
+
+.inv-guest-dlg {
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0;
+  max-width: 520px;
+  width: calc(100vw - 32px);
+  box-shadow: 0 12px 40px rgba(0,0,0,.18);
+}
+.inv-guest-dlg::backdrop { background: rgba(15,23,42,.45); }
+.inv-guest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 22px 18px;
+  margin: 0;
+}
+.inv-guest-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-brand-dark);
+}
+.inv-guest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.inv-guest-table th, .inv-guest-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: .5px solid var(--c-border);
+}
+.inv-guest-table th {
+  font-weight: 500;
+  color: var(--c-muted);
+  width: 40%;
+  background: rgba(27, 79, 114, .03);
+}
+.inv-guest-table tbody tr:last-child th,
+.inv-guest-table tbody tr:last-child td { border-bottom: 0; }
+.inv-guest-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.inv-btn-close {
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+.inv-btn-close:hover { background: var(--c-border); color: var(--c-text); }
