@@ -1720,20 +1720,25 @@ input[type="date"]:disabled {
 .inv-search {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
   font: inherit;
   font-size: 14px;
-  background: var(--c-surface);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
-.inv-search:focus { outline: 2px solid var(--c-brand-light); outline-offset: 1px; }
+.inv-search:focus {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 1px;
+  border-color: var(--color-border-primary);
+}
 
 .inv-loading, .inv-error, .inv-empty {
   margin: 12px 0;
-  color: var(--c-muted);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
-.inv-error { color: var(--c-red-fg); }
+.inv-error { color: var(--color-text-danger); }
 
 .inv-table-wrap { overflow-x: auto; }
 .inv-table {
@@ -1742,20 +1747,23 @@ input[type="date"]:disabled {
   font-size: 14px;
 }
 .inv-table th, .inv-table td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   text-align: left;
-  border-bottom: .5px solid var(--c-border);
+  border-bottom: 0.5px solid var(--color-border-tertiary);
   vertical-align: top;
 }
 .inv-table th {
-  background: var(--c-bg);
-  font-weight: 600;
-  color: var(--c-brand-dark);
+  background: var(--color-background-secondary);
+  font-weight: 500;
+  color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
 }
-.inv-table th:hover { background: #eef1f5; }
+.inv-table th:hover { background: var(--color-background-tertiary); }
 .inv-table th.num, .inv-table td.num { text-align: right; }
 .inv-table th[data-sort-key]::after {
   content: " ";
@@ -1766,45 +1774,51 @@ input[type="date"]:disabled {
 .inv-table th.inv-sort-asc::after  { content: " ▲"; opacity: 1; }
 .inv-table th.inv-sort-desc::after { content: " ▼"; opacity: 1; }
 .inv-table tbody tr:last-child td { border-bottom: 0; }
-.inv-table tbody tr:hover { background: rgba(27, 79, 114, .03); }
+.inv-table tbody tr:hover { background: var(--color-background-tertiary); }
 
 .inv-expand-btn {
   background: transparent;
   border: 0;
   cursor: pointer;
   font: inherit;
-  font-weight: 600;
-  color: var(--c-brand-dark);
+  font-weight: 500;
+  color: var(--color-text-primary);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0;
 }
-.inv-chevron { color: var(--c-muted); font-size: 12px; }
+.inv-chevron { color: var(--color-text-tertiary); font-size: 12px; }
 
-.inv-cell-bookings, .inv-cell-nights { font-variant-numeric: tabular-nums; }
-.inv-cell-property { color: var(--c-muted); }
+.inv-cell-bookings, .inv-cell-nights {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.inv-cell-property { color: var(--color-text-secondary); }
 
 .inv-cell-actions { white-space: nowrap; }
 .inv-btn {
-  padding: 4px 10px;
-  border: 1px solid var(--c-brand);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface);
-  color: var(--c-brand);
+  padding: 6px 12px;
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
+  font-weight: 500;
   margin-right: 4px;
+  transition: background .12s, border-color .12s;
 }
-.inv-btn:hover { background: var(--c-brand); color: #fff; }
-.inv-btn-pdf  { /* default brand */ }
-.inv-btn-xlsx { border-color: var(--c-green-fg); color: var(--c-green-fg); }
-.inv-btn-xlsx:hover { background: var(--c-green-fg); color: #fff; }
+.inv-btn:hover {
+  background: var(--color-background-secondary);
+  border-color: var(--color-border-primary);
+}
+.inv-btn-xlsx, .inv-btn-pdf { /* delt nøytral stil */ }
 
 /* Detalj-rad — bookings under en utvidet måned. */
 .inv-detail-row > td {
-  background: rgba(27, 79, 114, .04);
+  background: var(--color-background-secondary);
   padding: 8px 12px;
 }
 .inv-detail-table {
@@ -1814,31 +1828,39 @@ input[type="date"]:disabled {
   margin: 4px 0;
 }
 .inv-detail-table th, .inv-detail-table td {
-  padding: 4px 8px;
+  padding: 6px 10px;
   text-align: left;
-  border-bottom: .5px dashed var(--c-border);
+  border-bottom: 0.5px solid var(--color-border-tertiary);
 }
-.inv-detail-table th { color: var(--c-muted); font-weight: 500; }
+.inv-detail-table th {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
 .inv-detail-table th.num, .inv-detail-table td.num { text-align: right; }
 .inv-detail-table tbody tr:last-child td { border-bottom: 0; }
 
 /* v3.10.2: klikkbar booking-rad → åpner grunnlags-dialog. */
 .inv-booking-row { cursor: pointer; transition: background .12s; }
-.inv-booking-row:hover { background: rgba(27, 79, 114, .08); }
+.inv-booking-row:hover { background: var(--color-background-tertiary); }
 
 .inv-guest-dlg {
   border: 0;
-  border-radius: var(--radius);
+  border-radius: var(--border-radius-lg);
   padding: 0;
   max-width: 520px;
   width: calc(100vw - 32px);
   box-shadow: 0 12px 40px rgba(0,0,0,.18);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
 .inv-guest-dlg::backdrop { background: rgba(15,23,42,.45); }
 .inv-guest-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 22px 22px 18px;
   margin: 0;
 }
@@ -1846,7 +1868,7 @@ input[type="date"]:disabled {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--c-brand-dark);
+  color: var(--color-text-primary);
 }
 .inv-guest-table {
   width: 100%;
@@ -1854,15 +1876,22 @@ input[type="date"]:disabled {
   font-size: 13px;
 }
 .inv-guest-table th, .inv-guest-table td {
-  padding: 6px 10px;
+  padding: 8px 12px;
   text-align: left;
-  border-bottom: .5px solid var(--c-border);
+  border-bottom: 0.5px solid var(--color-border-tertiary);
 }
 .inv-guest-table th {
   font-weight: 500;
-  color: var(--c-muted);
+  color: var(--color-text-tertiary);
   width: 40%;
-  background: rgba(27, 79, 114, .03);
+  background: var(--color-background-secondary);
+  font-size: 11px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.inv-guest-table td {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 .inv-guest-table tbody tr:last-child th,
 .inv-guest-table tbody tr:last-child td { border-bottom: 0; }
@@ -1872,8 +1901,14 @@ input[type="date"]:disabled {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
+/* Lukk-knappen får primær fyll-stil — samme som extend-dlg. */
 .inv-btn-close {
-  border-color: var(--c-border);
-  color: var(--c-text);
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  color: var(--color-background-primary);
 }
-.inv-btn-close:hover { background: var(--c-border); color: var(--c-text); }
+.inv-btn-close:hover {
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  opacity: .85;
+}
