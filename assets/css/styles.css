@@ -1814,10 +1814,14 @@ input[type="date"]:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-/* v3.10.6: Last ned-kolonnen høyrejusteres så knappene legger seg ute mot
-   høyre kant — bedre balanse mot tabellens venstre-side. */
-.inv-cell-actions { white-space: nowrap; text-align: right; }
-.inv-table th[data-sort-key]:last-of-type ~ th,
+/* v3.10.6/v3.10.7: Last ned-kolonnen høyrejusteres så knappene legger seg
+   ute mot høyre kant. Må stage spesifisiteten med .inv-table td/.inv-table th
+   foran fordi den generelle `.inv-table th, .inv-table td { text-align:left }`
+   høyere oppe ellers vinner. */
+.inv-table td.inv-cell-actions {
+  white-space: nowrap;
+  text-align: right;
+}
 .inv-table thead th:last-child { text-align: right; }
 .inv-btn {
   padding: 6px 12px;
