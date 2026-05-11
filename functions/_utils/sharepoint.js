@@ -193,6 +193,22 @@ export async function logTokenUsage(env, itemId, currentCount) {
   });
 }
 
+// v3.10.11: Lett heartbeat-oppdatering. Kalles av portalen ~hvert minutt så
+// admin kan se hvem som er aktive akkurat nå. Skiller mellom SistBrukt
+// (innlogging/bestilling) og LastSeen (siste aktivitet, inkl. heartbeat).
+// Hvis kolonnen LastSeen ikke finnes i SharePoint enda, stripper
+// _stripUnknownFieldsAsync feltet og PATCH lykkes uten effekt — admin må
+// legge til kolonnen for at funksjonaliteten skal virke.
+export async function updateTokenHeartbeat(env, itemId) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.TOKENS}/items/${itemId}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify({
+      LastSeen: new Date().toISOString(),
+    }),
+  });
+}
+
 export function maskPhone(phone) {
   if (!phone || phone.length < 4) return "";
   const last3 = phone.slice(-3);

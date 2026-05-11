@@ -340,6 +340,23 @@
     }
   }
 
+  // v3.10.11: Lett heartbeat — la admin se hvem som har portalen åpen.
+  async function heartbeat(token) {
+    if (!token || typeof token !== "string") return { ok: false };
+    try {
+      const response = await fetch(`${API_BASE}/heartbeat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        cache: "no-store",
+      });
+      return await response.json().catch(() => ({ ok: false }));
+    } catch (_err) {
+      // Stille feil — heartbeat skal aldri forstyrre brukerflyten
+      return { ok: false };
+    }
+  }
+
   window.Api = {
     validateToken,
     validatePin,
@@ -350,6 +367,7 @@
     getCustomerFreeRooms,
     requestExtension,
     requestEnd,
-    getInvoiceArchive
+    getInvoiceArchive,
+    heartbeat
   };
 })();

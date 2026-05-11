@@ -75,6 +75,34 @@
         document.addEventListener("i18n:change", () => loadCustomerFreeRooms(session.token));
       }
 
+      // v3.10.11: Heartbeat hvert 60. sek mens fanen er aktiv. Gir admin et
+      // "hvem er online nå"-bilde via Customer_Tokens.LastSeen. Pauses når
+      // fanen er skjult (battery + SP-skriving-respekt) og resumes ved
+      // visibility-change.
+      if (session.token) {
+        let _hbInterval = null;
+        const _sendHeartbeat = () => {
+          if (document.visibilityState === "visible") {
+            window.Api.heartbeat(session.token);
+          }
+        };
+        const _startHb = () => {
+          if (_hbInterval) return;
+          _sendHeartbeat();
+          _hbInterval = setInterval(_sendHeartbeat, 60 * 1000);
+        };
+        const _stopHb = () => {
+          if (!_hbInterval) return;
+          clearInterval(_hbInterval);
+          _hbInterval = null;
+        };
+        _startHb();
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") _startHb();
+          else _stopHb();
+        });
+      }
+
       // v3.7.3: "Tøm datoer"-knapp under Fra dato — nullstiller fra+til
        // og resetter kalender-valg så kunden kan starte velgingen på nytt.
       const clearBtn = document.getElementById("f-clear-dates");
