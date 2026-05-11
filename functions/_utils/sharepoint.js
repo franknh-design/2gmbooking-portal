@@ -14,6 +14,7 @@ const LIST_IDS = {
   ROOMS:      "bfa962a0-5eb2-416c-abe8-adba06558c11",
   BOOKINGS:   "fe1dfe34-23df-4864-b0b1-b01bf60bfb75",
   PROPERTIES: "d842d574-f238-442a-be3d-77334727e89f",
+  RATES:      "a604493f-e879-48a0-bcab-cdeb9ae2195e",
   // v1.7: PIN-rate-limit. Sett til SharePoint-list-GUID for 'Pin_Attempts'
   // når listen er opprettet. Tom streng = rate-limiting deaktivert (graceful
   // degradation). Kolonner som forventes:
@@ -305,6 +306,35 @@ export async function getRoomsByIdMap(env) {
       title: f.Title || null,
       doorCode: f.Door_Code || null,
       cleaningStatus: f.Cleaning_Status || null,
+      dailyRate: Number(f.DailyRate) || 0,
+      propertyLookupId: f.PropertyLookupId ? String(f.PropertyLookupId) : null,
+      longTermCompany: f.LongTerm_Company || null,
+      longTermPrice: Number(f.LongTerm_Price) || 0,
+      longTermStartDate: f.LongTerm_StartDate || null,
+      longTermEndDate: f.LongTerm_EndDate || null,
+    };
+  }
+  return map;
+}
+
+// v3.10.4: Hent hele Rates-lista — brukes til pris-oppslag i fakturaarkivet.
+export async function getAllRates(env) {
+  const items = await fetchAllItems(env, LIST_IDS.RATES);
+  return items.map(it => it.fields || {}).filter(Boolean);
+}
+
+// v3.10.4: Hent Properties som id → { title, dailyRate, fullTenantCompany }.
+// Brukes som fallback-rate-kilde og for å gjenkjenne full-tenant-eiendommer.
+export async function getPropertiesByIdMap(env) {
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const map = {};
+  for (const item of items) {
+    if (!item.id) continue;
+    const f = item.fields || {};
+    map[String(item.id)] = {
+      title: f.Title || null,
+      dailyRate: Number(f.DailyRate) || 0,
+      fullTenantCompany: f.FullTenant_Company || null,
     };
   }
   return map;

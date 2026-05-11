@@ -33,7 +33,10 @@ import {
   findToken,
   getAllBookingsForCompany,
   getRoomsByIdMap,
+  getAllRates,
+  getPropertiesByIdMap,
 } from "../_utils/sharepoint.js";
+import { getDailyRate } from "../_utils/rates.js";
 
 const MONTHS_EN = [
   "January", "February", "March", "April", "May", "June",
@@ -62,9 +65,13 @@ export async function onRequestPost(context) {
     // Hent ALLE bookinger for kunden (alt unntatt Cancelled). Vi grupperer
     // selv basert på siste natt — sammenfaller med admin-appens "natt-tilhører-
     // måneden-den-slutter-i"-konvensjon.
-    const [items, roomsById] = await Promise.all([
+    // v3.10.4: Rates + Properties hentes også så vi kan vise per-booking sum
+    // (nights × rate) for kunden.
+    const [items, roomsById, allRates, propertiesById] = await Promise.all([
       getAllBookingsForCompany(env, company),
       getRoomsByIdMap(env),
+      getAllRates(env),
+      getPropertiesByIdMap(env),
     ]);
 
     // Group by month-of-last-night. For open-ended bookinger uten Check_Out,
@@ -94,6 +101,21 @@ export async function onRequestPost(context) {
         ? Math.max(0, Math.round((new Date(f.Check_Out) - new Date(f.Check_In)) / 86400000))
         : null;
 
+      // v3.10.4: Beregn pris (nights × rate). Bruker effektivt selskap
+      // (Billing_Company > Company). Sett til null hvis vi ikke kan beregne.
+      const effectiveCompany = (f.Billing_Company || f.Company || "").trim();
+      const rateInfo = getDailyRate({
+        personName: f.Person_Name,
+        company: effectiveCompany,
+        propertyTitle: f.Property_Name,
+        roomId,
+        allRates,
+        roomsById,
+        propertiesById,
+      });
+      const rate = rateInfo.rate || 0;
+      const total = (nights != null && rate) ? Math.round(nights * rate) : null;
+
       const bookingObj = {
         ref: f.Title || "",
         property: f.Property_Name || "",
@@ -103,6 +125,8 @@ export async function onRequestPost(context) {
         checkOut: f.Check_Out || null,
         nights,
         status: f.Status || "",
+        rate: rate || null,
+        total,
       };
 
       if (!byMonth.has(key)) {
@@ -112,12 +136,14 @@ export async function onRequestPost(context) {
           labelNb: `${MONTHS_NB[m]} ${y}`,
           bookings: [],
           totalNights: 0,
+          totalAmount: 0,
           bookingCount: 0,
         });
       }
       const bucket = byMonth.get(key);
       bucket.bookings.push(bookingObj);
       bucket.totalNights += (nights || 0);
+      bucket.totalAmount += (total || 0);
       bucket.bookingCount += 1;
     }
 

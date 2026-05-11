@@ -39,6 +39,11 @@
     return tx("invoices.totalNights", { n });
   }
 
+  function formatKr(amount) {
+    if (amount == null || amount === "") return tx("invoices.noRate");
+    return Number(amount).toLocaleString("nb-NO") + " kr";
+  }
+
   const Invoices = {
     token: null,
     container: null,
@@ -175,6 +180,8 @@
           av = a.bookingCount; bv = b.bookingCount;
         } else if (key === "nights") {
           av = a.totalNights; bv = b.totalNights;
+        } else if (key === "amount") {
+          av = a.totalAmount || 0; bv = b.totalAmount || 0;
         } else if (key === "property") {
           av = (a.bookings[0] && a.bookings[0].property) || "";
           bv = (b.bookings[0] && b.bookings[0].property) || "";
@@ -234,6 +241,7 @@
           </td>
           <td class="inv-cell-bookings num">${g.bookingCount}</td>
           <td class="inv-cell-nights num">${g.totalNights}</td>
+          <td class="inv-cell-amount num">${escapeHtml(formatKr(g.totalAmount))}</td>
           <td class="inv-cell-property">${escapeHtml(properties || "—")}</td>
           <td class="inv-cell-actions">
             <button type="button" class="inv-btn inv-btn-pdf"  data-action="pdf"  data-period="${escapeHtml(g.period)}">${tx("invoices.btnPdf")}</button>
@@ -253,6 +261,8 @@
           <th>${tx("invoices.colCheckIn")}</th>
           <th>${tx("invoices.colCheckOut")}</th>
           <th class="num">${tx("invoices.colNightsOne")}</th>
+          <th class="num">${tx("invoices.colRate")}</th>
+          <th class="num">${tx("invoices.colAmount")}</th>
         </tr>`;
       const body = g.bookings.map((b, idx) => `
         <tr class="inv-booking-row" data-period="${escapeHtml(g.period)}" data-idx="${idx}" title="${escapeHtml(tx("invoices.viewSheet"))}">
@@ -262,13 +272,24 @@
           <td>${escapeHtml(formatIsoDate(b.checkIn))}</td>
           <td>${escapeHtml(b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded"))}</td>
           <td class="num">${b.nights == null ? "—" : b.nights}</td>
+          <td class="num">${escapeHtml(formatKr(b.rate))}</td>
+          <td class="num">${escapeHtml(formatKr(b.total))}</td>
         </tr>`).join("");
+      const footer = `
+        <tr class="inv-detail-foot">
+          <td colspan="5" style="text-align:right;font-weight:500">${escapeHtml(tx("invoices.colAmount"))}:</td>
+          <td class="num">${g.totalNights}</td>
+          <td></td>
+          <td class="num" style="font-weight:600">${escapeHtml(formatKr(g.totalAmount))}</td>
+        </tr>`;
       return `
-        <tr class="inv-detail-row"><td colspan="5">
+        <tr class="inv-detail-row"><td colspan="6">
           <table class="inv-detail-table">
             <thead>${headers}</thead>
             <tbody>${body}</tbody>
+            <tfoot>${footer}</tfoot>
           </table>
+          <p class="inv-amount-note">${escapeHtml(tx("invoices.amountNote"))}</p>
         </td></tr>
       `;
     },
@@ -344,6 +365,8 @@
         [tx("invoices.colCheckIn"),   formatIsoDate(booking.checkIn)],
         [tx("invoices.colCheckOut"),  checkOutLabel],
         [tx("invoices.colNightsOne"), booking.nights == null ? "—" : String(booking.nights)],
+        [tx("invoices.colRate"),      formatKr(booking.rate)],
+        [tx("invoices.colAmount"),    formatKr(booking.total)],
         [tx("invoices.colPeriod"),    monthLabel],
         [tx("invoices.colStatus"),    booking.status || "—"],
       ];
@@ -354,6 +377,7 @@
         <form method="dialog" class="inv-guest-form">
           <h3 class="inv-guest-title">${escapeHtml(tx("invoices.guestSheet", { guest: booking.guest || "—" }))}</h3>
           <table class="inv-guest-table"><tbody>${rowsHtml}</tbody></table>
+          <p class="inv-amount-note">${escapeHtml(tx("invoices.amountNote"))}</p>
           <div class="inv-guest-actions">
             <button type="button" class="inv-btn inv-btn-pdf"  data-action="pdf">${tx("invoices.btnPdf")}</button>
             <button type="button" class="inv-btn inv-btn-xlsx" data-action="xlsx">${tx("invoices.btnXlsx")}</button>
@@ -382,6 +406,8 @@
         [tx("invoices.colCheckIn"),   formatIsoDate(b.checkIn)],
         [tx("invoices.colCheckOut"),  co],
         [tx("invoices.colNightsOne"), b.nights == null ? "—" : String(b.nights)],
+        [tx("invoices.colRate"),      formatKr(b.rate)],
+        [tx("invoices.colAmount"),    formatKr(b.total)],
         [tx("invoices.colPeriod"),    label],
         [tx("invoices.colStatus"),    b.status || "—"],
       ].map(([k, v]) => `<tr><th style="text-align:left;background:#f5f7fa;padding:6px 10px;border-bottom:.5px solid #e5e7eb;width:35%">${escapeHtml(k)}</th><td style="padding:6px 10px;border-bottom:.5px solid #e5e7eb">${escapeHtml(v)}</td></tr>`).join("");
@@ -391,6 +417,7 @@
   body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:24px;color:#1f2937}
   h1{font-size:18pt;margin:0 0 4px;color:#1B4F72}
   .meta{color:#6b7280;font-size:11pt;margin-bottom:14px}
+  .note{color:#6b7280;font-size:9pt;margin:8px 0 0;font-style:italic}
   table{border-collapse:collapse;width:100%;font-size:11pt}
   tr:last-child th,tr:last-child td{border-bottom:0}
   .footer{margin-top:18px;color:#6b7280;font-size:9pt;text-align:center}
@@ -401,6 +428,7 @@
 <h1>${escapeHtml(tx("invoices.guestSheet", { guest: b.guest || "—" }))}</h1>
 <div class="meta">${escapeHtml(customer)} · ${escapeHtml(label)}</div>
 <table><tbody>${rows}</tbody></table>
+<p class="note">${escapeHtml(tx("invoices.amountNote"))}</p>
 <div class="footer">2GM Eiendom AS · ${new Date().toLocaleDateString("nb-NO")}</div>
 </body></html>`;
 
@@ -422,6 +450,8 @@
         [tx("invoices.colCheckIn"),   formatIsoDate(b.checkIn)],
         [tx("invoices.colCheckOut"),  co],
         [tx("invoices.colNightsOne"), b.nights == null ? "" : String(b.nights)],
+        [tx("invoices.colRate"),      b.rate == null ? "" : String(b.rate)],
+        [tx("invoices.colAmount"),    b.total == null ? "" : String(b.total)],
         [tx("invoices.colPeriod"),    localizedMonthLabel(group)],
         [tx("invoices.colStatus"),    b.status || ""],
       ];
@@ -454,6 +484,8 @@
           <td>${escapeHtml(formatIsoDate(b.checkIn))}</td>
           <td>${escapeHtml(b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded"))}</td>
           <td style="text-align:right">${b.nights == null ? "—" : b.nights}</td>
+          <td style="text-align:right">${escapeHtml(formatKr(b.rate))}</td>
+          <td style="text-align:right">${escapeHtml(formatKr(b.total))}</td>
         </tr>`).join("");
 
       const html = `<!DOCTYPE html><html><head><title>${escapeHtml(tx("invoices.summary", { month: label }))}</title>
@@ -461,17 +493,19 @@
   body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:24px;color:#1f2937}
   h1{font-size:18pt;margin:0 0 4px;color:#1B4F72}
   .meta{color:#6b7280;font-size:11pt;margin-bottom:14px}
+  .note{color:#6b7280;font-size:9pt;margin:8px 0 0;font-style:italic}
   table{border-collapse:collapse;width:100%;font-size:11pt}
   th,td{padding:6px 10px;border-bottom:.5px solid #e5e7eb;text-align:left}
   th{background:#f5f7fa;font-weight:600}
   tr:last-child td{border-bottom:0}
+  tfoot td{font-weight:600;background:#fafafa}
   .footer{margin-top:18px;color:#6b7280;font-size:9pt;text-align:center}
   .print-btn{position:fixed;top:16px;right:16px;padding:8px 14px;background:#1B4F72;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12pt}
   @media print { .print-btn{display:none} }
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
 <h1>${escapeHtml(tx("invoices.summary", { month: label }))}</h1>
-<div class="meta">${escapeHtml(customer)} · ${escapeHtml(tx("invoices.totalBookings", { n: group.bookingCount }))} · ${escapeHtml(tx("invoices.totalNights", { n: group.totalNights }))}</div>
+<div class="meta">${escapeHtml(customer)} · ${escapeHtml(tx("invoices.totalBookings", { n: group.bookingCount }))} · ${escapeHtml(tx("invoices.totalNights", { n: group.totalNights }))} · ${escapeHtml(formatKr(group.totalAmount))}</div>
 <table>
   <thead><tr>
     <th>${escapeHtml(tx("invoices.colRoom"))}</th>
@@ -480,9 +514,18 @@
     <th>${escapeHtml(tx("invoices.colCheckIn"))}</th>
     <th>${escapeHtml(tx("invoices.colCheckOut"))}</th>
     <th style="text-align:right">${escapeHtml(tx("invoices.colNightsOne"))}</th>
+    <th style="text-align:right">${escapeHtml(tx("invoices.colRate"))}</th>
+    <th style="text-align:right">${escapeHtml(tx("invoices.colAmount"))}</th>
   </tr></thead>
   <tbody>${rows}</tbody>
+  <tfoot><tr>
+    <td colspan="5" style="text-align:right">${escapeHtml(tx("invoices.colAmount"))}</td>
+    <td style="text-align:right">${group.totalNights}</td>
+    <td></td>
+    <td style="text-align:right">${escapeHtml(formatKr(group.totalAmount))}</td>
+  </tr></tfoot>
 </table>
+<p class="note">${escapeHtml(tx("invoices.amountNote"))}</p>
 <div class="footer">2GM Eiendom AS · ${new Date().toLocaleDateString("nb-NO")}</div>
 </body></html>`;
 
@@ -503,6 +546,8 @@
         tx("invoices.colCheckIn"),
         tx("invoices.colCheckOut"),
         tx("invoices.colNightsOne"),
+        tx("invoices.colRate"),
+        tx("invoices.colAmount"),
       ];
       const esc = (v) => {
         const s = String(v == null ? "" : v);
@@ -517,8 +562,21 @@
           formatIsoDate(b.checkIn),
           b.checkOut ? formatIsoDate(b.checkOut) : tx("invoices.openEnded"),
           b.nights == null ? "" : b.nights,
+          b.rate == null ? "" : b.rate,
+          b.total == null ? "" : b.total,
         ].map(esc).join(sep));
       }
+      // Total-rad
+      lines.push([
+        "",
+        "",
+        "",
+        "",
+        tx("invoices.colAmount"),
+        group.totalNights,
+        "",
+        group.totalAmount || 0,
+      ].map(esc).join(sep));
       const csv = "﻿" + lines.join("\r\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);

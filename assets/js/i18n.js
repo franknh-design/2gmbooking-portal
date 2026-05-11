@@ -216,8 +216,13 @@
       "invoices.guestSheet":     "Grunnlag — {guest}",
       "invoices.colRef":         "Bookingref.",
       "invoices.colStatus":      "Status",
+      "invoices.colAmount":      "Sum",
+      "invoices.colRate":        "Døgnpris",
       "invoices.close":          "Lukk",
       "invoices.viewSheet":      "Vis grunnlag",
+      "invoices.totalAmount":    "{n} kr",
+      "invoices.noRate":         "—",
+      "invoices.amountNote":     "Beløp = netter × døgnpris (eks. gebyrer/mva)",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Bestillingsportal",
@@ -430,8 +435,13 @@
       "invoices.guestSheet":     "Statement — {guest}",
       "invoices.colRef":         "Booking ref.",
       "invoices.colStatus":      "Status",
+      "invoices.colAmount":      "Amount",
+      "invoices.colRate":        "Rate / night",
       "invoices.close":          "Close",
       "invoices.viewSheet":      "View statement",
+      "invoices.totalAmount":    "{n} kr",
+      "invoices.noRate":         "—",
+      "invoices.amountNote":     "Amount = nights × rate (excl. fees/VAT)",
 
       // Footer
       "footer.copy": "© 2GM Eiendom AS · Booking Portal",

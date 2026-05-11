@@ -1790,11 +1790,29 @@ input[type="date"]:disabled {
 }
 .inv-chevron { color: var(--color-text-tertiary); font-size: 12px; }
 
-.inv-cell-bookings, .inv-cell-nights {
+.inv-cell-bookings, .inv-cell-nights, .inv-cell-amount {
   font-variant-numeric: tabular-nums;
   color: var(--color-text-primary);
 }
+.inv-cell-amount { font-weight: 500; }
 .inv-cell-property { color: var(--color-text-secondary); }
+
+/* v3.10.4: lite forklaringstekst under grunnlag-tabell + i dialog. */
+.inv-amount-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+/* Total-rad i detalj-tabell. */
+.inv-detail-foot td {
+  border-top: 0.5px solid var(--color-border-secondary);
+  border-bottom: 0;
+  padding-top: 8px;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
 
 .inv-cell-actions { white-space: nowrap; }
 .inv-btn {
