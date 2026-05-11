@@ -151,38 +151,64 @@
     _bestillingToggleWired = true;
   }
 
-  // v3.10.8: Tab-rad — hopper til + åpner valgt seksjon.
+  // v3.10.9: Tab-rad — eksklusiv visning. Klikk åpner valgt seksjon og
+  // kollapser de to andre, så bare én er utslått om gangen.
+  const PORTAL_SECTIONS = [
+    { panelId: "bestilling-panel", toggleId: "bestilling-toggle" },
+    { panelId: "mybookings-panel", toggleId: "mybookings-toggle" },
+    { panelId: "invoices-panel",   toggleId: "invoices-toggle" },
+  ];
+  function _setPortalSection(targetPanelId) {
+    PORTAL_SECTIONS.forEach(({ panelId, toggleId }) => {
+      const panel = document.getElementById(panelId);
+      const toggle = document.getElementById(toggleId);
+      if (!panel) return;
+      const shouldOpen = panelId === targetPanelId;
+      panel.classList.toggle("collapsed", !shouldOpen);
+      if (toggle) toggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    });
+    const buttons = document.querySelectorAll(".portal-nav-btn");
+    buttons.forEach(b => {
+      b.classList.toggle("is-active", b.getAttribute("data-target") === targetPanelId);
+    });
+  }
   let _portalNavWired = false;
   function wirePortalNav() {
     if (_portalNavWired) return;
     const buttons = document.querySelectorAll(".portal-nav-btn");
     if (!buttons.length) return;
-    const setActive = (btn) => {
-      buttons.forEach(b => b.classList.toggle("is-active", b === btn));
-    };
     buttons.forEach(btn => {
       btn.addEventListener("click", () => {
         const targetId = btn.getAttribute("data-target");
         const target = document.getElementById(targetId);
         if (!target) return;
-        // Tving seksjonen åpen (fjern .collapsed) og oppdater aria på toggle-knapp
-        if (target.classList.contains("collapsed")) {
-          target.classList.remove("collapsed");
-          const toggleId =
-            targetId === "bestilling-panel" ? "bestilling-toggle" :
-            targetId === "mybookings-panel" ? "mybookings-toggle" :
-            targetId === "invoices-panel"   ? "invoices-toggle"   : null;
-          if (toggleId) {
-            const t = document.getElementById(toggleId);
-            if (t) t.setAttribute("aria-expanded", "true");
-          }
-        }
-        // Vis seksjonen hvis den var helt skjult (Mine bookinger og Fakturaarkiv
-        // starter med hidden=true før init).
         if (target.hidden) target.hidden = false;
+        _setPortalSection(targetId);
         target.scrollIntoView({ behavior: "smooth", block: "start" });
-        setActive(btn);
       });
+    });
+    // Synk hver enkelt accordion-header med tab-radens aktive tilstand —
+    // dvs. når brukeren klikker chevronen direkte, må de andre kollapses og
+    // tab-radens "is-active" oppdateres.
+    PORTAL_SECTIONS.forEach(({ panelId, toggleId }) => {
+      const toggle = document.getElementById(toggleId);
+      if (!toggle) return;
+      toggle.addEventListener("click", (e) => {
+        // Hvis denne seksjonen allerede er åpen, lukk alle (toggle av).
+        // Hvis den er lukket, åpne kun denne og lukk de andre.
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+        e.preventDefault();
+        e.stopImmediatePropagation(); // stopp også andre handlere på samme element
+        const isOpen = !panel.classList.contains("collapsed");
+        if (isOpen) {
+          panel.classList.add("collapsed");
+          toggle.setAttribute("aria-expanded", "false");
+          document.querySelectorAll(".portal-nav-btn").forEach(b => b.classList.remove("is-active"));
+        } else {
+          _setPortalSection(panelId);
+        }
+      }, true); // capture-fase så vi vinner over de eksisterende toggle-handlere
     });
     _portalNavWired = true;
   }

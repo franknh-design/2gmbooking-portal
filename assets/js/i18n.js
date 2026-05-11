@@ -26,8 +26,9 @@
       "topbar.newBooking":  "+ Ny bestilling",
       "topbar.logout":      "Logg ut",
 
-      // Nav (v3.10.8)
+      // Nav (v3.10.8 / v3.10.9)
       "nav.booking":        "Bestilling",
+      "nav.newBooking":     "+ Ny bestilling",
       "nav.mybookings":     "Mine bookinger",
       "nav.invoices":       "Fakturaarkiv",
 
@@ -252,8 +253,9 @@
       "topbar.newBooking":  "+ New booking",
       "topbar.logout":      "Sign out",
 
-      // Nav (v3.10.8)
+      // Nav (v3.10.8 / v3.10.9)
       "nav.booking":        "Booking",
+      "nav.newBooking":     "+ New booking",
       "nav.mybookings":     "My bookings",
       "nav.invoices":       "Invoice archive",
 

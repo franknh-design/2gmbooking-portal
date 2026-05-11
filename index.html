@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.10.8 -->
+<!-- v3.10.9 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -64,14 +64,14 @@
       </div>
     </header>
 
-    <!-- v3.10.8: Tab-rad under banneret — scroller til + åpner seksjonen. -->
+    <!-- v3.10.9: Tab-rad under banneret — scroller til + åpner seksjonen. -->
     <nav class="portal-nav" aria-label="Sections">
-      <button type="button" class="portal-nav-btn is-active" data-target="bestilling-panel" data-i18n="nav.booking">Bestilling</button>
+      <button type="button" class="portal-nav-btn is-active" data-target="bestilling-panel" data-i18n="nav.newBooking">+ Ny bestilling</button>
       <button type="button" class="portal-nav-btn" data-target="mybookings-panel" data-i18n="nav.mybookings">Mine bookinger</button>
       <button type="button" class="portal-nav-btn" data-target="invoices-panel" data-i18n="nav.invoices">Fakturaarkiv</button>
     </nav>
 
-    <!-- v3.10.8: Bestilling som ett trekkspill — Kalender + Ny bestilling +
+    <!-- v3.10.9: Bestilling som ett trekkspill — Kalender + Ny bestilling +
          Ledige rom hører sammen som én flyt (sjekk → bestill). Åpen som default. -->
     <section class="bestilling-section" id="bestilling-panel">
       <button type="button" class="panel-head bestilling-toggle" id="bestilling-toggle" aria-expanded="true">
@@ -200,8 +200,8 @@
 
     <!-- v3.8.0: Mine bookinger nederst — kollapser via :has() når lista er hidden. -->
     <div class="mybookings-top">
-      <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
-        <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="true">
+      <section class="panel panel-mybookings collapsed" id="mybookings-panel" aria-label="Mine bookinger" hidden>
+        <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="false">
           <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
           <span class="badge" id="mybookings-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
@@ -223,11 +223,11 @@
       </section>
     </div>
 
-    <!-- v3.10.8: Fakturaarkiv nederst — historiske opphold gruppert per måned,
+    <!-- v3.10.9: Fakturaarkiv nederst — historiske opphold gruppert per måned,
          sortbart, søkbart, med PDF/CSV-nedlasting. -->
     <div class="invoices-top">
-      <section class="panel panel-invoices" id="invoices-panel" aria-label="Fakturaarkiv" hidden>
-        <button type="button" class="panel-head inv-toggle" id="invoices-toggle" aria-expanded="true">
+      <section class="panel panel-invoices collapsed" id="invoices-panel" aria-label="Fakturaarkiv" hidden>
+        <button type="button" class="panel-head inv-toggle" id="invoices-toggle" aria-expanded="false">
           <h2 class="panel-title" data-i18n="invoices.title">Fakturaarkiv</h2>
           <span class="badge" id="invoices-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
@@ -259,7 +259,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.8</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.9</small>
     </footer>
   </div>
 
