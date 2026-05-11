@@ -62,6 +62,10 @@
         window.Invoices.init({ token: session.token });
       }
 
+      // v3.10.8: Bestilling som samlet trekkspill + tab-nav under banneret.
+      wireBestillingToggle();
+      wirePortalNav();
+
       // v3.7.2: Ledige rom under kalenderen — kun for kunder som eier rom
       // (long-term/full-tenant). Tom respons = skjult seksjon.
       if (session.token) {
@@ -132,6 +136,56 @@
       });
     });
   });
+
+  // v3.10.8: Bestilling-trekkspill (Kalender + Ny bestilling + Ledige rom).
+  let _bestillingToggleWired = false;
+  function wireBestillingToggle() {
+    if (_bestillingToggleWired) return;
+    const toggle = document.getElementById("bestilling-toggle");
+    const section = document.getElementById("bestilling-panel");
+    if (!toggle || !section) return;
+    toggle.addEventListener("click", () => {
+      const collapsed = section.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    _bestillingToggleWired = true;
+  }
+
+  // v3.10.8: Tab-rad — hopper til + åpner valgt seksjon.
+  let _portalNavWired = false;
+  function wirePortalNav() {
+    if (_portalNavWired) return;
+    const buttons = document.querySelectorAll(".portal-nav-btn");
+    if (!buttons.length) return;
+    const setActive = (btn) => {
+      buttons.forEach(b => b.classList.toggle("is-active", b === btn));
+    };
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.getAttribute("data-target");
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        // Tving seksjonen åpen (fjern .collapsed) og oppdater aria på toggle-knapp
+        if (target.classList.contains("collapsed")) {
+          target.classList.remove("collapsed");
+          const toggleId =
+            targetId === "bestilling-panel" ? "bestilling-toggle" :
+            targetId === "mybookings-panel" ? "mybookings-toggle" :
+            targetId === "invoices-panel"   ? "invoices-toggle"   : null;
+          if (toggleId) {
+            const t = document.getElementById(toggleId);
+            if (t) t.setAttribute("aria-expanded", "true");
+          }
+        }
+        // Vis seksjonen hvis den var helt skjult (Mine bookinger og Fakturaarkiv
+        // starter med hidden=true før init).
+        if (target.hidden) target.hidden = false;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActive(btn);
+      });
+    });
+    _portalNavWired = true;
+  }
 
   // v3.7.9: trekkspill-knapp på Ledige rom-headeren — samme mønster som
   // Mine bookinger. Wires én gang ved første kall.

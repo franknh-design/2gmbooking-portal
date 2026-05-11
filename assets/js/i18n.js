@@ -26,6 +26,11 @@
       "topbar.newBooking":  "+ Ny bestilling",
       "topbar.logout":      "Logg ut",
 
+      // Nav (v3.10.8)
+      "nav.booking":        "Bestilling",
+      "nav.mybookings":     "Mine bookinger",
+      "nav.invoices":       "Fakturaarkiv",
+
       // Auth
       "auth.title":           "Bestillingsportal",
       "auth.loginAs":         "Innlogging for {name}",
@@ -246,6 +251,11 @@
       "topbar.app":         "Booking Portal",
       "topbar.newBooking":  "+ New booking",
       "topbar.logout":      "Sign out",
+
+      // Nav (v3.10.8)
+      "nav.booking":        "Booking",
+      "nav.mybookings":     "My bookings",
+      "nav.invoices":       "Invoice archive",
 
       // Auth
       "auth.title":           "Booking Portal",

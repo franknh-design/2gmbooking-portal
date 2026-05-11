@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.10.7 -->
+<!-- v3.10.8 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -64,9 +64,21 @@
       </div>
     </header>
 
-    <!-- v3.8.0: Rekkefølge fra topp — Tilgjengelighet + Ny bestilling, så
-         Ledige rom, så Mine bookinger nederst. Alle tre er alltid synlige
-         (hver seksjon kan kollapses individuelt via egen trekkspill-knapp). -->
+    <!-- v3.10.8: Tab-rad under banneret — scroller til + åpner seksjonen. -->
+    <nav class="portal-nav" aria-label="Sections">
+      <button type="button" class="portal-nav-btn is-active" data-target="bestilling-panel" data-i18n="nav.booking">Bestilling</button>
+      <button type="button" class="portal-nav-btn" data-target="mybookings-panel" data-i18n="nav.mybookings">Mine bookinger</button>
+      <button type="button" class="portal-nav-btn" data-target="invoices-panel" data-i18n="nav.invoices">Fakturaarkiv</button>
+    </nav>
+
+    <!-- v3.10.8: Bestilling som ett trekkspill — Kalender + Ny bestilling +
+         Ledige rom hører sammen som én flyt (sjekk → bestill). Åpen som default. -->
+    <section class="bestilling-section" id="bestilling-panel">
+      <button type="button" class="panel-head bestilling-toggle" id="bestilling-toggle" aria-expanded="true">
+        <h2 class="panel-title" data-i18n="nav.booking">Bestilling</h2>
+        <span class="mb-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="bestilling-body">
 
     <main class="layout" id="mainLayout">
       <!-- Venstre kolonne: kalender -->
@@ -183,6 +195,9 @@
       </section>
     </div>
 
+      </div><!-- /.bestilling-body -->
+    </section><!-- /.bestilling-section -->
+
     <!-- v3.8.0: Mine bookinger nederst — kollapser via :has() når lista er hidden. -->
     <div class="mybookings-top">
       <section class="panel panel-mybookings" id="mybookings-panel" aria-label="Mine bookinger" hidden>
@@ -208,7 +223,7 @@
       </section>
     </div>
 
-    <!-- v3.10.7: Fakturaarkiv nederst — historiske opphold gruppert per måned,
+    <!-- v3.10.8: Fakturaarkiv nederst — historiske opphold gruppert per måned,
          sortbart, søkbart, med PDF/CSV-nedlasting. -->
     <div class="invoices-top">
       <section class="panel panel-invoices" id="invoices-panel" aria-label="Fakturaarkiv" hidden>
@@ -244,7 +259,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.7</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.8</small>
     </footer>
   </div>
 
