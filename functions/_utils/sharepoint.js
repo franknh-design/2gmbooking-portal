@@ -391,6 +391,16 @@ export async function getBookingsForProperty(env, propertyName) {
   });
 }
 
+// v3.10.13: Matcher på Billing_Company ELLER Company. Admin-appen bruker
+// getEffectiveCompany(b) (Billing_Company → Company fallback) til fakturering,
+// så portalen må følge samme regel — ellers ser ikke betalende kunde sine
+// egne bookinger der Company er satt til noe annet enn token-firmaet.
+function _bookingMatchesCompany(fields, target) {
+  const billing = String(fields.Billing_Company || "").trim().toLowerCase();
+  const company = String(fields.Company || "").trim().toLowerCase();
+  return billing === target || company === target;
+}
+
 export async function getBookingsForCompany(env, companyName) {
   const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
 
@@ -400,8 +410,7 @@ export async function getBookingsForCompany(env, companyName) {
 
   return items.filter(item => {
     const f = item.fields;
-    const company = String(f.Company || "").trim().toLowerCase();
-    return company === target && ACTIVE_STATUSES.has(f.Status);
+    return _bookingMatchesCompany(f, target) && ACTIVE_STATUSES.has(f.Status);
   });
 }
 
@@ -418,8 +427,7 @@ export async function getAllBookingsForCompany(env, companyName, includeStatuses
     : null; // null = aksepter alt unntatt Cancelled
   return items.filter(item => {
     const f = item.fields;
-    const company = String(f.Company || "").trim().toLowerCase();
-    if (company !== target) return false;
+    if (!_bookingMatchesCompany(f, target)) return false;
     if (f.Status === "Cancelled") return false;
     if (allow && !allow.has(f.Status)) return false;
     return true;
