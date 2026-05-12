@@ -52,6 +52,13 @@
 
         <div class="sc-list-wrap">
           <table class="sc-list-table">
+            <colgroup>
+              <col class="sc-c-room">
+              <col class="sc-c-guest">
+              <col class="sc-c-code">
+              <col class="sc-c-phone">
+              <col class="sc-c-action">
+            </colgroup>
             <thead>
               <tr>
                 <th class="sc-col-room"></th>
@@ -128,6 +135,16 @@
     bookings = (result.bookings || []).filter(b =>
       b.status === "Active" || b.status === "Upcoming"
     );
+    // v3.10.27: stigende romnr-sortering. Bruker localeCompare m/ numeric
+    // så "204" < "706" og "204A" sorteres mellom 204 og 205.
+    bookings.sort((a, b) => {
+      const ra = a.roomNumber || "";
+      const rb = b.roomNumber || "";
+      if (!ra && !rb) return 0;
+      if (!ra) return 1;
+      if (!rb) return -1;
+      return ra.localeCompare(rb, undefined, { numeric: true, sensitivity: "base" });
+    });
     renderRows();
   }
 

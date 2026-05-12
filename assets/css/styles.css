@@ -333,22 +333,31 @@ input, select, button { font-family: inherit; }
   .topbar-action { padding: 5px 10px; font-size: 11px; }
 }
 
-/* Send dørkode-dialog — liste-versjon (v3.10.25, bredere fra v3.10.26) */
-.sc-dlg-list {
-  max-width: 1100px;
-  width: calc(100vw - 32px);
+/* Send dørkode-dialog — liste-versjon (v3.10.27)
+   .extend-dlg.sc-dlg-list bruker dobbel-class for å vinne over .extend-dlg
+   sin max-width:420px som ligger senere i fila. */
+.extend-dlg.sc-dlg-list {
+  max-width: min(1100px, calc(100vw - 24px));
+  width: calc(100vw - 24px);
 }
 .sc-list-wrap {
   max-height: 60vh;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--color-border-tertiary, #e4e4e7);
   border-radius: var(--border-radius-sm);
 }
 .sc-list-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 13px;
 }
+.sc-list-table col.sc-c-room   { width: 70px; }
+.sc-list-table col.sc-c-guest  { width: auto; }
+.sc-list-table col.sc-c-code   { width: 100px; }
+.sc-list-table col.sc-c-phone  { width: 190px; }
+.sc-list-table col.sc-c-action { width: 130px; }
 .sc-list-table thead th {
   background: var(--color-background-secondary, #f7f7f8);
   text-align: left;
@@ -370,18 +379,25 @@ input, select, button { font-family: inherit; }
 }
 .sc-row.sc-row-disabled { opacity: .55; }
 .sc-row .sc-room { font-weight: 600; white-space: nowrap; }
-.sc-row .sc-code { font-family: ui-monospace, monospace; letter-spacing: 1px; }
+.sc-row .sc-guest { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-row .sc-code {
+  font-family: ui-monospace, monospace;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
 .sc-no-code { font-style: italic; color: var(--c-red-fg, #b00020); font-size: 11px; }
 .sc-phone-input {
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 5px 8px;
   border: 1px solid var(--color-border-tertiary, #e4e4e7);
   border-radius: var(--border-radius-sm);
   font: inherit;
   font-size: 13px;
 }
-.sc-phone-cell { min-width: 160px; }
-.sc-action-cell { white-space: nowrap; min-width: 90px; }
+.sc-phone-cell { padding-right: 6px; }
+.sc-action-cell { white-space: nowrap; }
 .sc-send-btn {
   padding: 5px 12px;
   font-size: 12px;
@@ -407,10 +423,13 @@ input, select, button { font-family: inherit; }
 .sc-msg-error   { color: var(--c-red-fg, #b00020); }
 .sc-msg-success { color: var(--color-text-success, #117a3d); }
 .sc-msg-info    { color: var(--c-muted, #555); }
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .sc-list-table { font-size: 12px; }
   .sc-list-table thead th, .sc-list-table tbody td { padding: 6px 6px; }
-  .sc-phone-cell { min-width: 110px; }
+  .sc-list-table col.sc-c-room   { width: 56px; }
+  .sc-list-table col.sc-c-code   { width: 80px; }
+  .sc-list-table col.sc-c-phone  { width: 150px; }
+  .sc-list-table col.sc-c-action { width: 100px; }
 }
 .topbar-cta {
   background: var(--color-text-primary);
