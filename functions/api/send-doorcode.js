@@ -31,11 +31,17 @@ import {
   findBookingByRefForCompany,
   findPersonPhoneByName,
   getRoomsByIdMap,
+  updateBookingFields,
 } from "../_utils/sharepoint.js";
 
 // Flask-proxyen som signerer KeySMS-kallet. Samme base som tuya.js bruker
 // (locks.haugan.online) — settes som env var for å kunne styre per-miljø.
 const DEFAULT_NOTIFY_BASE = "https://locks.haugan.online";
+
+// v3.10.16: Tjenesten koster — legges som notat på bookingen så admin/
+// invoicing kan inkludere det i neste faktura. Beløpet eksponeres til
+// frontend så bekreftelses-dialogen kan vise det før kunden trykker send.
+const DOORCODE_SMS_PRICE_KR = 5;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -116,11 +122,28 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "sms_failed", detail: err }, 502);
     }
 
+    // v3.10.16: Logg gebyret som notat på bookingen så admin/invoicing kan
+    // ta det med på neste faktura. Notes appendes (ikke overskrives) så
+    // tidligere notater fra kunden eller admin beholdes. Patch-feilen er
+    // ikke kritisk for kunden — SMS-en er allerede sendt — så vi logger og
+    // returnerer success uansett.
+    const nowIso = new Date().toISOString().replace("T", " ").slice(0, 16);
+    const chargeLine = `[${nowIso}] SMS dørkode → ${person.phone}: ${DOORCODE_SMS_PRICE_KR} kr`;
+    const existingNotes = String(f.Notes || "").trim();
+    const newNotes = existingNotes ? `${existingNotes}\n${chargeLine}` : chargeLine;
+    try {
+      await updateBookingFields(env, booking.id, { Notes: newNotes });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("[send-doorcode] kunne ikke logge gebyret på bookingen:", e?.message || e);
+    }
+
     return jsonResponse({
       ok: true,
       sentTo: person.phone,
       guest: personName,
       roomNumber,
+      costKr: DOORCODE_SMS_PRICE_KR,
     });
   } catch (err) {
     // eslint-disable-next-line no-console

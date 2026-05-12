@@ -664,6 +664,9 @@
   // v3.10.15: Sender dørkode på SMS til gjesten hvis vedkommende er
   // registrert i Persons-lista med telefon. Backend gjør oppslaget — vi gir
   // bare booking-ref.
+  // v3.10.16: Bekreftelses- og suksess-tekster nevner at tjenesten koster
+  // 5 kr som legges til neste faktura. Beløpet logges som notat på
+  // bookingen så admin ser det ved fakturering.
   async function sendDoorcodeOnSms(booking, mybookingsRef) {
     if (!booking || !mybookingsRef) return;
     if (!booking.doorCode) {
@@ -671,7 +674,12 @@
       return;
     }
     const guest = booking.guest || "gjesten";
-    if (!window.confirm(`Send dørkoden til ${guest}?\n\nVi henter telefonnummer fra registeret. Hvis ${guest} ikke er lagt inn eller mangler nummer, må admin oppdatere person-kortet først.`)) {
+    const confirmMsg =
+      `Send dørkoden til ${guest}?\n\n` +
+      `Telefonnummer hentes fra registeret. Hvis ${guest} ikke er lagt inn ` +
+      `eller mangler nummer, må admin oppdatere person-kortet først.\n\n` +
+      `💳 Tjenesten koster 5 kr og belastes rommet på neste faktura.`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     const res = await window.Api.sendDoorcodeSms({
@@ -679,7 +687,8 @@
       bookingRef: booking.ref,
     });
     if (res && res.ok) {
-      window.alert(`✓ Dørkode sendt til ${res.sentTo}`);
+      const cost = res.costKr || 5;
+      window.alert(`✓ Dørkode sendt til ${res.sentTo}\n\n${cost} kr lagt til på neste faktura.`);
       return;
     }
     const err = (res && res.error) || "unknown";
