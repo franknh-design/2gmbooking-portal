@@ -1673,6 +1673,19 @@ input[type="date"]:disabled {
   background: var(--color-text-primary);
   border-color: var(--color-text-primary);
 }
+/* v3.10.17: Knapp med hint-tekst på linje under hovedteksten — brukes for
+   SMS-dørkode der vi vil at "5 kr pr SMS" synes uten å rope. */
+.action-menu-btn-with-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.action-menu-btn-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
 @media (max-width: 600px) {
   .mb-card-info-row { flex-direction: column; gap: 6px; }
   .mb-card-info-stack-right { align-items: flex-start; }

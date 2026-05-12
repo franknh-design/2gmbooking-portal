@@ -48,13 +48,24 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { token, bookingRef } = body || {};
+    const { token, bookingRef, phoneOverride } = body || {};
 
     if (!token || typeof token !== "string") {
       return jsonResponse({ ok: false, error: "missing_token" }, 400);
     }
     if (!bookingRef || typeof bookingRef !== "string") {
       return jsonResponse({ ok: false, error: "missing_bookingRef" }, 400);
+    }
+    // v3.10.17: Hvis kunden taster inn nummer manuelt (når gjesten ikke er
+    // i Persons-lista), bruk det i stedet for oppslag. Lett validering:
+    // 8+ siffer etter at +/space/-/parens er strippet.
+    let manualPhone = null;
+    if (phoneOverride && typeof phoneOverride === "string") {
+      const clean = phoneOverride.replace(/[\s\-()]/g, "");
+      if (!/^\+?\d{8,}$/.test(clean)) {
+        return jsonResponse({ ok: false, error: "invalid_phone" }, 400);
+      }
+      manualPhone = clean;
     }
 
     const tokenRow = await findToken(env, token);
@@ -93,12 +104,17 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "no_person_name" }, 400);
     }
 
-    const person = await findPersonPhoneByName(env, personName);
-    if (!person) {
-      // Skiller ikke mellom "ikke i Persons" og "i Persons men uten nr" —
-      // begge tilfeller har samme handling fra kundens side (legg inn nr.
-      // hos admin), og vi unngår å lekke om personen finnes i registeret.
-      return jsonResponse({ ok: false, error: "no_phone" }, 404);
+    // v3.10.17: Manuelt nummer overstyrer Persons-oppslaget. Brukes når
+    // kunden taster inn nummeret selv (gjest ikke i registeret).
+    let person;
+    if (manualPhone) {
+      person = { phone: manualPhone, name: personName, manual: true };
+    } else {
+      person = await findPersonPhoneByName(env, personName);
+      if (!person) {
+        // Frontend kjenner igjen no_phone og åpner manuell-inntastings-dialog.
+        return jsonResponse({ ok: false, error: "no_phone" }, 404);
+      }
     }
 
     const roomNumber = room.title || "";
@@ -128,7 +144,8 @@ export async function onRequestPost(context) {
     // ikke kritisk for kunden — SMS-en er allerede sendt — så vi logger og
     // returnerer success uansett.
     const nowIso = new Date().toISOString().replace("T", " ").slice(0, 16);
-    const chargeLine = `[${nowIso}] SMS dørkode → ${person.phone}: ${DOORCODE_SMS_PRICE_KR} kr`;
+    const phoneTag = person.manual ? `${person.phone} (manuelt)` : person.phone;
+    const chargeLine = `[${nowIso}] SMS dørkode → ${phoneTag}: ${DOORCODE_SMS_PRICE_KR} kr`;
     const existingNotes = String(f.Notes || "").trim();
     const newNotes = existingNotes ? `${existingNotes}\n${chargeLine}` : chargeLine;
     try {

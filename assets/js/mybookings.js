@@ -607,6 +607,11 @@
 
   function ensureActionMenu() {
     let dlg = document.getElementById("actionMenu");
+    const smsBtnHtml = () =>
+      `<button type="button" data-action="sms-doorcode" class="action-menu-btn action-menu-btn-with-hint">
+         <span class="action-menu-btn-label">${escapeHtml(tx("mybookings.smsDoorcode"))}</span>
+         <small class="action-menu-btn-hint">${escapeHtml(tx("mybookings.smsCostHint"))}</small>
+       </button>`;
     if (dlg) {
       // Re-render etiketter ved evt. språkbytte mellom kall
       dlg.querySelector(".action-menu-title").textContent  = tx("mybookings.actionsTitle");
@@ -614,7 +619,11 @@
       const endBtn = dlg.querySelector('[data-action="end"]');
       if (endBtn) endBtn.textContent = tx("mybookings.endRental");
       const smsBtn = dlg.querySelector('[data-action="sms-doorcode"]');
-      if (smsBtn) smsBtn.textContent = tx("mybookings.smsDoorcode") || "📱 Send dørkode på SMS";
+      if (smsBtn) {
+        // v3.10.17: Erstatter hele knappen så både hovedtekst og hint
+        // oppdateres ved språkbytte.
+        smsBtn.outerHTML = smsBtnHtml();
+      }
       dlg.querySelector('[data-action="close"]').textContent  = tx("extend.cancel");
       return dlg;
     }
@@ -625,12 +634,12 @@
     dlg.className = "extend-dlg action-menu";
     dlg.innerHTML = `
       <div class="extend-dlg-form action-menu-form">
-        <h3 class="extend-dlg-title action-menu-title">${tx("mybookings.actionsTitle")}</h3>
+        <h3 class="extend-dlg-title action-menu-title">${escapeHtml(tx("mybookings.actionsTitle"))}</h3>
         <div class="action-menu-buttons">
-          <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${tx("mybookings.extend")}</button>
-          <button type="button" data-action="end"    class="action-menu-btn">${tx("mybookings.endRental")}</button>
-          <button type="button" data-action="sms-doorcode" class="action-menu-btn">${tx("mybookings.smsDoorcode") || "📱 Send dørkode på SMS"}</button>
-          <button type="button" data-action="close"  class="action-menu-btn">${tx("extend.cancel")}</button>
+          <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${escapeHtml(tx("mybookings.extend"))}</button>
+          <button type="button" data-action="end"    class="action-menu-btn">${escapeHtml(tx("mybookings.endRental"))}</button>
+          ${smsBtnHtml()}
+          <button type="button" data-action="close"  class="action-menu-btn">${escapeHtml(tx("extend.cancel"))}</button>
         </div>
       </div>
     `;
@@ -661,47 +670,132 @@
     return dlg;
   }
 
-  // v3.10.15: Sender dørkode på SMS til gjesten hvis vedkommende er
-  // registrert i Persons-lista med telefon. Backend gjør oppslaget — vi gir
-  // bare booking-ref.
-  // v3.10.16: Bekreftelses- og suksess-tekster nevner at tjenesten koster
-  // 5 kr som legges til neste faktura. Beløpet logges som notat på
-  // bookingen så admin ser det ved fakturering.
+  // v3.10.15-17: Sender dørkode på SMS til gjesten. Først prøver backend å
+  // finne nummeret i Persons-lista; hvis det mangler åpner vi en dialog så
+  // kunden kan taste inn nummeret manuelt. Tjenesten koster 5 kr som
+  // logges på bookingens Notes-felt for fakturering.
   async function sendDoorcodeOnSms(booking, mybookingsRef) {
     if (!booking || !mybookingsRef) return;
     if (!booking.doorCode) {
-      window.alert("Ingen dørkode er tildelt ennå.");
+      window.alert(tx("sms.errNoCode"));
       return;
     }
-    const guest = booking.guest || "gjesten";
+    const guest = booking.guest || tx("mybookings.unnamed");
     const confirmMsg =
-      `Send dørkoden til ${guest}?\n\n` +
-      `Telefonnummer hentes fra registeret. Hvis ${guest} ikke er lagt inn ` +
-      `eller mangler nummer, må admin oppdatere person-kortet først.\n\n` +
-      `💳 Tjenesten koster 5 kr og belastes rommet på neste faktura.`;
-    if (!window.confirm(confirmMsg)) {
-      return;
-    }
-    const res = await window.Api.sendDoorcodeSms({
+      `${tx("sms.confirm", { guest })}\n\n` +
+      `${tx("sms.costNote")}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    await _trySendDoorcode(booking, mybookingsRef, null, guest);
+  }
+
+  async function _trySendDoorcode(booking, mybookingsRef, phoneOverride, guest) {
+    const payload = {
       token: mybookingsRef.token,
       bookingRef: booking.ref,
-    });
+    };
+    if (phoneOverride) payload.phoneOverride = phoneOverride;
+
+    const res = await window.Api.sendDoorcodeSms(payload);
     if (res && res.ok) {
-      const cost = res.costKr || 5;
-      window.alert(`✓ Dørkode sendt til ${res.sentTo}\n\n${cost} kr lagt til på neste faktura.`);
+      window.alert(tx("sms.success", { phone: res.sentTo }));
       return;
     }
     const err = (res && res.error) || "unknown";
+    // Mangler nummer i Persons → tilby manuell inntasting.
+    if (err === "no_phone" && !phoneOverride) {
+      openManualPhoneDialog(booking, mybookingsRef, guest);
+      return;
+    }
     const map = {
-      no_phone: `${guest} er ikke i registeret eller mangler telefon. Be admin legge til nummeret på person-kortet.`,
-      no_door_code: "Ingen dørkode er tildelt ennå.",
-      no_room_assigned: "Bookingen har ikke fått rom ennå.",
-      no_person_name: "Bookingen har ikke et gjestnavn.",
-      not_your_booking: "Bookingen tilhører ikke ditt firma.",
-      invalid_token: "Sesjonen er utløpt — last siden på nytt.",
-      sms_failed: `Kunne ikke sende SMS (${(res && res.detail) || "ukjent feil"}).`,
+      no_door_code:     tx("sms.errNoCode"),
+      no_room_assigned: tx("sms.errNoRoom"),
+      not_your_booking: tx("sms.errNotYours"),
+      invalid_token:    tx("sms.errExpired"),
+      invalid_phone:    tx("sms.manualInvalid"),
+      sms_failed:       tx("sms.errFailed", { err: (res && res.detail) || "?" }),
     };
-    window.alert(map[err] || `Kunne ikke sende SMS: ${err}`);
+    window.alert(map[err] || tx("sms.errFailed", { err }));
+  }
+
+  // v3.10.17: Manuell telefon-inntastings-dialog. Åpnes automatisk hvis
+  // backend rapporterer no_phone (gjest mangler nummer i Persons-lista).
+  function openManualPhoneDialog(booking, mybookingsRef, guest) {
+    const dlg = ensureManualPhoneDialog();
+    if (!dlg) {
+      const ans = window.prompt(
+        tx("sms.manualPrompt", { guest }) + "\n\n" + tx("sms.costNote"),
+        "+47"
+      );
+      if (ans) _trySendDoorcode(booking, mybookingsRef, ans, guest);
+      return;
+    }
+    dlg._booking = booking;
+    dlg._mybookingsRef = mybookingsRef;
+    dlg._guest = guest;
+    dlg.querySelector(".extend-dlg-title").textContent = tx("sms.manualTitle");
+    dlg.querySelector(".extend-dlg-sub").textContent = tx("sms.manualPrompt", { guest });
+    dlg.querySelector(".extend-dlg-newdate-label").textContent = tx("sms.manualLabel");
+    const input = dlg.querySelector("input[name=phone]");
+    input.placeholder = tx("sms.manualPlaceholder");
+    input.value = "+47";
+    dlg.querySelector(".sms-cost-note").textContent = tx("sms.costNote");
+    dlg.querySelector('[data-action="cancel"]').textContent = tx("sms.manualCancel");
+    dlg.querySelector('[data-action="submit"]').textContent = tx("sms.manualSend");
+    dlg.querySelector(".extend-dlg-msg").textContent = "";
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+    // Litt forsinket fokus så dialog-animasjonen rekker å starte først
+    setTimeout(() => { try { input.focus(); input.select(); } catch (_) {} }, 50);
+  }
+
+  function ensureManualPhoneDialog() {
+    let dlg = document.getElementById("smsPhoneDialog");
+    if (dlg) return dlg;
+    if (typeof HTMLDialogElement === "undefined") return null;
+    dlg = document.createElement("dialog");
+    dlg.id = "smsPhoneDialog";
+    dlg.className = "extend-dlg";
+    dlg.innerHTML = `
+      <form method="dialog" class="extend-dlg-form">
+        <h3 class="extend-dlg-title"></h3>
+        <p class="extend-dlg-sub"></p>
+        <label class="field">
+          <span class="field-label extend-dlg-newdate-label"></span>
+          <input type="tel" name="phone" required autocomplete="tel" />
+        </label>
+        <p class="sms-cost-note" style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 0"></p>
+        <p class="extend-dlg-msg" aria-live="polite"></p>
+        <div class="extend-dlg-buttons">
+          <button type="button" class="btn btn-ghost" data-action="cancel"></button>
+          <button type="button" class="btn btn-primary" data-action="submit"></button>
+        </div>
+      </form>
+    `;
+    document.body.appendChild(dlg);
+
+    dlg.addEventListener("click", async (e) => {
+      const action = e.target?.dataset?.action;
+      if (action === "cancel") {
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      } else if (action === "submit") {
+        const input = dlg.querySelector("input[name=phone]");
+        const value = (input.value || "").trim();
+        const cleaned = value.replace(/[\s\-()]/g, "");
+        if (!/^\+?\d{8,}$/.test(cleaned)) {
+          dlg.querySelector(".extend-dlg-msg").textContent = tx("sms.manualInvalid");
+          return;
+        }
+        const submitBtn = dlg.querySelector('[data-action="submit"]');
+        submitBtn.disabled = true;
+        dlg.querySelector(".extend-dlg-msg").textContent = "…";
+        await _trySendDoorcode(dlg._booking, dlg._mybookingsRef, cleaned, dlg._guest);
+        submitBtn.disabled = false;
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      }
+    });
+
+    return dlg;
   }
 
   // ---- Avslutt-leien-dialog (v3.5.2) ----
