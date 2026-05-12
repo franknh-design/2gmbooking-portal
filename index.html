@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.10.29 -->
+<!-- v3.10.30 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -48,6 +48,21 @@
 
   <!-- ========== Portal ========== -->
   <div id="portal" hidden>
+    <!-- v3.10.0: Mobil header (skjult på desktop) -->
+    <header class="m-header mobile-only">
+      <div class="m-header-text">
+        <small>2GM Eiendom</small>
+        <strong data-i18n="topbar.app">Bestillingsportal</strong>
+      </div>
+      <button type="button" class="m-hamburger" id="mHamburgerBtn" aria-label="Meny">☰</button>
+    </header>
+    <!-- v3.10.0: Mobil sticky-lokasjon (skjult på desktop) -->
+    <div class="m-location-bar mobile-only">
+      <label class="m-location-field">
+        <span data-i18n="booking.location">Lokasjon</span>
+        <select id="m-location" aria-label="Lokasjon"></select>
+      </label>
+    </div>
     <header class="topbar">
       <div class="topbar-left">
         <span class="topbar-logo">2GM Eiendom</span>
@@ -263,8 +278,53 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.29</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.30</small>
     </footer>
+
+    <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
+    <div class="m-bottom-bar mobile-only" id="mBottomBar" hidden>
+      <div class="m-bottom-info">
+        <strong id="mDateRange"></strong>
+        <small id="mNightsText"></small>
+      </div>
+      <button type="button" id="mFortsettBtn" class="m-fortsett-btn">
+        <span data-i18n="mobile.continue">Fortsett</span> →
+      </button>
+    </div>
+
+    <!-- v3.10.0: Mobil bottom sheet (kommer opp etter "Fortsett") -->
+    <div class="m-sheet-overlay mobile-only" id="mSheetOverlay" hidden role="dialog" aria-modal="true" aria-label="Ny bestilling">
+      <div class="m-sheet" id="mSheet">
+        <div class="m-sheet-handle" aria-hidden="true"></div>
+        <h2 class="m-sheet-title" data-i18n="booking.title">Ny bestilling</h2>
+        <p class="m-sheet-sub" id="mSheetSub"></p>
+
+        <label class="m-field-label" data-i18n="booking.rooms">Antall rom</label>
+        <div class="m-counter" role="group" aria-label="Antall rom">
+          <button type="button" id="m-rooms-minus" aria-label="Færre rom">−</button>
+          <input type="number" id="m-rooms" value="1" min="1" max="20" inputmode="numeric" />
+          <button type="button" id="m-rooms-plus" aria-label="Flere rom">+</button>
+        </div>
+
+        <label class="m-toggle-row" for="m-open-ended">
+          <span data-i18n="booking.dontKnowOut">Vet ikke utflyttingsdato</span>
+          <span class="m-toggle">
+            <input type="checkbox" id="m-open-ended" />
+            <span class="m-toggle-track" aria-hidden="true"></span>
+          </span>
+        </label>
+
+        <label class="m-field-label" id="mGuestLabel" for="m-guest-name">Rom 1 · gjest</label>
+        <input type="text" id="m-guest-name" placeholder="Navn på gjest" data-i18n-placeholder="mobile.guestPlaceholder" autocomplete="off" />
+
+        <button type="button" id="m-deviating-link" class="m-link-btn" data-i18n="booking.deviatingDates">+ Avvikende datoer</button>
+        <!-- Container der vi flytter inn guests-list når "Avvikende datoer"
+             åpnes — så bruker kan sette per-rom-datoer uten å forlate sheet'et. -->
+        <div id="mDeviatingHost"></div>
+
+        <button type="button" id="m-submit" class="m-submit-btn" data-i18n="booking.submit">Send bestilling</button>
+      </div>
+    </div>
   </div>
 
   <script src="assets/js/i18n.js"></script>
@@ -279,5 +339,6 @@
   <script src="assets/js/sendcode.js"></script>
   <script src="assets/js/help.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/mobile.js"></script>
 </body>
 </html>

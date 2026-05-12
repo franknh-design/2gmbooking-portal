@@ -305,6 +305,17 @@
         "jul","aug","sep","okt","nov","des"
       ],
       "weekdays.short": ["Man","Tir","Ons","Tor","Fre","Lør","Søn"],
+
+      // v3.10.0 — Mobil-redesign
+      "mobile.continue":         "Fortsett",
+      "mobile.openPeriod":       "Åpen periode",
+      "mobile.oneNight":         "{n} natt",
+      "mobile.manyNights":       "{n} netter",
+      "mobile.pickEnd":          "Velg utdato",
+      "mobile.guestLabel":       "Rom {n} · gjest",
+      "mobile.guestPlaceholder": "Navn på gjest",
+      "mobile.hideDeviating":    "− Skjul avvikende datoer",
+      "booking.deviatingDates":  "+ Avvikende datoer",
     },
 
     en: {
@@ -592,6 +603,17 @@
         "Jul","Aug","Sep","Oct","Nov","Dec"
       ],
       "weekdays.short": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+
+      // v3.10.0 — Mobile redesign
+      "mobile.continue":         "Continue",
+      "mobile.openPeriod":       "Open period",
+      "mobile.oneNight":         "{n} night",
+      "mobile.manyNights":       "{n} nights",
+      "mobile.pickEnd":          "Pick check-out",
+      "mobile.guestLabel":       "Room {n} · guest",
+      "mobile.guestPlaceholder": "Guest name",
+      "mobile.hideDeviating":    "− Hide deviating dates",
+      "booking.deviatingDates":  "+ Deviating dates",
     },
   };
 

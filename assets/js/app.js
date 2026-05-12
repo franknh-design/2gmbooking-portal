@@ -48,6 +48,11 @@
           window.Calendar.setRange(from, to);
         }
       });
+      // v3.10.0: Signaliser at portalen er klar — mobile.js bruker dette til
+      // å re-synce m-location-dropdownen etter at Booking.init har populert
+      // den. Dispatches på document så det også er tilgjengelig på desktop
+      // (no-op der).
+      document.dispatchEvent(new CustomEvent("portal:ready"));
 
       // Liste under kalender: kundens egne bookinger (alle lokasjoner)
       // Kun når vi har en ekte token — i demo-modus uten token er det
