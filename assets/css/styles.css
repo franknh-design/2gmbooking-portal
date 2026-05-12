@@ -329,9 +329,58 @@ input, select, button { font-family: inherit; }
 }
 .topbar-action:hover  { opacity: .9; }
 .topbar-action:active { transform: translateY(1px); }
+.topbar-help {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+  font-family: inherit;
+}
+.topbar-help:hover {
+  background: var(--color-background-secondary);
+  border-color: var(--color-border-primary);
+}
 @media (max-width: 560px) {
   .topbar-action { padding: 5px 10px; font-size: 11px; }
+  .topbar-help { padding: 4px 8px; font-size: 11px; }
 }
+
+/* Hjelp-modal (v3.10.29) */
+.extend-dlg.help-dlg {
+  max-width: min(720px, calc(100vw - 24px));
+  width: calc(100vw - 24px);
+}
+.help-form {
+  gap: 12px;
+}
+.help-head { display: flex; flex-direction: column; gap: 4px; }
+.help-title { margin: 0; }
+.help-sub { margin: 0; font-size: 13px; color: var(--c-muted, #555); }
+.help-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.help-section + .help-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-border-tertiary, #e4e4e7); }
+.help-section-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-brand-dark, #0f3b66);
+}
+.help-section-body p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-primary, #1f2937);
+}
+.help-section-body p:last-child { margin-bottom: 0; }
+.help-buttons { grid-template-columns: 1fr !important; }
 
 /* Send dørkode-dialog — liste-versjon (v3.10.27)
    .extend-dlg.sc-dlg-list bruker dobbel-class for å vinne over .extend-dlg

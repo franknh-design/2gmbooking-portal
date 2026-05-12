@@ -203,6 +203,26 @@
       "sendcode.lookupError":   "Kunne ikke hente bookinger. Prøv igjen.",
       "sendcode.unsupported":   "Nettleseren støtter ikke dialog-vinduer.",
 
+      // Hjelp-modal (v3.10.29)
+      "help.btn":              "? Hjelp",
+      "help.title":            "Slik bruker du portalen",
+      "help.sub":              "Kort guide til vanlige oppgaver. Bytt mellom NO/EN øverst til høyre.",
+      "help.close":            "Lukk",
+      "help.welcome.title":    "Velkommen",
+      "help.welcome.body":     "Dette er selvbetjent bestillingsportal for 2GM Eiendoms faste bedriftskunder. Du bestiller rom selv, ser status på opphold, sender dørkoder til gjestene dine og laster ned faktura-historikk — alt på ett sted.\n\nHver bedrift har sin egen tilgangslenke. Lenken kommer fra 2GM (Frank) når avtale er på plass.",
+      "help.login.title":      "Logge inn",
+      "help.login.body":       "Tilgang gis via en personlig URL + en 6-sifret PIN. Du får begge fra 2GM.\n\n**1.** Klikk på lenken (eller åpne den fra epost). Adressen ser ut som https://2gmbooking-portal.pages.dev/?token=…\n**2.** Skriv inn 6-sifret PIN. Portalen husker innloggingen i denne nettleseren.\n**3.** Etter 5 mislykkede PIN-forsøk blir tilgangen låst i 1 time. Kontakt 2GM hvis du må reset PIN.",
+      "help.booking.title":    "Bestille rom",
+      "help.booking.body":     "Naviger til **+ Ny bestilling**. Kalenderen viser ledighet per dag — grønn=ledig, gul=få igjen, rød=fullt.\n\n**1.** Velg lokasjon i nedtrekk-menyen.\n**2.** Klikk en dato i kalenderen (start), deretter sluttdato. Velg «Open-ended» hvis utflyttingsdato er ukjent.\n**3.** Sett antall rom og legg inn gjestenavn (én linje per gjest). Hver gjest kan ha avvikende datoer.\n**4.** Send bestillingen. 2GM bekrefter manuelt og tildeler rom — du ser oppdatering under «Mine bookinger».",
+      "help.mybookings.title": "Mine bookinger",
+      "help.mybookings.body":  "Alle aktive og kommende opphold listes her, gruppert per lokasjon. Hvert kort viser gjestens navn, datoer, romnummer og dørkode når admin har generert.\n\nFra et booking-kort kan du:\n- Be om forlengelse (sender forespørsel — admin godkjenner manuelt)\n- Be om å avslutte tidligere\n- Skrive ut hele lista (printer-vennlig versjon)",
+      "help.sendcode.title":   "Send dørkode på SMS",
+      "help.sendcode.body":    "Knappen **🔑 Send dørkode** i banneret åpner en liste med alle dine aktive/kommende bookinger med dørkode + telefonnr fra gjeste-registeret. Per rad:\n- Bekreft eller endre telefonnr (mobil, med landkode +47)\n- Klikk **Send** — SMS-en sendes med standard velkomst-mal (rom + kode + WiFi).\n\nHver SMS koster **5 kr**, summen legges automatisk på neste faktura. Bookinger uten dørkode er grået ut — admin må generere PIN først.",
+      "help.invoices.title":   "Fakturaarkiv",
+      "help.invoices.body":    "Tidligere opphold gruppert per måned. Søk og sorter etter periode, eiendom, sum eller netter. PDF/CSV-nedlasting per måned. Brukes til regnskapsavstemming og oppslag når det reises spørsmål.",
+      "help.contact.title":    "Kontakt 2GM",
+      "help.contact.body":     "Spørsmål om booking, PIN, faktura eller annet: ring eller send melding til Frank Haugan på +47 99 10 10 41 — eller send epost til frank@2gm.no.\n\nFeil/forslag i portalen: send detaljer på samme måte, gjerne med skjermbilde.",
+
       // Forleng-dialog
       "extend.title":   "Forleng oppholdet",
       "extend.subPart": "Booking {ref}, nåværende utflytting {current}.",
@@ -469,6 +489,26 @@
       "sendcode.noCode":        "(no code assigned)",
       "sendcode.lookupError":   "Could not fetch bookings. Please try again.",
       "sendcode.unsupported":   "This browser does not support dialog windows.",
+
+      // Help modal (v3.10.29)
+      "help.btn":              "? Help",
+      "help.title":            "How to use the portal",
+      "help.sub":              "Short guide to the common tasks. Switch NO/EN in the top right.",
+      "help.close":            "Close",
+      "help.welcome.title":    "Welcome",
+      "help.welcome.body":     "This is the self-service booking portal for 2GM Eiendom's regular corporate customers. Book rooms yourself, see the status of your stays, send door codes to your guests, and download invoice history — all in one place.\n\nEach company has its own access link. The link is sent by 2GM (Frank) once the agreement is in place.",
+      "help.login.title":      "Logging in",
+      "help.login.body":       "Access is granted via a personal URL + a 6-digit PIN. You receive both from 2GM.\n\n**1.** Click the link (or open it from email). The address looks like https://2gmbooking-portal.pages.dev/?token=…\n**2.** Enter the 6-digit PIN. The portal remembers the login in this browser.\n**3.** After 5 failed PIN attempts, access is locked for 1 hour. Contact 2GM if you need a PIN reset.",
+      "help.booking.title":    "Booking a room",
+      "help.booking.body":     "Go to **+ New booking**. The calendar shows availability per day — green=free, yellow=few left, red=full.\n\n**1.** Pick a location from the dropdown.\n**2.** Click a start date in the calendar, then an end date. Choose «Open-ended» if the check-out date is unknown.\n**3.** Set the number of rooms and enter guest names (one line per guest). Each guest can have differing dates.\n**4.** Submit the booking. 2GM confirms manually and assigns rooms — you'll see the update under «My bookings».",
+      "help.mybookings.title": "My bookings",
+      "help.mybookings.body":  "All active and upcoming stays are listed here, grouped by location. Each card shows the guest's name, dates, room number and door code once admin has generated it.\n\nFrom a booking card you can:\n- Request an extension (sends a request — admin must approve)\n- Request to end the stay earlier\n- Print the entire list (printer-friendly version)",
+      "help.sendcode.title":   "Send door code by SMS",
+      "help.sendcode.body":    "The **🔑 Send door code** button in the banner opens a list of all your active/upcoming bookings with door code + phone number from the guest registry. Per row:\n- Confirm or change the phone number (mobile, with country code +47)\n- Click **Send** — the SMS goes out with the standard welcome template (room + code + Wi-Fi).\n\nEach SMS costs **NOK 5**, charged automatically on the next invoice. Bookings without a door code are greyed out — admin must generate a PIN first.",
+      "help.invoices.title":   "Invoice archive",
+      "help.invoices.body":    "Past stays grouped by month. Search and sort by period, property, total or nights. PDF/CSV download per month. Use it for accounting reconciliation and follow-up questions.",
+      "help.contact.title":    "Contact 2GM",
+      "help.contact.body":     "Questions about bookings, PIN, invoicing or anything else: call or message Frank Haugan at +47 99 10 10 41 — or email frank@2gm.no.\n\nBugs/suggestions in the portal: send details the same way, ideally with a screenshot.",
 
       // Extend dialog
       "extend.title":   "Extend stay",
