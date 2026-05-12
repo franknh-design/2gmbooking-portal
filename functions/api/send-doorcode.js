@@ -116,11 +116,10 @@ export async function onRequestPost(context) {
     if (!room) {
       return jsonResponse({ ok: false, error: "room_not_found" }, 404);
     }
-    // v3.10.19: Bruk bookingens egen Door_Code først (per-gjest binding fra
-    // v20.13.1 i admin-appen). Fall tilbake til Rooms.Door_Code for gamle
-    // bookinger som ikke har sin egen kode lagret enda.
-    const bookingCode = String(f.Door_Code || "").trim();
-    const doorCode = bookingCode || room.doorCode;
+    // v3.10.23: Strikt per-booking kode — ingen fallback til Rooms.Door_Code.
+    // Fallbacken lekket andre gjesters kode på samme rom. Admin må generere
+    // PIN på akkurat denne bookingen for at SMS skal kunne sendes.
+    const doorCode = String(f.Door_Code || "").trim();
     if (!doorCode) {
       return jsonResponse({ ok: false, error: "no_door_code" }, 400);
     }

@@ -73,12 +73,15 @@ export async function onRequestPost(context) {
       const f = item.fields;
       const roomId = f.RoomLookupId;
       const room = roomId ? roomsById[String(roomId)] : null;
-      // v3.10.19: Hver booking bærer nå sin egen Door_Code — den koden gjesten
-      // faktisk fikk. Fall back til Rooms.Door_Code for gamle bookinger som ble
-      // opprettet før v20.13.1, slik at de fortsatt vises riktig. Da neste PIN
-      // genereres på rommet, lagres den på _bookingen_, ikke bare på rommet.
-      const bookingCode = (f.Door_Code || "").trim();
-      const doorCode = bookingCode || (room ? room.doorCode : null);
+      // v3.10.23: Strikt per-booking kode — INGEN fallback til Rooms.Door_Code.
+      // Fallbacken i v3.10.19 lekket "nyeste kode på låsen" til andre gjester
+      // på samme rom hvis bare én av dem hadde fått egen Bookings.Door_Code
+      // generert. Eksempel: Jon og Sindre på rom 706 — Jon fikk PIN → hans
+      // kode skrevet til både Jon.Door_Code og Rooms.Door_Code → Sindre uten
+      // egen kode arvet Rooms.Door_Code = Jons kode.
+      // Nå: kode vises bare hvis Bookings.Door_Code er satt. Admin må
+      // regenerere PIN for hver booking som skal vises i portalen.
+      const doorCode = (f.Door_Code || "").trim() || null;
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
