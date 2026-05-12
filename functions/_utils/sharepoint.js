@@ -508,6 +508,39 @@ export async function findBookingByIdForCompany(env, bookingId, companyName) {
   return null;
 }
 
+// v3.10.25: Batch-versjon — last Persons-lista én gang og returner et lookup-
+// objekt så my-bookings kan slå opp telefon for hver booking uten nye Graph-
+// kall. fetchAllItems pagineres (Persons har 300+ rader), så vi unngår N rundturer.
+export async function getPersonsLookup(env) {
+  const items = await fetchAllItems(env, LIST_IDS.PERSONS);
+  const records = items.map(item => {
+    const f = item.fields || {};
+    return {
+      name: String(f.Title || f.Person_Name || f.Name || "").trim().toLowerCase(),
+      phone: String(f.Mobile || f.Phone || f.Telefon || "").trim(),
+    };
+  }).filter(p => p.name);
+  return {
+    findPhone(rawName) {
+      const target = String(rawName || "").trim().toLowerCase();
+      if (!target) return "";
+      for (const p of records) {
+        if (p.name === target && p.phone) return p.phone;
+      }
+      const words = target.split(/[\s,]+/).filter(w => w.length > 1);
+      if (words.length < 2) return "";
+      for (const p of records) {
+        const pwords = p.name.split(/[\s,]+/).filter(w => w.length > 1);
+        if (pwords.length < 2) continue;
+        if (words.every(w => p.name.indexOf(w) >= 0) || pwords.every(w => target.indexOf(w) >= 0)) {
+          if (p.phone) return p.phone;
+        }
+      }
+      return "";
+    },
+  };
+}
+
 // v3.10.15: Persons-lookup for SMS-doorcode. Fuzzy-match etter samme regel
 // som admin-appens person-historikk: eksakt match eller alle ord finnes i
 // motsatt navn (håndterer "Ola N. Hansen" vs "Ola Hansen" osv.). Returnerer

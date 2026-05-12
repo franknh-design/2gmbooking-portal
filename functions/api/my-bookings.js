@@ -32,6 +32,7 @@ import {
   findToken,
   getBookingsForCompany,
   getRoomsByIdMap,
+  getPersonsLookup,
   propertyAddress,
   updateBookingStatus,
 } from "../_utils/sharepoint.js";
@@ -57,9 +58,10 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: true, bookings: [] });
     }
 
-    const [items, roomsById] = await Promise.all([
+    const [items, roomsById, personsLookup] = await Promise.all([
       getBookingsForCompany(env, company),
       getRoomsByIdMap(env),
+      getPersonsLookup(env),
     ]);
 
     // ----- AUTO-CHECKIN -----
@@ -82,6 +84,10 @@ export async function onRequestPost(context) {
       // Nå: kode vises bare hvis Bookings.Door_Code er satt. Admin må
       // regenerere PIN for hver booking som skal vises i portalen.
       const doorCode = (f.Door_Code || "").trim() || null;
+      // v3.10.25: phone fra Persons-lookup. Brukes av Send dørkode-modalen
+      // (banner-knappen) til å pre-fylle telefonnr per gjest. Lekker ikke
+      // info siden bookingen allerede tilhører kundens token.
+      const phone = personsLookup.findPhone(f.Person_Name || "") || null;
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
@@ -93,6 +99,7 @@ export async function onRequestPost(context) {
         pendingConfirmation: f.Pending_Confirmation === true,
         roomNumber: room ? room.title : null,
         doorCode: doorCode,
+        phone,
       };
     });
 

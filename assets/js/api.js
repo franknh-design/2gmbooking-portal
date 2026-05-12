@@ -343,13 +343,17 @@
   // v3.10.15: Sender dørkoden til gjesten på SMS via KeySMS-proxyen.
   // Backend slår opp telefon fra Persons-lista og sender bare hvis gjesten
   // finnes der med et registrert nummer.
-  async function sendDoorcodeSms({ token, bookingRef }) {
+  // v3.10.25: phoneOverride lar kalleren bypasse Persons-oppslaget og bruke
+  // et eksplisitt nummer (f.eks. fra en redigerbar input i banner-modalen).
+  async function sendDoorcodeSms({ token, bookingRef, phoneOverride }) {
     if (!token || !bookingRef) return { ok: false, error: "missing_arguments" };
     try {
+      const payload = { token, bookingRef };
+      if (phoneOverride) payload.phoneOverride = phoneOverride;
       const response = await fetch(`${API_BASE}/send-doorcode`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, bookingRef }),
+        body: JSON.stringify(payload),
         cache: "no-store",
       });
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));

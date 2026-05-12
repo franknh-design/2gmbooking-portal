@@ -1,11 +1,11 @@
 /* =========================================================
-   Send dørkode — banner-knapp + modal.
-   v1.0
-   - Knappen i topbar åpner en modal med tre felter: romnr, kode, telefon.
-   - Bruker skriver inn romnr → blur trigger lookup mot /api/lookup-room-
-     bookings → fyller kode + telefon automatisk.
-   - Flere bookinger på samme rom → liste med radio-valg.
-   - Submit kaller /api/send-doorcode-by-room.
+   Send dørkode — banner-knapp + liste-modal.
+   v2.0
+   - Klikk på topbar-knapp åpner modal som viser ALLE kundens
+     aktive/kommende bookinger som ei liste:
+       Rom | Gjest | Kode | Telefon (redigerbar) | Send-knapp
+   - Hver rad sendes individuelt (5 kr per SMS, samme som før).
+   - Rader uten dørkode er deaktiverte (admin må generere PIN først).
    ========================================================= */
 (function () {
   "use strict";
@@ -13,9 +13,7 @@
   function tx(key, vars) { return window.I18n ? window.I18n.t(key, vars) : key; }
 
   let dlg = null;
-  let lookupTimer = null;
-  let currentMatches = [];      // siste lookup-resultat
-  let selectedMatch = null;     // valgt booking i listen (eller eneste)
+  let bookings = [];
 
   function init() {
     const btn = document.getElementById("btn-send-doorcode");
@@ -23,21 +21,16 @@
     btn.addEventListener("click", openDialog);
   }
 
-  function openDialog() {
+  async function openDialog() {
     const d = ensureDialog();
     if (!d) {
-      // Fallback for nettlesere uten <dialog>-støtte. Bør aldri nås
-      // (moderne browsere har full støtte), men holder appen robust.
       window.alert(tx("sendcode.unsupported"));
       return;
     }
-    resetForm();
+    showLoader();
     if (typeof d.showModal === "function") d.showModal();
     else d.setAttribute("open", "");
-    setTimeout(() => {
-      const room = d.querySelector("input[name=room]");
-      if (room) { try { room.focus(); room.select(); } catch (_) {} }
-    }, 60);
+    await refreshList();
   }
 
   function closeDialog() {
@@ -46,64 +39,38 @@
     else dlg.removeAttribute("open");
   }
 
-  function resetForm() {
-    if (!dlg) return;
-    dlg.querySelector("input[name=room]").value = "";
-    dlg.querySelector("input[name=phone]").value = "";
-    dlg.querySelector("input[name=code]").value = "";
-    dlg.querySelector(".sc-msg").textContent = "";
-    dlg.querySelector(".sc-msg").classList.remove("sc-msg-error", "sc-msg-success");
-    dlg.querySelector(".sc-candidates").innerHTML = "";
-    dlg.querySelector(".sc-candidates").hidden = true;
-    dlg.querySelector(".sc-guest-line").textContent = "";
-    dlg.querySelector(".sc-guest-line").hidden = true;
-    currentMatches = [];
-    selectedMatch = null;
-    setSubmitEnabled(false);
-  }
-
-  function setSubmitEnabled(enabled) {
-    if (!dlg) return;
-    const btn = dlg.querySelector('[data-action="submit"]');
-    if (btn) btn.disabled = !enabled;
-  }
-
   function ensureDialog() {
     if (dlg) return dlg;
     if (typeof HTMLDialogElement === "undefined") return null;
     dlg = document.createElement("dialog");
     dlg.id = "sendDoorcodeDialog";
-    dlg.className = "extend-dlg sc-dlg";
+    dlg.className = "extend-dlg sc-dlg-list";
     dlg.innerHTML = `
       <form method="dialog" class="extend-dlg-form sc-form">
         <h3 class="extend-dlg-title sc-title"></h3>
         <p class="extend-dlg-sub sc-sub"></p>
 
-        <label class="field">
-          <span class="field-label sc-room-label"></span>
-          <input type="text" name="room" inputmode="numeric" autocomplete="off" />
-        </label>
-
-        <div class="sc-candidates" hidden></div>
-
-        <p class="sc-guest-line" hidden></p>
-
-        <label class="field">
-          <span class="field-label sc-code-label"></span>
-          <input type="text" name="code" readonly autocomplete="off" />
-        </label>
-
-        <label class="field">
-          <span class="field-label sc-phone-label"></span>
-          <input type="tel" name="phone" autocomplete="tel" />
-        </label>
+        <div class="sc-list-wrap">
+          <table class="sc-list-table">
+            <thead>
+              <tr>
+                <th class="sc-col-room"></th>
+                <th class="sc-col-guest"></th>
+                <th class="sc-col-code"></th>
+                <th class="sc-col-phone"></th>
+                <th class="sc-col-action"></th>
+              </tr>
+            </thead>
+            <tbody class="sc-list-body"></tbody>
+          </table>
+          <p class="sc-list-empty" hidden></p>
+          <p class="sc-list-loading"></p>
+        </div>
 
         <p class="sms-cost-note sc-cost" style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 0"></p>
-        <p class="extend-dlg-msg sc-msg" aria-live="polite"></p>
 
-        <div class="extend-dlg-buttons">
-          <button type="button" class="btn btn-ghost" data-action="cancel"></button>
-          <button type="button" class="btn btn-primary" data-action="submit" disabled></button>
+        <div class="extend-dlg-buttons sc-list-buttons">
+          <button type="button" class="btn btn-ghost" data-action="close"></button>
         </div>
       </form>
     `;
@@ -112,34 +79,12 @@
     applyLabels();
     window.addEventListener("i18n:change", applyLabels);
 
-    const roomInput = dlg.querySelector("input[name=room]");
-    roomInput.addEventListener("input", () => {
-      if (lookupTimer) clearTimeout(lookupTimer);
-      const val = roomInput.value.trim();
-      if (!val) {
-        dlg.querySelector("input[name=code]").value = "";
-        dlg.querySelector(".sc-candidates").hidden = true;
-        dlg.querySelector(".sc-candidates").innerHTML = "";
-        dlg.querySelector(".sc-guest-line").hidden = true;
-        dlg.querySelector(".sc-msg").textContent = "";
-        selectedMatch = null;
-        setSubmitEnabled(false);
-        return;
-      }
-      lookupTimer = setTimeout(() => doLookup(val), 250);
-    });
-    roomInput.addEventListener("blur", () => {
-      if (lookupTimer) { clearTimeout(lookupTimer); lookupTimer = null; }
-      const val = roomInput.value.trim();
-      if (val) doLookup(val);
-    });
-
-    dlg.addEventListener("click", async (e) => {
+    dlg.addEventListener("click", (e) => {
       const action = e.target?.dataset?.action;
-      if (action === "cancel") {
-        closeDialog();
-      } else if (action === "submit") {
-        await doSend();
+      if (action === "close") closeDialog();
+      else if (action === "send-row") {
+        const idx = Number(e.target.dataset.idx);
+        sendRow(idx);
       }
     });
 
@@ -148,160 +93,134 @@
 
   function applyLabels() {
     if (!dlg) return;
-    dlg.querySelector(".sc-title").textContent      = tx("sendcode.title");
-    dlg.querySelector(".sc-sub").textContent        = tx("sendcode.sub");
-    dlg.querySelector(".sc-room-label").textContent = tx("sendcode.roomLabel");
-    dlg.querySelector(".sc-code-label").textContent = tx("sendcode.codeLabel");
-    dlg.querySelector(".sc-phone-label").textContent= tx("sendcode.phoneLabel");
+    dlg.querySelector(".sc-title").textContent = tx("sendcode.title");
+    dlg.querySelector(".sc-sub").textContent   = tx("sendcode.subList");
+    dlg.querySelector(".sc-col-room").textContent  = tx("sendcode.colRoom");
+    dlg.querySelector(".sc-col-guest").textContent = tx("sendcode.colGuest");
+    dlg.querySelector(".sc-col-code").textContent  = tx("sendcode.colCode");
+    dlg.querySelector(".sc-col-phone").textContent = tx("sendcode.colPhone");
+    dlg.querySelector(".sc-col-action").textContent = "";
     dlg.querySelector(".sc-cost").textContent       = tx("sms.costNote");
-    dlg.querySelector('[data-action="cancel"]').textContent = tx("sendcode.cancel");
-    dlg.querySelector('[data-action="submit"]').textContent = tx("sendcode.send");
-    const roomInput = dlg.querySelector("input[name=room]");
-    if (roomInput) roomInput.placeholder = tx("sendcode.roomPlaceholder");
-    const phoneInput = dlg.querySelector("input[name=phone]");
-    if (phoneInput) phoneInput.placeholder = tx("sendcode.phonePlaceholder");
+    dlg.querySelector('[data-action="close"]').textContent = tx("sendcode.close");
+    dlg.querySelector(".sc-list-loading").textContent = tx("sendcode.searching");
   }
 
-  async function doLookup(roomNumber) {
+  function showLoader() {
+    if (!dlg) return;
+    dlg.querySelector(".sc-list-loading").hidden = false;
+    dlg.querySelector(".sc-list-empty").hidden = true;
+    dlg.querySelector(".sc-list-body").innerHTML = "";
+  }
+
+  async function refreshList() {
     const token = window.Auth?.token;
     if (!token) {
-      showMsg("error", tx("sms.errExpired"));
+      renderEmpty(tx("sms.errExpired"));
       return;
     }
-    showMsg("info", tx("sendcode.searching"));
-    const result = await window.Api.lookupRoomBookings({ token, roomNumber });
+    const result = await window.Api.getMyBookings(token);
     if (!result.ok) {
-      showMsg("error", tx("sendcode.lookupError"));
-      currentMatches = [];
-      selectedMatch = null;
-      setSubmitEnabled(false);
+      renderEmpty(tx("sendcode.lookupError"));
       return;
     }
-    currentMatches = result.matches || [];
+    // Bare Active/Upcoming. Hvis ingen kode er tildelt, vis raden grået ut
+    // så kunden ser hva som mangler, ikke at lista er tom.
+    bookings = (result.bookings || []).filter(b =>
+      b.status === "Active" || b.status === "Upcoming"
+    );
+    renderRows();
+  }
 
-    if (!currentMatches.length) {
-      dlg.querySelector("input[name=code]").value = "";
-      dlg.querySelector(".sc-candidates").hidden = true;
-      dlg.querySelector(".sc-candidates").innerHTML = "";
-      dlg.querySelector(".sc-guest-line").hidden = true;
-      showMsg("error", tx("sendcode.noBookings"));
-      selectedMatch = null;
-      setSubmitEnabled(false);
+  function renderEmpty(msg) {
+    if (!dlg) return;
+    dlg.querySelector(".sc-list-loading").hidden = true;
+    const empty = dlg.querySelector(".sc-list-empty");
+    empty.textContent = msg;
+    empty.hidden = false;
+    dlg.querySelector(".sc-list-body").innerHTML = "";
+  }
+
+  function renderRows() {
+    if (!dlg) return;
+    dlg.querySelector(".sc-list-loading").hidden = true;
+    const empty = dlg.querySelector(".sc-list-empty");
+    const tbody = dlg.querySelector(".sc-list-body");
+    tbody.innerHTML = "";
+
+    if (!bookings.length) {
+      empty.textContent = tx("sendcode.empty");
+      empty.hidden = false;
       return;
     }
+    empty.hidden = true;
 
-    showMsg("clear", "");
+    bookings.forEach((b, idx) => {
+      const tr = document.createElement("tr");
+      tr.className = "sc-row";
+      const hasCode = !!b.doorCode;
+      if (!hasCode) tr.classList.add("sc-row-disabled");
 
-    if (currentMatches.length === 1) {
-      selectMatch(currentMatches[0]);
-      dlg.querySelector(".sc-candidates").hidden = true;
-      dlg.querySelector(".sc-candidates").innerHTML = "";
-      const m = currentMatches[0];
-      const line = dlg.querySelector(".sc-guest-line");
-      line.textContent = formatGuestLine(m);
-      line.hidden = false;
-    } else {
-      renderCandidates(currentMatches);
-      dlg.querySelector(".sc-guest-line").hidden = true;
-      // Velg ikke noe enda — krev valg fra brukeren
-      selectedMatch = null;
-      dlg.querySelector("input[name=code]").value = "";
-      dlg.querySelector("input[name=phone]").value = "";
-      setSubmitEnabled(false);
-    }
-  }
+      const room = escapeHtml(b.roomNumber || "—");
+      const guest = escapeHtml(b.guest || "—");
+      const code = hasCode ? escapeHtml(b.doorCode) : `<span class="sc-no-code">${escapeHtml(tx("sendcode.noCode"))}</span>`;
+      const phoneVal = b.phone || "+47";
+      const sendLabel = escapeHtml(tx("sendcode.send"));
 
-  function formatGuestLine(m) {
-    const name = m.personName || "—";
-    const status = m.status === "Active" ? tx("mybookings.statusActive") : tx("mybookings.statusUpcoming");
-    return tx("sendcode.guestLine", { name, status });
-  }
-
-  function renderCandidates(matches) {
-    const wrap = dlg.querySelector(".sc-candidates");
-    wrap.innerHTML = "";
-    const heading = document.createElement("p");
-    heading.className = "sc-candidates-head";
-    heading.textContent = tx("sendcode.pickGuest", { n: matches.length });
-    wrap.appendChild(heading);
-
-    matches.forEach((m, idx) => {
-      const id = `sc-cand-${idx}`;
-      const row = document.createElement("label");
-      row.className = "sc-cand-row";
-      row.htmlFor = id;
-      const status = m.status === "Active" ? tx("mybookings.statusActive") : tx("mybookings.statusUpcoming");
-      const dates = formatBookingDates(m.checkIn, m.checkOut);
-      row.innerHTML = `
-        <input type="radio" id="${id}" name="sc-candidate" value="${idx}">
-        <span class="sc-cand-main">
-          <strong>${escapeHtml(m.personName || "—")}</strong>
-          <small>${escapeHtml(status)} · ${escapeHtml(dates)}</small>
-        </span>
+      tr.innerHTML = `
+        <td class="sc-room">${room}</td>
+        <td class="sc-guest">${guest}</td>
+        <td class="sc-code">${code}</td>
+        <td class="sc-phone-cell">
+          <input type="tel" class="sc-phone-input" data-idx="${idx}" value="${escapeHtml(phoneVal)}" autocomplete="tel">
+        </td>
+        <td class="sc-action-cell">
+          <button type="button" class="btn btn-primary sc-send-btn" data-action="send-row" data-idx="${idx}"${hasCode?"":" disabled"}>${sendLabel}</button>
+          <span class="sc-row-msg" data-idx="${idx}"></span>
+        </td>
       `;
-      row.querySelector("input").addEventListener("change", () => {
-        selectMatch(m);
-      });
-      wrap.appendChild(row);
+      tbody.appendChild(tr);
     });
-    wrap.hidden = false;
   }
 
-  function selectMatch(m) {
-    selectedMatch = m;
-    dlg.querySelector("input[name=code]").value = m.doorCode || "";
-    // Pre-fyll telefon hvis registrert, men la kunden overstyre.
-    const phoneInput = dlg.querySelector("input[name=phone]");
-    if (m.phone) {
-      phoneInput.value = m.phone;
-    } else if (!phoneInput.value) {
-      phoneInput.value = "+47";
-    }
-    if (!m.doorCode) {
-      showMsg("error", tx("sendcode.noDoorCode"));
-      setSubmitEnabled(false);
-      return;
-    }
-    showMsg("clear", "");
-    setSubmitEnabled(true);
-  }
+  async function sendRow(idx) {
+    const b = bookings[idx];
+    if (!b) return;
+    const phoneInput = dlg.querySelector(`.sc-phone-input[data-idx="${idx}"]`);
+    const btn = dlg.querySelector(`.sc-send-btn[data-idx="${idx}"]`);
+    const msg = dlg.querySelector(`.sc-row-msg[data-idx="${idx}"]`);
+    if (!phoneInput || !btn || !msg) return;
 
-  function showMsg(kind, text) {
-    const el = dlg.querySelector(".sc-msg");
-    if (!el) return;
-    el.classList.remove("sc-msg-error", "sc-msg-success", "sc-msg-info");
-    if (kind === "error")   el.classList.add("sc-msg-error");
-    if (kind === "success") el.classList.add("sc-msg-success");
-    if (kind === "info")    el.classList.add("sc-msg-info");
-    el.textContent = kind === "clear" ? "" : text;
-  }
-
-  async function doSend() {
-    if (!selectedMatch) return;
-    const phoneRaw = dlg.querySelector("input[name=phone]").value.trim();
-    const phone = phoneRaw.replace(/[\s\-()]/g, "");
+    const rawPhone = (phoneInput.value || "").trim();
+    const phone = rawPhone.replace(/[\s\-()]/g, "");
     if (!/^\+?\d{8,}$/.test(phone)) {
-      showMsg("error", tx("sms.manualInvalid"));
+      msg.textContent = tx("sms.manualInvalid");
+      msg.className = "sc-row-msg sc-msg-error";
       return;
     }
+
     const token = window.Auth?.token;
     if (!token) {
-      showMsg("error", tx("sms.errExpired"));
+      msg.textContent = tx("sms.errExpired");
+      msg.className = "sc-row-msg sc-msg-error";
       return;
     }
 
-    setSubmitEnabled(false);
-    showMsg("info", tx("sendcode.sending"));
+    btn.disabled = true;
+    msg.textContent = tx("sendcode.sending");
+    msg.className = "sc-row-msg sc-msg-info";
 
-    const result = await window.Api.sendDoorcodeByRoom({
+    const result = await window.Api.sendDoorcodeSms({
       token,
-      bookingId: selectedMatch.bookingId,
-      phone,
+      bookingRef: b.ref,
+      phoneOverride: phone,
     });
 
     if (result.ok) {
-      showMsg("success", tx("sendcode.success", { phone: result.sentTo || phone }));
-      setTimeout(() => { closeDialog(); }, 1800);
+      msg.textContent = tx("sendcode.successInline", { phone: result.sentTo || phone });
+      msg.className = "sc-row-msg sc-msg-success";
+      // Behold knappen disabled så kunden ikke dobbelt-sender; gjenåpnes ved
+      // ny modal-åpning. Lagre nye phone-verdien tilbake til state hvis ulik.
+      b.phone = phone;
       return;
     }
 
@@ -313,22 +232,13 @@
       invalid_phone:   tx("sms.manualInvalid"),
       sms_failed:      tx("sms.errFailed", { err: result.detail || "?" }),
     };
-    showMsg("error", errMap[result.error] || tx("sms.errFailed", { err: result.error || "?" }));
-    setSubmitEnabled(true);
-  }
-
-  function formatBookingDates(checkIn, checkOut) {
-    if (!checkIn) return "";
-    const fmt = iso => {
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-      return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
-    };
-    if (!checkOut) return `${fmt(checkIn)} → ${tx("mybookings.openPeriod")}`;
-    return `${fmt(checkIn)} → ${fmt(checkOut)}`;
+    msg.textContent = errMap[result.error] || tx("sms.errFailed", { err: result.error || "?" });
+    msg.className = "sc-row-msg sc-msg-error";
+    btn.disabled = false;
   }
 
   function escapeHtml(s) {
-    return String(s || "").replace(/[&<>"']/g, c =>
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
   }
 
