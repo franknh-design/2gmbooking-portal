@@ -31,6 +31,7 @@ import {
   findBookingByRefForCompany,
   findPersonPhoneByName,
   getRoomsByIdMap,
+  getPropertiesFullByIdMap,
   updateBookingFields,
 } from "../_utils/sharepoint.js";
 
@@ -42,6 +43,27 @@ const DEFAULT_NOTIFY_BASE = "https://locks.haugan.online";
 // invoicing kan inkludere det i neste faktura. Beløpet eksponeres til
 // frontend så bekreftelses-dialogen kan vise det før kunden trykker send.
 const DOORCODE_SMS_PRICE_KR = 5;
+
+// v3.10.18: Speil av admin-appens DEFAULT_SMS_TEMPLATE (js/messaging.js).
+// Brukes når property.SMS_Template er tom. Placeholders må matche admin —
+// _renderTemplate erstatter alle {key} med vars[key].
+const DEFAULT_SMS_TEMPLATE = `Hello {first_name},
+Welcome to {property}.
+Room: {room}, door code: {room_door_code}
+WiFi: {wifi_ssid} / {wifi_password}
+{floor_info}
+{welcome_message}
+Best regards, Frank — 2GM`;
+
+function renderTemplate(template, vars) {
+  let out = template || "";
+  for (const k of Object.keys(vars)) {
+    const re = new RegExp("\\{" + k + "\\}", "g");
+    out = out.replace(re, vars[k] != null ? String(vars[k]) : "");
+  }
+  // Trim flere blanke linjer som oppstår når floor_info/welcome_message er tomme.
+  return out.replace(/\n{3,}/g, "\n\n").trim();
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -118,9 +140,33 @@ export async function onRequestPost(context) {
     }
 
     const roomNumber = room.title || "";
-    const message = roomNumber
-      ? `2GM dørkode rom ${roomNumber}: ${doorCode}#`
-      : `2GM dørkode: ${doorCode}#`;
+
+    // v3.10.18: Bygg SMS med samme template + placeholders som admin-appens
+    // js/messaging.js. Bruker property.SMS_Template hvis satt, ellers
+    // DEFAULT_SMS_TEMPLATE. Floor_info plukkes basert på room.Floor (1 eller 2).
+    const propsById = await getPropertiesFullByIdMap(env);
+    const property = room.propertyLookupId ? propsById[room.propertyLookupId] : null;
+
+    let floorInfo = "";
+    if (property && room.floor) {
+      if (room.floor === "1") floorInfo = property.floor1Info || "";
+      else if (room.floor === "2") floorInfo = property.floor2Info || "";
+    }
+
+    const firstName = (personName.split(/\s+/)[0] || personName).trim();
+    const vars = {
+      first_name:      firstName,
+      guest_name:      personName,
+      property:        property ? property.title : (f.Property_Name || ""),
+      room:            roomNumber,
+      room_door_code:  doorCode,
+      wifi_ssid:       property ? property.wifiSsid : "",
+      wifi_password:   property ? property.wifiPassword : "",
+      welcome_message: property ? property.welcomeMessage : "",
+      floor_info:      floorInfo,
+    };
+    const template = (property && property.smsTemplate) || DEFAULT_SMS_TEMPLATE;
+    const message = renderTemplate(template, vars);
 
     const notifyBase = env.NOTIFY_PROXY_BASE || DEFAULT_NOTIFY_BASE;
     const smsResp = await fetch(`${notifyBase}/notify/sms`, {

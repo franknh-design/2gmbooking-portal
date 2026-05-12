@@ -325,10 +325,34 @@ export async function getRoomsByIdMap(env) {
       cleaningStatus: f.Cleaning_Status || null,
       dailyRate: Number(f.DailyRate) || 0,
       propertyLookupId: f.PropertyLookupId ? String(f.PropertyLookupId) : null,
+      // v3.10.18: Floor brukes til å plukke riktig Floor1/Floor2_Info i
+      // SMS-template-rendering (samme regel som admin-appen).
+      floor: f.Floor != null ? String(f.Floor) : null,
       longTermCompany: f.LongTerm_Company || null,
       longTermPrice: Number(f.LongTerm_Price) || 0,
       longTermStartDate: f.LongTerm_StartDate || null,
       longTermEndDate: f.LongTerm_EndDate || null,
+    };
+  }
+  return map;
+}
+
+// v3.10.18: Full property-meta-map med templates og WiFi-info — brukes av
+// send-doorcode for å rendre samme SMS-template som admin-appen.
+export async function getPropertiesFullByIdMap(env) {
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const map = {};
+  for (const item of items) {
+    if (!item.id) continue;
+    const f = item.fields || {};
+    map[String(item.id)] = {
+      title:           f.Title || "",
+      smsTemplate:     f.SMS_Template || "",
+      wifiSsid:        f.WiFi_SSID || "",
+      wifiPassword:    f.WiFi_Password || "",
+      welcomeMessage:  f.Welcome_Message || "",
+      floor1Info:      f.Floor1_Info || "",
+      floor2Info:      f.Floor2_Info || "",
     };
   }
   return map;
