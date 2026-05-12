@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.10.23 -->
+<!-- v3.10.24 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -66,6 +66,7 @@
           <button type="button" data-lang-btn="nb" class="lang-btn">NO</button>
           <button type="button" data-lang-btn="en" class="lang-btn">EN</button>
         </div>
+        <button type="button" class="topbar-action" id="btn-send-doorcode" data-i18n="sendcode.btn" title="Send dørkode på SMS">🔑 Send dørkode</button>
         <span class="badge badge-customer" id="customer-badge">—</span>
         <button type="button" class="topbar-logout" id="btn-logout" data-i18n="topbar.logout" hidden>Logg ut</button>
       </div>
@@ -207,7 +208,7 @@
           <span class="mb-chevron" aria-hidden="true">▾</span>
         </button>
         <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle.
-             v3.10.23: + Skriv ut-knapp helt til høyre. -->
+             v3.10.24: + Skriv ut-knapp helt til høyre. -->
         <div class="mb-filters" id="mybookings-filters" role="tablist" aria-label="Filter">
           <button type="button" data-mb-filter="active"   class="mb-filter-btn" data-i18n="mybookings.filterActive">Aktive</button>
           <button type="button" data-mb-filter="upcoming" class="mb-filter-btn" data-i18n="mybookings.filterUpcoming">Kommende</button>
@@ -261,7 +262,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.23</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.24</small>
     </footer>
   </div>
 
@@ -274,6 +275,7 @@
   <script src="assets/js/booking.js"></script>
   <script src="assets/js/mybookings.js"></script>
   <script src="assets/js/invoices.js"></script>
+  <script src="assets/js/sendcode.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

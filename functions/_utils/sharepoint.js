@@ -445,6 +445,69 @@ export async function findBookingByRefForCompany(env, bookingRef, companyName) {
   return null;
 }
 
+// v3.10.24: Slå opp ALLE aktive/kommende bookinger på et romnummer som
+// tilhører kundens firma. Brukes av "Send dørkode"-knappen i banneret —
+// hvis flere gjester deler rom (sjelden, men forekommer ved overlapp) skal
+// kunden få velge hvilken som skal motta SMS.
+//
+// Returnerer { rooms: [room1, room2, ...], bookings: [b1, b2, ...] }
+// sortert: Active først, deretter tidligste Check_In. Tom bookings-liste
+// hvis ingen match (gjør at frontend kan skille mellom "fant rom, men ingen
+// booking" og "fant ikke rommet").
+export async function findBookingsByRoomForCompany(env, roomNumber, companyName) {
+  const roomTarget = String(roomNumber || "").trim().toLowerCase();
+  const coTarget = String(companyName || "").trim().toLowerCase();
+  if (!roomTarget || !coTarget) return { rooms: [], bookings: [] };
+
+  const [rooms, items] = await Promise.all([
+    fetchAllItems(env, LIST_IDS.ROOMS),
+    fetchAllItems(env, LIST_IDS.BOOKINGS),
+  ]);
+
+  const matchingRooms = rooms.filter(r => {
+    const title = String(r.fields?.Title || "").trim().toLowerCase();
+    return title === roomTarget && r.id;
+  });
+  if (!matchingRooms.length) return { rooms: [], bookings: [] };
+
+  const matchingRoomIds = new Set(matchingRooms.map(r => String(r.id)));
+
+  const candidates = items.filter(item => {
+    const f = item.fields || {};
+    if (f.Status !== "Active" && f.Status !== "Upcoming") return false;
+    if (!f.RoomLookupId) return false;
+    if (!matchingRoomIds.has(String(f.RoomLookupId))) return false;
+    return _bookingMatchesCompany(f, coTarget);
+  });
+
+  candidates.sort((a, b) => {
+    const sa = a.fields.Status === "Active" ? 0 : 1;
+    const sb = b.fields.Status === "Active" ? 0 : 1;
+    if (sa !== sb) return sa - sb;
+    const ca = new Date(a.fields.Check_In || 0).getTime() || Number.MAX_SAFE_INTEGER;
+    const cb = new Date(b.fields.Check_In || 0).getTime() || Number.MAX_SAFE_INTEGER;
+    return ca - cb;
+  });
+
+  return { rooms: matchingRooms, bookings: candidates };
+}
+
+// Slå opp booking på rad-id og verifiser at den tilhører kundens firma.
+// Brukes av send-doorcode-by-room når kunden allerede har valgt en spesifikk
+// booking i lookup-resultatet.
+export async function findBookingByIdForCompany(env, bookingId, companyName) {
+  const idTarget = String(bookingId || "").trim();
+  const coTarget = String(companyName || "").trim().toLowerCase();
+  if (!idTarget || !coTarget) return null;
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  for (const item of items) {
+    if (String(item.id) !== idTarget) continue;
+    if (!_bookingMatchesCompany(item.fields || {}, coTarget)) return null;
+    return item;
+  }
+  return null;
+}
+
 // v3.10.15: Persons-lookup for SMS-doorcode. Fuzzy-match etter samme regel
 // som admin-appens person-historikk: eksakt match eller alle ord finnes i
 // motsatt navn (håndterer "Ola N. Hansen" vs "Ola Hansen" osv.). Returnerer

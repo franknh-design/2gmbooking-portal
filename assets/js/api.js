@@ -364,6 +364,54 @@
     }
   }
 
+  // v3.10.24: Slå opp aktive/kommende bookinger på et romnummer for kundens
+  // firma. Brukes av "Send dørkode"-knappen i banneret som tar inn romnr →
+  // backend returnerer kandidatlistene med kode + telefonnr.
+  async function lookupRoomBookings({ token, roomNumber }) {
+    if (!token || !roomNumber) return { ok: false, error: "missing_arguments" };
+    try {
+      const response = await fetch(`${API_BASE}/lookup-room-bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, roomNumber }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] lookup-room-bookings exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  // v3.10.24: Send dørkode via SMS basert på bookingId + telefonnr (i stedet
+  // for bookingRef + Persons-oppslag). Brukes etter lookupRoomBookings når
+  // kunden har valgt gjest og bekreftet/justert telefonnr.
+  async function sendDoorcodeByRoom({ token, bookingId, phone }) {
+    if (!token || !bookingId || !phone) return { ok: false, error: "missing_arguments" };
+    try {
+      const response = await fetch(`${API_BASE}/send-doorcode-by-room`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, bookingId, phone }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        return { ok: false, error: data.error || "http_error", status: response.status, detail: data.detail };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] send-doorcode-by-room exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   // v3.10.11: Lett heartbeat — la admin se hvem som har portalen åpen.
   async function heartbeat(token) {
     if (!token || typeof token !== "string") return { ok: false };
