@@ -15,6 +15,7 @@ const LIST_IDS = {
   BOOKINGS:   "fe1dfe34-23df-4864-b0b1-b01bf60bfb75",
   PROPERTIES: "d842d574-f238-442a-be3d-77334727e89f",
   RATES:      "a604493f-e879-48a0-bcab-cdeb9ae2195e",
+  PERSONS:    "ebbe517d-83f8-4169-9423-70c63a3f8c07",
   // v1.7: PIN-rate-limit. Sett til SharePoint-list-GUID for 'Pin_Attempts'
   // når listen er opprettet. Tom streng = rate-limiting deaktivert (graceful
   // degradation). Kolonner som forventes:
@@ -399,6 +400,54 @@ function _bookingMatchesCompany(fields, target) {
   const billing = String(fields.Billing_Company || "").trim().toLowerCase();
   const company = String(fields.Company || "").trim().toLowerCase();
   return billing === target || company === target;
+}
+
+// v3.10.15: Slå opp én booking på Title/booking-ref og verifiser at den
+// tilhører kundens firma (Billing_Company eller Company). Brukes av
+// send-doorcode for å unngå at en kunde kan trigge SMS for en annen kundes
+// booking ved å gjette ref'en.
+export async function findBookingByRefForCompany(env, bookingRef, companyName) {
+  const refTarget = String(bookingRef || "").trim().toLowerCase();
+  const coTarget  = String(companyName || "").trim().toLowerCase();
+  if (!refTarget || !coTarget) return null;
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  for (const item of items) {
+    const f = item.fields || {};
+    const t = String(f.Title || "").trim().toLowerCase();
+    if (t !== refTarget) continue;
+    if (!_bookingMatchesCompany(f, coTarget)) return null;
+    return item;
+  }
+  return null;
+}
+
+// v3.10.15: Persons-lookup for SMS-doorcode. Fuzzy-match etter samme regel
+// som admin-appens person-historikk: eksakt match eller alle ord finnes i
+// motsatt navn (håndterer "Ola N. Hansen" vs "Ola Hansen" osv.). Returnerer
+// første person med ikke-tomt Mobile/Phone/Telefon-felt, eller null.
+export async function findPersonPhoneByName(env, name) {
+  const target = String(name || "").trim().toLowerCase();
+  if (!target) return null;
+  const items = await fetchAllItems(env, LIST_IDS.PERSONS);
+  const words = target.split(/[\s,]+/).filter(w => w.length > 1);
+
+  const candidates = items.filter(item => {
+    const f = item.fields || {};
+    const pn = String(f.Title || f.Person_Name || f.Name || "").trim().toLowerCase();
+    if (!pn) return false;
+    if (pn === target) return true;
+    if (words.length < 2) return false;
+    const pwords = pn.split(/[\s,]+/).filter(w => w.length > 1);
+    if (pwords.length < 2) return false;
+    return words.every(w => pn.indexOf(w) >= 0) || pwords.every(w => target.indexOf(w) >= 0);
+  });
+
+  for (const c of candidates) {
+    const f = c.fields || {};
+    const phone = String(f.Mobile || f.Phone || f.Telefon || "").trim();
+    if (phone) return { phone, name: f.Title || f.Person_Name || f.Name || "" };
+  }
+  return null;
 }
 
 export async function getBookingsForCompany(env, companyName) {

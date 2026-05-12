@@ -613,6 +613,8 @@
       dlg.querySelector('[data-action="extend"]').textContent = tx("mybookings.extend");
       const endBtn = dlg.querySelector('[data-action="end"]');
       if (endBtn) endBtn.textContent = tx("mybookings.endRental");
+      const smsBtn = dlg.querySelector('[data-action="sms-doorcode"]');
+      if (smsBtn) smsBtn.textContent = tx("mybookings.smsDoorcode") || "📱 Send dørkode på SMS";
       dlg.querySelector('[data-action="close"]').textContent  = tx("extend.cancel");
       return dlg;
     }
@@ -627,6 +629,7 @@
         <div class="action-menu-buttons">
           <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${tx("mybookings.extend")}</button>
           <button type="button" data-action="end"    class="action-menu-btn">${tx("mybookings.endRental")}</button>
+          <button type="button" data-action="sms-doorcode" class="action-menu-btn">${tx("mybookings.smsDoorcode") || "📱 Send dørkode på SMS"}</button>
           <button type="button" data-action="close"  class="action-menu-btn">${tx("extend.cancel")}</button>
         </div>
       </div>
@@ -647,10 +650,49 @@
         const ref = dlg._mybookingsRef;
         dlg.close ? dlg.close() : dlg.removeAttribute("open");
         openEndDialog(b, ref);
+      } else if (action === "sms-doorcode") {
+        const b = dlg._booking;
+        const ref = dlg._mybookingsRef;
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+        sendDoorcodeOnSms(b, ref);
       }
     });
 
     return dlg;
+  }
+
+  // v3.10.15: Sender dørkode på SMS til gjesten hvis vedkommende er
+  // registrert i Persons-lista med telefon. Backend gjør oppslaget — vi gir
+  // bare booking-ref.
+  async function sendDoorcodeOnSms(booking, mybookingsRef) {
+    if (!booking || !mybookingsRef) return;
+    if (!booking.doorCode) {
+      window.alert("Ingen dørkode er tildelt ennå.");
+      return;
+    }
+    const guest = booking.guest || "gjesten";
+    if (!window.confirm(`Send dørkoden til ${guest}?\n\nVi henter telefonnummer fra registeret. Hvis ${guest} ikke er lagt inn eller mangler nummer, må admin oppdatere person-kortet først.`)) {
+      return;
+    }
+    const res = await window.Api.sendDoorcodeSms({
+      token: mybookingsRef.token,
+      bookingRef: booking.ref,
+    });
+    if (res && res.ok) {
+      window.alert(`✓ Dørkode sendt til ${res.sentTo}`);
+      return;
+    }
+    const err = (res && res.error) || "unknown";
+    const map = {
+      no_phone: `${guest} er ikke i registeret eller mangler telefon. Be admin legge til nummeret på person-kortet.`,
+      no_door_code: "Ingen dørkode er tildelt ennå.",
+      no_room_assigned: "Bookingen har ikke fått rom ennå.",
+      no_person_name: "Bookingen har ikke et gjestnavn.",
+      not_your_booking: "Bookingen tilhører ikke ditt firma.",
+      invalid_token: "Sesjonen er utløpt — last siden på nytt.",
+      sms_failed: `Kunne ikke sende SMS (${(res && res.detail) || "ukjent feil"}).`,
+    };
+    window.alert(map[err] || `Kunne ikke sende SMS: ${err}`);
   }
 
   // ---- Avslutt-leien-dialog (v3.5.2) ----

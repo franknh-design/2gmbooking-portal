@@ -340,6 +340,30 @@
     }
   }
 
+  // v3.10.15: Sender dørkoden til gjesten på SMS via KeySMS-proxyen.
+  // Backend slår opp telefon fra Persons-lista og sender bare hvis gjesten
+  // finnes der med et registrert nummer.
+  async function sendDoorcodeSms({ token, bookingRef }) {
+    if (!token || !bookingRef) return { ok: false, error: "missing_arguments" };
+    try {
+      const response = await fetch(`${API_BASE}/send-doorcode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, bookingRef }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        return { ok: false, error: data.error || "http_error", status: response.status, detail: data.detail };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] send-doorcode exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   // v3.10.11: Lett heartbeat — la admin se hvem som har portalen åpen.
   async function heartbeat(token) {
     if (!token || typeof token !== "string") return { ok: false };
@@ -368,6 +392,7 @@
     requestExtension,
     requestEnd,
     getInvoiceArchive,
+    sendDoorcodeSms,
     heartbeat
   };
 })();
