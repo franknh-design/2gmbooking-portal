@@ -1454,16 +1454,20 @@ input[type="date"]:disabled {
    list-styling. */
 .mb-group-header {
   /* v3.6.3: bumpet 13px→16px og bytte til primær tekstfarge — dette
-     er hovedinndelingen i lista, må kunne ses uten å måtte myse. */
+     er hovedinndelingen i lista, må kunne ses uten å måtte myse.
+     v3.10.21: full ramme + bakgrunnsfarge så lokasjons-skillene blir
+     visuelt tydelige bånd over kortene under. */
   grid-column: 1 / -1;
   list-style: none;
-  margin: 18px 0 6px;
-  padding: 8px 12px;
-  font-size: 16px;
+  margin: 18px 0 8px;
+  padding: 10px 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text-primary);
   letter-spacing: .01em;
-  border-bottom: 1px solid var(--color-border-tertiary);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
 }
 .mb-group-header:first-child { margin-top: 0; }
 
