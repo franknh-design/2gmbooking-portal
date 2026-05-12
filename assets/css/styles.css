@@ -333,9 +333,9 @@ input, select, button { font-family: inherit; }
   .topbar-action { padding: 5px 10px; font-size: 11px; }
 }
 
-/* Send dørkode-dialog — liste-versjon (v3.10.25) */
+/* Send dørkode-dialog — liste-versjon (v3.10.25, bredere fra v3.10.26) */
 .sc-dlg-list {
-  max-width: 880px;
+  max-width: 1100px;
   width: calc(100vw - 32px);
 }
 .sc-list-wrap {
