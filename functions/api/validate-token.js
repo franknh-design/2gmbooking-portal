@@ -42,6 +42,11 @@ export async function onRequestPost(context) {
       .map(s => s.trim().toLowerCase())
       .filter(Boolean);
 
+    // v3.10.30: Standardspråk per kontaktperson — admin setter Sprak i
+    // Customer_Tokens (nb/en/tom). Portalen kaller I18n.setLang etter
+    // vellykket validering hvis feltet er satt.
+    const language = String(fields.Sprak || "").toLowerCase();
+
     return jsonResponse({
       valid: true,
       firma: fields.Firma,
@@ -49,6 +54,7 @@ export async function onRequestPost(context) {
       telefon_maskert: maskPhone(fields.Telefon),
       tillatte_lokasjoner: tillatteLokasjoner,
       maks_rom: fields.MaksRomPerBestilling || 1,
+      language: language === "nb" || language === "en" ? language : "",
       // v1.1: token-stempel = hash av Pin+Aktiv+Token+Lokasjoner.
       // Klienten lagrer dette i sesjonen og logger ut hvis det endrer
       // seg mellom kall — gjør at PIN-rotering, token-rotering og andre

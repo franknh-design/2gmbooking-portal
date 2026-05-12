@@ -92,6 +92,19 @@
         };
         this._currentStamp = result.tokenStamp || null;
 
+        // v3.10.30: Anvende kontaktens standardspråk hvis satt i admin (Sprak).
+        // Kun hvis brukeren ikke allerede har valgt språk manuelt (localStorage),
+        // for å ikke overstyre eget valg. Sprak='nb'|'en' fra Customer_Tokens.
+        try {
+          const contactLang = String(result.language || '').toLowerCase();
+          if ((contactLang === 'nb' || contactLang === 'en') && window.I18n) {
+            const stored = localStorage.getItem('2gm_portal_lang');
+            if (!stored && window.I18n.getLang() !== contactLang) {
+              window.I18n.setLang(contactLang);
+            }
+          }
+        } catch (_) {}
+
         // eslint-disable-next-line no-console
         console.log("[AUTH] Token gyldig for:", this.customer.name);
 
