@@ -109,7 +109,9 @@
     errorEl: null,
     countEl: null,
     // v3.7.8: filter-state — "active" | "upcoming" | "all"
-    _filter: "active",
+    // v3.10.20: default "all" så kunden ser alle bookinger (aktive +
+    // kommende) med én gang — tidligere skjulte default-filteret kommende.
+    _filter: "all",
     _lastBookings: [],
 
     init({ token }) {
