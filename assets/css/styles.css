@@ -353,11 +353,12 @@ input, select, button { font-family: inherit; }
   table-layout: fixed;
   font-size: 13px;
 }
-.sc-list-table col.sc-c-room   { width: 70px; }
-.sc-list-table col.sc-c-guest  { width: auto; }
-.sc-list-table col.sc-c-code   { width: 100px; }
-.sc-list-table col.sc-c-phone  { width: 190px; }
-.sc-list-table col.sc-c-action { width: 130px; }
+.sc-list-table col.sc-c-room     { width: 70px; }
+.sc-list-table col.sc-c-location { width: 200px; }
+.sc-list-table col.sc-c-guest    { width: auto; }
+.sc-list-table col.sc-c-code     { width: 100px; }
+.sc-list-table col.sc-c-phone    { width: 190px; }
+.sc-list-table col.sc-c-action   { width: 130px; }
 .sc-list-table thead th {
   background: var(--color-background-secondary, #f7f7f8);
   text-align: left;
@@ -379,6 +380,9 @@ input, select, button { font-family: inherit; }
 }
 .sc-row.sc-row-disabled { opacity: .55; }
 .sc-row .sc-room { font-weight: 600; white-space: nowrap; }
+.sc-row .sc-location { line-height: 1.25; }
+.sc-row .sc-location .sc-loc-name { display: block; font-weight: 600; }
+.sc-row .sc-location .sc-loc-addr { display: block; color: var(--c-muted, #666); font-size: 11px; margin-top: 1px; }
 .sc-row .sc-guest { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-row .sc-code {
   font-family: ui-monospace, monospace;
@@ -423,13 +427,20 @@ input, select, button { font-family: inherit; }
 .sc-msg-error   { color: var(--c-red-fg, #b00020); }
 .sc-msg-success { color: var(--color-text-success, #117a3d); }
 .sc-msg-info    { color: var(--c-muted, #555); }
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   .sc-list-table { font-size: 12px; }
   .sc-list-table thead th, .sc-list-table tbody td { padding: 6px 6px; }
-  .sc-list-table col.sc-c-room   { width: 56px; }
-  .sc-list-table col.sc-c-code   { width: 80px; }
-  .sc-list-table col.sc-c-phone  { width: 150px; }
-  .sc-list-table col.sc-c-action { width: 100px; }
+  .sc-list-table col.sc-c-room     { width: 56px; }
+  .sc-list-table col.sc-c-location { width: 140px; }
+  .sc-list-table col.sc-c-code     { width: 80px; }
+  .sc-list-table col.sc-c-phone    { width: 150px; }
+  .sc-list-table col.sc-c-action   { width: 100px; }
+  .sc-row .sc-location .sc-loc-addr { font-size: 10px; }
+}
+@media (max-width: 600px) {
+  /* Skjul adressen — for trangt. Property-navn beholdes. */
+  .sc-row .sc-location .sc-loc-addr { display: none; }
+  .sc-list-table col.sc-c-location { width: 110px; }
 }
 .topbar-cta {
   background: var(--color-text-primary);

@@ -54,6 +54,7 @@
           <table class="sc-list-table">
             <colgroup>
               <col class="sc-c-room">
+              <col class="sc-c-location">
               <col class="sc-c-guest">
               <col class="sc-c-code">
               <col class="sc-c-phone">
@@ -62,6 +63,7 @@
             <thead>
               <tr>
                 <th class="sc-col-room"></th>
+                <th class="sc-col-location"></th>
                 <th class="sc-col-guest"></th>
                 <th class="sc-col-code"></th>
                 <th class="sc-col-phone"></th>
@@ -102,11 +104,12 @@
     if (!dlg) return;
     dlg.querySelector(".sc-title").textContent = tx("sendcode.title");
     dlg.querySelector(".sc-sub").textContent   = tx("sendcode.subList");
-    dlg.querySelector(".sc-col-room").textContent  = tx("sendcode.colRoom");
-    dlg.querySelector(".sc-col-guest").textContent = tx("sendcode.colGuest");
-    dlg.querySelector(".sc-col-code").textContent  = tx("sendcode.colCode");
-    dlg.querySelector(".sc-col-phone").textContent = tx("sendcode.colPhone");
-    dlg.querySelector(".sc-col-action").textContent = "";
+    dlg.querySelector(".sc-col-room").textContent     = tx("sendcode.colRoom");
+    dlg.querySelector(".sc-col-location").textContent = tx("sendcode.colLocation");
+    dlg.querySelector(".sc-col-guest").textContent    = tx("sendcode.colGuest");
+    dlg.querySelector(".sc-col-code").textContent     = tx("sendcode.colCode");
+    dlg.querySelector(".sc-col-phone").textContent    = tx("sendcode.colPhone");
+    dlg.querySelector(".sc-col-action").textContent   = "";
     dlg.querySelector(".sc-cost").textContent       = tx("sms.costNote");
     dlg.querySelector('[data-action="close"]').textContent = tx("sendcode.close");
     dlg.querySelector(".sc-list-loading").textContent = tx("sendcode.searching");
@@ -182,9 +185,18 @@
       const code = hasCode ? escapeHtml(b.doorCode) : `<span class="sc-no-code">${escapeHtml(tx("sendcode.noCode"))}</span>`;
       const phoneVal = b.phone || "+47";
       const sendLabel = escapeHtml(tx("sendcode.send"));
+      // v3.10.28: vis lokasjon (property + adresse på neste linje). Begge er
+      // alltid med — adressen står tom-streng hvis vi ikke har den mappet i
+      // PROPERTY_ADDRESSES på backend, og blir da bare droppet i render.
+      const propName = escapeHtml(b.property || "");
+      const propAddr = escapeHtml(b.propertyAddress || "");
+      const locCell = propName
+        ? `<strong class="sc-loc-name">${propName}</strong>${propAddr?`<small class="sc-loc-addr">${propAddr}</small>`:""}`
+        : "—";
 
       tr.innerHTML = `
         <td class="sc-room">${room}</td>
+        <td class="sc-location">${locCell}</td>
         <td class="sc-guest">${guest}</td>
         <td class="sc-code">${code}</td>
         <td class="sc-phone-cell">
