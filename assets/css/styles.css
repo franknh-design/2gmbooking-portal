@@ -1362,6 +1362,10 @@ input[type="date"]:disabled {
   opacity: .7;
   font-weight: 400;
 }
+/* v3.10.14: Skriv ut-knappen står til høyre, adskilt fra filter-knappene. */
+.mb-print-btn {
+  margin-left: auto;
+}
 /* v3.8.4: amber-pille på Kommende-knappen som signaliserer at det finnes
    pending-bookinger (Pending_Confirmation=true) — synlig uavhengig av
    hvilket filter som er aktivt. */

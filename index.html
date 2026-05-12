@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.10.13 -->
+<!-- v3.10.14 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -206,11 +206,13 @@
           <span class="badge" id="mybookings-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
         </button>
-        <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle -->
+        <!-- v3.7.8: filter-toggler — Aktive / Kommende / Alle.
+             v3.10.14: + Skriv ut-knapp helt til høyre. -->
         <div class="mb-filters" id="mybookings-filters" role="tablist" aria-label="Filter">
           <button type="button" data-mb-filter="active"   class="mb-filter-btn is-active" data-i18n="mybookings.filterActive">Aktive</button>
           <button type="button" data-mb-filter="upcoming" class="mb-filter-btn" data-i18n="mybookings.filterUpcoming">Kommende</button>
           <button type="button" data-mb-filter="all"      class="mb-filter-btn" data-i18n="mybookings.filterAll">Alle</button>
+          <button type="button" id="mybookings-print" class="mb-filter-btn mb-print-btn" data-i18n="mybookings.print" title="Skriv ut listen">🖨 Skriv ut</button>
         </div>
         <p class="mb-loading" id="mybookings-loading" data-i18n="mybookings.loading">Laster…</p>
         <p class="mb-error"   id="mybookings-error"   data-i18n="mybookings.error" hidden>
@@ -259,7 +261,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.13</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.10.14</small>
     </footer>
   </div>
 

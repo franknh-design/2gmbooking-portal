@@ -220,12 +220,136 @@
       wrap._wired = true;
       wrap.addEventListener("click", (e) => {
         const btn = e.target.closest("button[data-mb-filter]");
-        if (!btn) return;
-        const f = btn.getAttribute("data-mb-filter");
-        if (f === this._filter) return;
-        this._filter = f;
-        this._render(this._lastBookings, true);
+        if (btn) {
+          const f = btn.getAttribute("data-mb-filter");
+          if (f === this._filter) return;
+          this._filter = f;
+          this._render(this._lastBookings, true);
+          return;
+        }
+        // v3.10.14: Skriv ut åpner et eget vindu med utskriftsvennlig liste.
+        const printBtn = e.target.closest("#mybookings-print");
+        if (printBtn) {
+          this.printList();
+        }
       });
+    },
+
+    // v3.10.14: Åpner et nytt vindu med utskriftsvennlig liste over bookingene
+    // som er i nåværende filter, og trigger print-dialogen automatisk. Gruppert
+    // per property — samme som on-screen-visningen.
+    printList() {
+      const bookings = this._applyFilter(this._lastBookings || []);
+      if (!bookings.length) {
+        window.alert(tx("mybookings.printEmpty") || "Ingen bookinger å skrive ut.");
+        return;
+      }
+
+      const groups = new Map();
+      for (const b of bookings) {
+        const key = (b.property || "").trim() || tx("mybookings.noLocation");
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(b);
+      }
+      const sortedKeys = Array.from(groups.keys())
+        .sort((a, b) => a.localeCompare(b, "nb", { sensitivity: "base" }));
+      for (const key of sortedKeys) {
+        groups.get(key).sort((a, b) => {
+          const an = String(a.roomNumber || "");
+          const bn = String(b.roomNumber || "");
+          if (!an && !bn) return 0;
+          if (!an) return 1;
+          if (!bn) return -1;
+          return an.localeCompare(bn, undefined, { numeric: true });
+        });
+      }
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const printedAt = `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      const filterLabel = this._filter === "active"
+        ? (tx("mybookings.filterActive") || "Aktive")
+        : this._filter === "upcoming"
+          ? (tx("mybookings.filterUpcoming") || "Kommende")
+          : (tx("mybookings.filterAll") || "Alle");
+
+      const groupsHtml = sortedKeys.map(propKey => {
+        const list = groups.get(propKey);
+        const addr = list.find(b => b.propertyAddress)?.propertyAddress;
+        const rows = list.map(b => {
+          const nights = b.checkOut ? nightsBetween(b.checkIn, b.checkOut) : null;
+          const dates = formatBookingDates(b.checkIn, b.checkOut) || "";
+          const nightsTxt = nights != null
+            ? (nights === 1 ? "1 natt" : `${nights} netter`)
+            : (tx("mybookings.openPeriod") || "Åpen");
+          const statusTxt = b.pendingConfirmation
+            ? (tx("mybookings.statusPending") || "Avventer")
+            : (b.status || "");
+          return `<tr>
+            <td>${escapeHtml(b.guest || "—")}</td>
+            <td>${escapeHtml(b.roomNumber || "—")}</td>
+            <td>${escapeHtml(b.doorCode || "—")}</td>
+            <td>${escapeHtml(dates)}</td>
+            <td>${escapeHtml(nightsTxt)}</td>
+            <td>${escapeHtml(statusTxt)}</td>
+            <td class="ref">${escapeHtml(b.ref || "")}</td>
+          </tr>`;
+        }).join("");
+        const addrLine = addr ? `<div class="prop-addr">${escapeHtml(addr)}</div>` : "";
+        return `<section class="prop-group">
+          <h2>${escapeHtml(propKey)}</h2>${addrLine}
+          <table>
+            <thead><tr>
+              <th>Gjest</th><th>Rom</th><th>Dørkode</th><th>Periode</th><th>Lengde</th><th>Status</th><th>Ref</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </section>`;
+      }).join("");
+
+      const html = `<!DOCTYPE html><html lang="nb"><head><meta charset="UTF-8"><title>2GM — Mine bookinger</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;color:#222;margin:18mm;font-size:12px;line-height:1.4}
+  header{border-bottom:2px solid #222;padding-bottom:8px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:baseline;gap:24px;flex-wrap:wrap}
+  header h1{margin:0;font-size:18px;font-weight:600}
+  header .meta{font-size:11px;color:#666}
+  .prop-group{margin-bottom:22px;break-inside:avoid}
+  .prop-group h2{font-size:13px;margin:0 0 2px;border-bottom:1px solid #999;padding-bottom:3px}
+  .prop-addr{font-size:11px;color:#666;margin-bottom:6px}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th,td{padding:5px 7px;text-align:left;border-bottom:.5px solid #ddd;vertical-align:top}
+  th{background:#f0f0f0;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  td.ref{font-family:Consolas,monospace;font-size:10px;color:#666}
+  footer{margin-top:24px;font-size:10px;color:#999;text-align:center;border-top:.5px solid #ddd;padding-top:8px}
+  @media print{body{margin:10mm}@page{margin:10mm}}
+</style></head><body>
+  <header>
+    <h1>2GM Eiendom — Mine bookinger</h1>
+    <div class="meta">${escapeHtml(filterLabel)} · ${escapeHtml(String(bookings.length))} bookinger · skrevet ut ${escapeHtml(printedAt)}</div>
+  </header>
+  ${groupsHtml}
+  <footer>2GM Eiendom AS · Bestillingsportal</footer>
+</body></html>`;
+
+      const w = window.open("", "_blank");
+      if (!w) {
+        window.alert("Pop-up blokkert. Tillat pop-ups for å skrive ut.");
+        return;
+      }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      // Vent på onload + en kort timeout som fallback hvis onload ikke fyrer
+      // (skjer på enkelte mobile nettlesere som åpner i samme prosess).
+      const triggerPrint = () => { try { w.focus(); w.print(); } catch (_) {} };
+      if (w.document.readyState === "complete") {
+        setTimeout(triggerPrint, 200);
+      } else {
+        w.addEventListener("load", () => setTimeout(triggerPrint, 200));
+        setTimeout(triggerPrint, 800);
+      }
     },
 
     _applyFilter(bookings) {
