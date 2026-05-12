@@ -73,6 +73,12 @@ export async function onRequestPost(context) {
       const f = item.fields;
       const roomId = f.RoomLookupId;
       const room = roomId ? roomsById[String(roomId)] : null;
+      // v3.10.19: Hver booking bærer nå sin egen Door_Code — den koden gjesten
+      // faktisk fikk. Fall back til Rooms.Door_Code for gamle bookinger som ble
+      // opprettet før v20.13.1, slik at de fortsatt vises riktig. Da neste PIN
+      // genereres på rommet, lagres den på _bookingen_, ikke bare på rommet.
+      const bookingCode = (f.Door_Code || "").trim();
+      const doorCode = bookingCode || (room ? room.doorCode : null);
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
@@ -83,7 +89,7 @@ export async function onRequestPost(context) {
         status: f.Status || "",
         pendingConfirmation: f.Pending_Confirmation === true,
         roomNumber: room ? room.title : null,
-        doorCode: room ? room.doorCode : null,
+        doorCode: doorCode,
       };
     });
 
