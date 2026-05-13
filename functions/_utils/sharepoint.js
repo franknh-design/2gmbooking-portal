@@ -1,9 +1,16 @@
 // functions/_utils/sharepoint.js
-// v1.5 - SharePoint operations via Microsoft Graph
-// Endringer fra v1.4:
-//   - Lagt til fetchAllItems() som håndterer @odata.nextLink-paginering
-//   - Alle list-spørringer går nå gjennom fetchAllItems
-//   - Default page size 999 (Graph API maks)
+// v1.6 - SharePoint operations via Microsoft Graph
+// Endringer fra v1.5 (portal v3.11.0, "Trinn 2 — trygt subset"):
+//   - fetchAllItems aksepterer {filter, select, prefer, top} i tillegg til
+//     legacy raw query-streng
+//   - $select på ALLE list-fetches — kun feltene koden faktisk leser. Kutter
+//     JSON-payload med ~60-80% per side → mindre JSON.parse-CPU
+//   - $filter på Bookings.Status (Choice — pålitelig) og Rooms.Active (Yes/No)
+//     for å redusere antall rader server-side
+//   - IKKE filter på Token/Title/Property_Name — vi prøvde det i v3.10.32 og
+//     det brakk validate-token (Token-kolonnen støtter trolig ikke $filter,
+//     antagelig fordi den er Multiline Text). Holder JS-side oppslag for
+//     disse, men payload-en de jobber på er mye mindre nå pga $select.
 
 import { graphRequest } from "./graph.js";
 
@@ -68,12 +75,38 @@ export function propertyAddress(propertyName) {
  * (forhindrer uendelig løkke ved feil).
  *
  * Graph API begrenser ofte til 200 per side selv med $top=999, derfor
- * MÅ vi følge nextLink. Booking-listen har 656 rader og vil vokse,
- * så uten paginering ville vi savne data uten feilmelding.
+ * MÅ vi følge nextLink.
+ *
+ * v3.11.0 (Trinn 2 — trygt subset): Aksepterer enten en ren query-streng
+ * (legacy) eller et structured options-objekt med {filter, select, top, prefer}.
+ *
+ *   filter: f.eks. "fields/Status eq 'Active'" — pålitelig på Choice/Yes-No,
+ *           IKKE bruk på Multiline Text (Token, evt. lange Title-felt)
+ *   select: f.eks. "Title,Status,Company" — kun felt vi leser. (id er alltid med.)
+ *   prefer: når $filter brukes på ikke-indekserte tekstkolonner, sett
+ *           "HonorNonIndexedQueriesWarningMayFailRandomly".
  */
-async function fetchAllItems(env, listId, query = "$expand=fields&$top=999") {
+async function fetchAllItems(env, listId, options = {}) {
   const MAX_PAGES = 50; // 50 * 999 = 49 950 rader. Mer enn nok.
-  const startPath = `/sites/${SITE_ID}/lists/${listId}/items?${query}`;
+
+  let queryString;
+  let extraHeaders;
+
+  if (typeof options === "string") {
+    queryString = options;
+  } else {
+    const parts = [];
+    parts.push(options.select ? `$expand=fields($select=${options.select})` : "$expand=fields");
+    parts.push(`$top=${options.top || 999}`);
+    if (options.filter) parts.push(`$filter=${encodeURIComponent(options.filter)}`);
+    queryString = parts.join("&");
+    if (options.prefer) {
+      extraHeaders = { Prefer: options.prefer };
+    }
+  }
+
+  const startPath = `/sites/${SITE_ID}/lists/${listId}/items?${queryString}`;
+  const fetchOpts = extraHeaders ? { headers: extraHeaders } : {};
 
   const allItems = [];
   let nextUrl = null;
@@ -81,8 +114,8 @@ async function fetchAllItems(env, listId, query = "$expand=fields&$top=999") {
 
   do {
     const data = nextUrl
-      ? await graphRequest(env, nextUrl)         // absolutt URL fra nextLink
-      : await graphRequest(env, startPath);      // relativ sti første gang
+      ? await graphRequest(env, nextUrl, fetchOpts)
+      : await graphRequest(env, startPath, fetchOpts);
 
     if (Array.isArray(data.value)) {
       allItems.push(...data.value);
@@ -101,12 +134,30 @@ async function fetchAllItems(env, listId, query = "$expand=fields&$top=999") {
   return allItems;
 }
 
+// v3.11.0: HonorNonIndexed-header for $filter på ikke-indekserte kolonner.
+// Trygt for våre datamengder (Bookings ~656, Rooms ~80) — langt under SharePoints
+// 5000-rad-grense som ellers ville avvist non-indexed queries.
+const HONOR_NONINDEXED = "HonorNonIndexedQueriesWarningMayFailRandomly";
+
+// v3.11.0: $select-konstanter per liste. Kun felt koden faktisk leser.
+const SELECT_BOOKING = "Title,Person_Name,Company,Billing_Company,Property_Name,Check_In,Check_Out,Status,Pending_Confirmation,RoomLookupId,Door_Code,Notes";
+const SELECT_ROOM = "Title,Door_Code,Cleaning_Status,DailyRate,PropertyLookupId,Floor,Active,LongTerm_Company,LongTerm_Price,LongTerm_StartDate,LongTerm_EndDate";
+const SELECT_PROPERTY_FULL = "Title,FullTenant_Company,DailyRate,SMS_Template,WiFi_SSID,WiFi_Password,Welcome_Message,Floor1_Info,Floor2_Info";
+const SELECT_TOKEN = "Title,Token,Pin,Aktiv,Firma,Kontaktperson,Telefon,Epost,Utlopsdato,TillatteLokasjoner,MaksRomPerBestilling,AntallBestillinger,SistBrukt,LastSeen,Sprak";
+const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon";
+const SELECT_RATE = "Person_Name,Company,Property,DailyRate,FeeType";
+
+// v3.11.0: Status-klauseler vi gjenbruker. Bookings.Status er Choice-felt —
+// $filter på Choice er pålitelig og indeksert i SharePoint-default.
+const FILTER_ACTIVE_OR_UPCOMING = "fields/Status eq 'Active' or fields/Status eq 'Upcoming'";
+const FILTER_NOT_CANCELLED = "fields/Status ne 'Cancelled'";
+
 // ============================================================================
 // Properties (Eiendommer-listen)
 // ============================================================================
 
 async function getPropertyLookupMap(env) {
-  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title" });
 
   const map = {};
   for (const item of items) {
@@ -120,7 +171,7 @@ async function getPropertyLookupMap(env) {
 // v1.7: Properties-meta inkl. FullTenant_Company, brukt av availability
 // for å gi customer-eide bygg ledighet til kunden selv.
 export async function getPropertyMetaMap(env) {
-  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,FullTenant_Company" });
   const map = {};
   for (const item of items) {
     if (!item.id) continue;
@@ -137,7 +188,10 @@ export async function getPropertyMetaMap(env) {
 // ============================================================================
 
 export async function findToken(env, token) {
-  const items = await fetchAllItems(env, LIST_IDS.TOKENS);
+  // v3.11.0: $select reduserer payload. Vi gjør IKKE $filter på Token-kolonnen
+  // — det brakk validate-token i v3.10.32, antagelig fordi Token er Multiline
+  // Text (ikke filtrerbar via Graph). JS-side find er billig på ~50 rader.
+  const items = await fetchAllItems(env, LIST_IDS.TOKENS, { select: SELECT_TOKEN });
 
   const match = items.find(item =>
     item.fields.Token === token && item.fields.Aktiv === true
@@ -238,7 +292,9 @@ export function maskPhone(phone) {
 
 async function _findPinAttemptRow(env, token) {
   if (!LIST_IDS.PIN_ATTEMPTS) return null;
-  const items = await fetchAllItems(env, LIST_IDS.PIN_ATTEMPTS);
+  const items = await fetchAllItems(env, LIST_IDS.PIN_ATTEMPTS, {
+    select: "Title,FailedCount,LockedUntil,LastAttempt",
+  });
   return items.find(it => it.fields && it.fields.Title === token) || null;
 }
 
@@ -299,14 +355,18 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 
   if (!lookupIdForProperty) return [];
 
-  const items = await fetchAllItems(env, LIST_IDS.ROOMS);
+  // v3.11.0: $select + $filter på Active (Yes/No — pålitelig). PropertyLookupId-
+  // filteret holder vi på JS-side fordi Lookup-felt-filtrering i SharePoint
+  // har egne fallgruver vi ikke har testet.
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS, {
+    select: SELECT_ROOM,
+    filter: "fields/Active eq true",
+    prefer: HONOR_NONINDEXED,
+  });
 
   return items.filter(item => {
     const f = item.fields;
-    const matches = String(f.PropertyLookupId) === String(lookupIdForProperty);
-    const hasTitle = !!f.Title;
-    const isActive = f.Active === true;
-    return matches && hasTitle && isActive;
+    return String(f.PropertyLookupId) === String(lookupIdForProperty) && !!f.Title;
   });
 }
 
@@ -314,7 +374,8 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 // booking-svar og til auto-checkin (vi trenger Cleaning_Status for å sjekke om
 // rommet er klart før vi flipper Upcoming → Active).
 export async function getRoomsByIdMap(env) {
-  const items = await fetchAllItems(env, LIST_IDS.ROOMS);
+  // v3.11.0: $select. Ingen filter — kalleren forventer alle rom (også inactive).
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS, { select: SELECT_ROOM });
   const map = {};
   for (const item of items) {
     if (!item.id) continue;
@@ -340,7 +401,7 @@ export async function getRoomsByIdMap(env) {
 // v3.10.18: Full property-meta-map med templates og WiFi-info — brukes av
 // send-doorcode for å rendre samme SMS-template som admin-appen.
 export async function getPropertiesFullByIdMap(env) {
-  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: SELECT_PROPERTY_FULL });
   const map = {};
   for (const item of items) {
     if (!item.id) continue;
@@ -360,14 +421,14 @@ export async function getPropertiesFullByIdMap(env) {
 
 // v3.10.4: Hent hele Rates-lista — brukes til pris-oppslag i fakturaarkivet.
 export async function getAllRates(env) {
-  const items = await fetchAllItems(env, LIST_IDS.RATES);
+  const items = await fetchAllItems(env, LIST_IDS.RATES, { select: SELECT_RATE });
   return items.map(it => it.fields || {}).filter(Boolean);
 }
 
 // v3.10.4: Hent Properties som id → { title, dailyRate, fullTenantCompany }.
 // Brukes som fallback-rate-kilde og for å gjenkjenne full-tenant-eiendommer.
 export async function getPropertiesByIdMap(env) {
-  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,DailyRate,FullTenant_Company" });
   const map = {};
   for (const item of items) {
     if (!item.id) continue;
@@ -405,15 +466,15 @@ export async function updateBookingFields(env, itemId, fields) {
 // ============================================================================
 
 export async function getBookingsForProperty(env, propertyName) {
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
-
-  const ACTIVE_STATUSES = new Set(["Active", "Upcoming"]);
-
-  return items.filter(item => {
-    const f = item.fields;
-    return f.Property_Name === propertyName
-      && ACTIVE_STATUSES.has(f.Status);
+  // v3.11.0: $select + Status-filter server-side. Property_Name-matching gjøres
+  // på JS-side fordi vi ikke har testet tekst-felt-filtrering grundig nok.
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
+    select: SELECT_BOOKING,
+    filter: FILTER_ACTIVE_OR_UPCOMING,
+    prefer: HONOR_NONINDEXED,
   });
+
+  return items.filter(item => item.fields.Property_Name === propertyName);
 }
 
 // v3.10.13: Matcher på Billing_Company ELLER Company. Admin-appen bruker
@@ -434,7 +495,9 @@ export async function findBookingByRefForCompany(env, bookingRef, companyName) {
   const refTarget = String(bookingRef || "").trim().toLowerCase();
   const coTarget  = String(companyName || "").trim().toLowerCase();
   if (!refTarget || !coTarget) return null;
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  // v3.11.0: $select. Ingen Title-filter — Title kan være Multiline Text-aktig
+  // og ble droppet etter validate-token-bruddet i v3.10.32.
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, { select: SELECT_BOOKING });
   for (const item of items) {
     const f = item.fields || {};
     const t = String(f.Title || "").trim().toLowerCase();
@@ -459,9 +522,15 @@ export async function findBookingsByRoomForCompany(env, roomNumber, companyName)
   const coTarget = String(companyName || "").trim().toLowerCase();
   if (!roomTarget || !coTarget) return { rooms: [], bookings: [] };
 
+  // v3.11.0: $select på begge + Status-filter på Bookings (trygt). Romnummer-
+  // og firma-matching gjøres på JS-side.
   const [rooms, items] = await Promise.all([
-    fetchAllItems(env, LIST_IDS.ROOMS),
-    fetchAllItems(env, LIST_IDS.BOOKINGS),
+    fetchAllItems(env, LIST_IDS.ROOMS, { select: SELECT_ROOM }),
+    fetchAllItems(env, LIST_IDS.BOOKINGS, {
+      select: SELECT_BOOKING,
+      filter: FILTER_ACTIVE_OR_UPCOMING,
+      prefer: HONOR_NONINDEXED,
+    }),
   ]);
 
   const matchingRooms = rooms.filter(r => {
@@ -499,7 +568,9 @@ export async function findBookingByIdForCompany(env, bookingId, companyName) {
   const idTarget = String(bookingId || "").trim();
   const coTarget = String(companyName || "").trim().toLowerCase();
   if (!idTarget || !coTarget) return null;
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  // v3.11.0: $select. Full-skanning beholdes — direkte /items/{id}-GET ble
+  // droppet etter v3.10.32-bruddet inntil vi har testet det isolert.
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, { select: SELECT_BOOKING });
   for (const item of items) {
     if (String(item.id) !== idTarget) continue;
     if (!_bookingMatchesCompany(item.fields || {}, coTarget)) return null;
@@ -512,7 +583,8 @@ export async function findBookingByIdForCompany(env, bookingId, companyName) {
 // objekt så my-bookings kan slå opp telefon for hver booking uten nye Graph-
 // kall. fetchAllItems pagineres (Persons har 300+ rader), så vi unngår N rundturer.
 export async function getPersonsLookup(env) {
-  const items = await fetchAllItems(env, LIST_IDS.PERSONS);
+  // v3.11.0: $select. Persons har 300+ rader, payload-kutt er betydelig.
+  const items = await fetchAllItems(env, LIST_IDS.PERSONS, { select: SELECT_PERSON });
   const records = items.map(item => {
     const f = item.fields || {};
     return {
@@ -548,7 +620,7 @@ export async function getPersonsLookup(env) {
 export async function findPersonPhoneByName(env, name) {
   const target = String(name || "").trim().toLowerCase();
   if (!target) return null;
-  const items = await fetchAllItems(env, LIST_IDS.PERSONS);
+  const items = await fetchAllItems(env, LIST_IDS.PERSONS, { select: SELECT_PERSON });
   const words = target.split(/[\s,]+/).filter(w => w.length > 1);
 
   const candidates = items.filter(item => {
@@ -571,16 +643,18 @@ export async function findPersonPhoneByName(env, name) {
 }
 
 export async function getBookingsForCompany(env, companyName) {
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
-
-  const ACTIVE_STATUSES = new Set(["Active", "Upcoming"]);
   const target = String(companyName || "").trim().toLowerCase();
   if (!target) return [];
 
-  return items.filter(item => {
-    const f = item.fields;
-    return _bookingMatchesCompany(f, target) && ACTIVE_STATUSES.has(f.Status);
+  // v3.11.0: $select + Status-filter (server-side). Company-matching i JS
+  // for å unngå case/whitespace-fallgruver på tekstkolonner.
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
+    select: SELECT_BOOKING,
+    filter: FILTER_ACTIVE_OR_UPCOMING,
+    prefer: HONOR_NONINDEXED,
   });
+
+  return items.filter(item => _bookingMatchesCompany(item.fields, target));
 }
 
 // v3.10.0: All-status variant — brukes av fakturaarkivet i portalen så
@@ -588,19 +662,28 @@ export async function getBookingsForCompany(env, companyName) {
 // Active og Upcoming inkluderes ikke automatisk — kalleren bestemmer
 // hvilke statuser den vil ha med via inkluderingsfilter.
 export async function getAllBookingsForCompany(env, companyName, includeStatuses) {
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
   const target = String(companyName || "").trim().toLowerCase();
   if (!target) return [];
-  const allow = includeStatuses && includeStatuses.length
-    ? new Set(includeStatuses)
-    : null; // null = aksepter alt unntatt Cancelled
-  return items.filter(item => {
-    const f = item.fields;
-    if (!_bookingMatchesCompany(f, target)) return false;
-    if (f.Status === "Cancelled") return false;
-    if (allow && !allow.has(f.Status)) return false;
-    return true;
+
+  // v3.11.0: $select + Status-filter. Hvis kalleren spesifiserer
+  // includeStatuses bygger vi tilsvarende OR-klausul; ellers "ne Cancelled".
+  let filter;
+  if (includeStatuses && includeStatuses.length) {
+    const clauses = includeStatuses
+      .map(s => `fields/Status eq '${String(s).replace(/'/g, "''")}'`)
+      .join(" or ");
+    filter = `(${clauses})`;
+  } else {
+    filter = FILTER_NOT_CANCELLED;
+  }
+
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
+    select: SELECT_BOOKING,
+    filter,
+    prefer: HONOR_NONINDEXED,
   });
+
+  return items.filter(item => _bookingMatchesCompany(item.fields, target));
 }
 
 export function generateBookingRef() {
@@ -795,10 +878,18 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
   const todayUTC = new Date();
   const today = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), todayUTC.getUTCDate()));
 
+  // v3.11.0: $select på begge + Status-filter på Bookings.
+  // Active-filter på Rooms IKKE her — vi vil inkludere alle rom i ownership-
+  // sjekken; "Active eq false" filtreres i JS-kontrollen rett under (samme
+  // adferd som før).
   const [propertyMeta, allRooms, allBookings] = await Promise.all([
     getPropertyMetaMap(env),
-    fetchAllItems(env, LIST_IDS.ROOMS),
-    fetchAllItems(env, LIST_IDS.BOOKINGS),
+    fetchAllItems(env, LIST_IDS.ROOMS, { select: SELECT_ROOM }),
+    fetchAllItems(env, LIST_IDS.BOOKINGS, {
+      select: SELECT_BOOKING,
+      filter: FILTER_ACTIVE_OR_UPCOMING,
+      prefer: HONOR_NONINDEXED,
+    }),
   ]);
 
   // 1. Filter rom kunden eier
