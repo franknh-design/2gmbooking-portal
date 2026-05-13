@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.11.0 -->
+<!-- v3.11.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -167,29 +167,34 @@
             </div>
           </div>
 
-          <div class="field">
-            <span class="field-label" data-i18n="booking.rooms">Antall rom</span>
-            <div class="counter" role="group" data-i18n-aria="booking.rooms" aria-label="Antall rom">
-              <button type="button" class="counter-btn" id="rooms-minus" data-i18n-aria="booking.fewerRooms" aria-label="Færre rom">−</button>
-              <input
-                type="number"
-                id="f-rooms"
-                name="rooms"
-                value="1"
-                min="1"
-                max="20"
-                inputmode="numeric"
-                aria-live="polite"
-              />
-              <button type="button" class="counter-btn" id="rooms-plus" data-i18n-aria="booking.moreRooms" aria-label="Flere rom">+</button>
+          <!-- v3.11.1: Antall rom + Navn på gjester gruppert i samme visuelle
+               container som booking-key-fields over, så de to seksjonene
+               speiler hverandre. -->
+          <div class="booking-key-fields booking-key-fields--secondary">
+            <div class="field">
+              <span class="field-label" data-i18n="booking.rooms">Antall rom</span>
+              <div class="counter" role="group" data-i18n-aria="booking.rooms" aria-label="Antall rom">
+                <button type="button" class="counter-btn" id="rooms-minus" data-i18n-aria="booking.fewerRooms" aria-label="Færre rom">−</button>
+                <input
+                  type="number"
+                  id="f-rooms"
+                  name="rooms"
+                  value="1"
+                  min="1"
+                  max="20"
+                  inputmode="numeric"
+                  aria-live="polite"
+                />
+                <button type="button" class="counter-btn" id="rooms-plus" data-i18n-aria="booking.moreRooms" aria-label="Flere rom">+</button>
+              </div>
             </div>
-          </div>
 
-          <fieldset class="field guests">
-            <legend class="field-label" data-i18n="booking.guests">Navn på gjester</legend>
-            <p class="guests-hint" data-i18n="booking.guestsHint">Bruker fellesperioden over med mindre du klikker «Avvikende datoer».</p>
-            <div id="guests-list" class="guests-list"></div>
-          </fieldset>
+            <fieldset class="field guests">
+              <legend class="field-label" data-i18n="booking.guests">Navn på gjester</legend>
+              <p class="guests-hint" data-i18n="booking.guestsHint">Bruker fellesperioden over med mindre du klikker «Avvikende datoer».</p>
+              <div id="guests-list" class="guests-list"></div>
+            </fieldset>
+          </div>
 
           <button type="submit" class="btn btn-primary btn-submit" id="submit-btn" data-i18n="booking.submit">
             Send bestilling
@@ -278,7 +283,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.11.0</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.11.1</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
