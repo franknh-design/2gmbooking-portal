@@ -511,7 +511,18 @@
       this._setState("list");
 
       // v3.7.9: vis bare antallet — header er kompakt nok at "55 row" ble støy.
-      if (this.countEl) this.countEl.textContent = String(count);
+      // v3.11.4: bruk totalen (ikke filtrert) så sirkelen bak «Mine bookinger»
+      // alltid viser hvor mange bookinger kunden faktisk har. Skjul den helt
+      // i demo-modus så telleren ikke villeder kunden.
+      if (this.countEl) {
+        if (this._isShowingDemo) {
+          this.countEl.hidden = true;
+          this.countEl.textContent = "";
+        } else {
+          this.countEl.hidden = false;
+          this.countEl.textContent = String(totalCount);
+        }
+      }
 
       // v3.10.10: ikke utvid panelet automatisk — kun "+ Ny bestilling" er
       // åpen som default. Brukeren åpner Mine bookinger ved å klikke tab

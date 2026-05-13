@@ -1590,10 +1590,22 @@ input[type="date"]:disabled {
 }
 
 .panel-mybookings .badge {
-  background: var(--c-bg);
-  color: var(--c-muted);
-  border: 1px solid var(--c-border);
-  font-weight: 500;
+  /* v3.11.4: liten sirkel bak «Mine bookinger»-tittelen — viser totalen
+     med en gang panelet er rendret, også når det er kollapset. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--c-brand);
+  color: #fff;
+  border: 0;
+  margin-left: 10px;
+  vertical-align: middle;
 }
 
 .mb-loading,
