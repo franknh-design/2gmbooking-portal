@@ -194,6 +194,33 @@
   // --------------------------------------------------------------------------
 
   /**
+   * v3.10.31: Henter telefonnr per booking (via Persons-lookup).
+   * Eget endepunkt så det dyre Persons-oppslaget ikke kjøres på hver
+   * my-bookings-polling — bare når sendcode-modalen faktisk åpnes.
+   * Returnerer { ok, phones: { "2GM-AB12CD": "+4799887766", ... } }.
+   */
+  async function getBookingPhones(token) {
+    if (!token || typeof token !== "string") {
+      return { ok: false, error: "missing_token", phones: {} };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/booking-phones`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response", phones: {} }));
+      if (!response.ok) {
+        return { ok: false, error: data.error || "http_error", phones: {} };
+      }
+      return { ok: data.ok !== false, phones: data.phones || {} };
+    } catch (_err) {
+      return { ok: false, error: "network_error", phones: {} };
+    }
+  }
+
+  /**
    * Henter kundens aktive + kommende bookinger (alle lokasjoner).
    * Returnerer { ok, bookings: [...] } eller { ok: false, error }.
    */
@@ -440,6 +467,7 @@
     clearAvailabilityCache,
     submitBooking,
     getMyBookings,
+    getBookingPhones,
     getCustomerFreeRooms,
     requestExtension,
     requestEnd,

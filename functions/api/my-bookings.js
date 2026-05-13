@@ -1,5 +1,5 @@
 // functions/api/my-bookings.js
-// v1.3 - Returnerer aktive + kommende bookinger for kunden bak token.
+// v1.4 - Returnerer aktive + kommende bookinger for kunden bak token.
 //        Beriket med roomNumber + doorCode når admin har tildelt rom,
 //        og propertyAddress (statisk per bygg, kommer fra sharepoint.js).
 //
@@ -8,6 +8,11 @@
 //        og ingen annen booking på samme rom er Active. Mirror av
 //        admin-appens js/auto_checkin.js, men kjører server-side så det
 //        ikke avhenger av at admin har åpen Booking-appen.
+//
+//        v1.4: Fjernet Persons-lookup (telefonnr per gjest) — flyttet til
+//        eget endepunkt /api/booking-phones som sendcode-modalen kaller
+//        on-demand. Portal kaller my-bookings hvert 60-90s, så å hente
+//        300+ Persons-rader på hvert kall var hovedkilde til ExceededCpu.
 //
 // POST /api/my-bookings
 // Body: { token: "..." }
@@ -32,7 +37,6 @@ import {
   findToken,
   getBookingsForCompany,
   getRoomsByIdMap,
-  getPersonsLookup,
   propertyAddress,
   updateBookingStatus,
 } from "../_utils/sharepoint.js";
@@ -58,10 +62,13 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: true, bookings: [] });
     }
 
-    const [items, roomsById, personsLookup] = await Promise.all([
+    // v3.10.31: Persons-lookup flyttet til eget endepunkt (/api/booking-phones)
+    // som sendcode-modalen kaller on-demand. Sparer 2 sider Graph-fetch + 300+
+    // navn-iterasjon på HVER my-bookings-respons (60s+90s polling i portalen)
+    // — var den primære grunnen til ExceededCpu på dette endepunktet.
+    const [items, roomsById] = await Promise.all([
       getBookingsForCompany(env, company),
       getRoomsByIdMap(env),
-      getPersonsLookup(env),
     ]);
 
     // ----- AUTO-CHECKIN -----
@@ -84,10 +91,6 @@ export async function onRequestPost(context) {
       // Nå: kode vises bare hvis Bookings.Door_Code er satt. Admin må
       // regenerere PIN for hver booking som skal vises i portalen.
       const doorCode = (f.Door_Code || "").trim() || null;
-      // v3.10.25: phone fra Persons-lookup. Brukes av Send dørkode-modalen
-      // (banner-knappen) til å pre-fylle telefonnr per gjest. Lekker ikke
-      // info siden bookingen allerede tilhører kundens token.
-      const phone = personsLookup.findPhone(f.Person_Name || "") || null;
       return {
         ref: f.Title || "",
         property: f.Property_Name || "",
@@ -99,7 +102,6 @@ export async function onRequestPost(context) {
         pendingConfirmation: f.Pending_Confirmation === true,
         roomNumber: room ? room.title : null,
         doorCode: doorCode,
-        phone,
       };
     });
 

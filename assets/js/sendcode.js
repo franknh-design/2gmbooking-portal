@@ -128,13 +128,18 @@
       renderEmpty(tx("sms.errExpired"));
       return;
     }
-    const result = await window.Api.getMyBookings(token);
+    // v3.10.31: Telefonnr ligger ikke lenger i my-bookings (flyttet til eget
+    // endepunkt for å unngå Persons-fetch på hver 60s-polling). Vi henter
+    // bookinger først (rask render), så telefonnr i parallell — input-feltet
+    // får default "+47" til oppdateringen kommer.
+    const bookingsPromise = window.Api.getMyBookings(token);
+    const phonesPromise = window.Api.getBookingPhones(token);
+
+    const result = await bookingsPromise;
     if (!result.ok) {
       renderEmpty(tx("sendcode.lookupError"));
       return;
     }
-    // Bare Active/Upcoming. Hvis ingen kode er tildelt, vis raden grået ut
-    // så kunden ser hva som mangler, ikke at lista er tom.
     bookings = (result.bookings || []).filter(b =>
       b.status === "Active" || b.status === "Upcoming"
     );
@@ -149,6 +154,26 @@
       return ra.localeCompare(rb, undefined, { numeric: true, sensitivity: "base" });
     });
     renderRows();
+
+    // Når phones-respons kommer: oppdater input-feltene som ikke er manuelt
+    // endret av kunden allerede.
+    const phonesResult = await phonesPromise;
+    if (phonesResult.ok && phonesResult.phones) {
+      let changed = false;
+      bookings.forEach((b, idx) => {
+        const ph = phonesResult.phones[b.ref];
+        if (!ph) return;
+        b.phone = ph;
+        const input = dlg && dlg.querySelector(`.sc-phone-input[data-idx="${idx}"]`);
+        // Bare overskriv hvis kunden ikke har skrevet noe selv (verdi er
+        // fortsatt default "+47").
+        if (input && (input.value === "+47" || input.value === "")) {
+          input.value = ph;
+          changed = true;
+        }
+      });
+      if (changed) { /* no-op — DOM allerede oppdatert */ }
+    }
   }
 
   function renderEmpty(msg) {
