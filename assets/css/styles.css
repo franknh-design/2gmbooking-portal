@@ -1728,6 +1728,16 @@ input[type="date"]:disabled {
   line-height: 1.4;
 }
 
+/* v3.11.6: demo-banner-rad øverst i Send dørkode-tabellen. */
+.sc-demo-banner-row .sc-demo-banner {
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #854F0B;
+  background: rgba(239,159,39,.12);
+  border-left: 3px solid #EF9F27;
+}
+
 /* v3.11.3: demo-banner øverst i Mine bookinger når lista består av
    demo-bookinger (kunden har ingen ekte). Lavmælt orange band; forsvinner
    automatisk når første ekte booking er på plass. */

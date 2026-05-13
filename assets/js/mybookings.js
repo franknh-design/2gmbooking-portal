@@ -82,6 +82,8 @@
   // ikke har noen ekte bookinger. Forsvinner automatisk når første ekte
   // booking er på plass. Ser ut akkurat som ekte bookinger (dørkode etc)
   // men er ikke klikkbare — action-menyen kobles bort i _renderBookingCard.
+  // v3.11.6: eksponert som window.DemoBookings så Send dørkode-modal
+  // også kan vise samme fiktive gjester.
   function buildDemoBookings() {
     const customerFirma = (window.Auth && window.Auth.customer && window.Auth.customer.name) || "";
     const today = new Date();
@@ -101,6 +103,7 @@
         propertyAddress: "Strandveien 112, 1234 Stedet",
         roomNumber: "201",
         doorCode: "473829",
+        phone: "+4790000001",
         status: "Active",
         checkIn: addDays(-5),
         checkOut: addDays(10),
@@ -115,6 +118,7 @@
         propertyAddress: "Strandveien 112, 1234 Stedet",
         roomNumber: "305",
         doorCode: "918274",
+        phone: "+4790000002",
         status: "Upcoming",
         checkIn: addDays(3),
         checkOut: addDays(21),
@@ -129,12 +133,14 @@
         propertyAddress: "Sjøvegen 7, 5678 Stedet",
         roomNumber: "112",
         doorCode: "562039",
+        phone: "+4790000003",
         status: "Upcoming",
         checkIn: addDays(14),
         checkOut: null,
       },
     ];
   }
+  window.DemoBookings = { build: buildDemoBookings };
 
   function statusBadge(status, pending) {
     const wrap = document.createElement("span");

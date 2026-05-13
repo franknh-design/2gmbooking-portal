@@ -143,6 +143,14 @@
     bookings = (result.bookings || []).filter(b =>
       b.status === "Active" || b.status === "Upcoming"
     );
+    // v3.11.6: ingen ekte bookinger → vis demo-gjester (samme som Mine
+    // bookinger) så kunden ser hvordan SMS-rad-flyten ser ut. Demo-rader
+    // har fiktiv telefon og blir avvist av sendRow med vennlig melding.
+    let isDemo = false;
+    if (!bookings.length && window.DemoBookings && typeof window.DemoBookings.build === "function") {
+      bookings = window.DemoBookings.build();
+      isDemo = true;
+    }
     // v3.10.27: stigende romnr-sortering. Bruker localeCompare m/ numeric
     // så "204" < "706" og "204A" sorteres mellom 204 og 205.
     bookings.sort((a, b) => {
@@ -153,7 +161,11 @@
       if (!rb) return -1;
       return ra.localeCompare(rb, undefined, { numeric: true, sensitivity: "base" });
     });
-    renderRows();
+    renderRows(isDemo);
+
+    // v3.11.6: i demo-modus hopper vi over phones-fetch — de fiktive
+    // gjestene har allerede phone fra buildDemoBookings.
+    if (isDemo) return;
 
     // Når phones-respons kommer: oppdater input-feltene som ikke er manuelt
     // endret av kunden allerede.
@@ -185,7 +197,7 @@
     dlg.querySelector(".sc-list-body").innerHTML = "";
   }
 
-  function renderRows() {
+  function renderRows(isDemo) {
     if (!dlg) return;
     dlg.querySelector(".sc-list-loading").hidden = true;
     const empty = dlg.querySelector(".sc-list-empty");
@@ -198,6 +210,14 @@
       return;
     }
     empty.hidden = true;
+
+    // v3.11.6: demo-banner øverst i lista når kunden ser fiktive gjester.
+    if (isDemo) {
+      const trBanner = document.createElement("tr");
+      trBanner.className = "sc-demo-banner-row";
+      trBanner.innerHTML = `<td colspan="6" class="sc-demo-banner">${escapeHtml(tx("sendcode.demoBanner"))}</td>`;
+      tbody.appendChild(trBanner);
+    }
 
     bookings.forEach((b, idx) => {
       const tr = document.createElement("tr");
@@ -243,6 +263,13 @@
     const btn = dlg.querySelector(`.sc-send-btn[data-idx="${idx}"]`);
     const msg = dlg.querySelector(`.sc-row-msg[data-idx="${idx}"]`);
     if (!phoneInput || !btn || !msg) return;
+
+    // v3.11.6: demo-rad → ikke send noe, vis vennlig melding i stedet.
+    if (b._isDemo) {
+      msg.textContent = tx("sendcode.demoRowMsg");
+      msg.className = "sc-row-msg sc-msg-info";
+      return;
+    }
 
     const rawPhone = (phoneInput.value || "").trim();
     const phone = rawPhone.replace(/[\s\-()]/g, "");
