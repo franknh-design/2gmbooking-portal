@@ -710,8 +710,25 @@ input, select, button { font-family: inherit; }
 .cal-weekdays,
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* v3.11.2: 1 smal kolonne for uke-nr + 7 dag-kolonner */
+  grid-template-columns: 28px repeat(7, 1fr);
   gap: 6px;
+}
+.cal-week-hdr {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 11px;
+  color: var(--c-muted);
+  opacity: .75;
+}
+.cal-week-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-muted);
+  opacity: .65;
 }
 
 /* v3.5.6: tydelig loading-indikator når kalenderen henter kapasitet
@@ -2392,7 +2409,8 @@ input[type="date"]:disabled {
   }
   .cal-weekdays {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* v3.11.2: uke-nr-kolonne smalere på mobil */
+    grid-template-columns: 22px repeat(7, 1fr);
     text-align: center;
     font-size: 12px;
     color: #6b6b6b;
@@ -2406,8 +2424,16 @@ input[type="date"]:disabled {
   }
   .cal-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: 22px repeat(7, 1fr);
     gap: 8px;
+  }
+  .cal-week-num {
+    font-size: 11px;
+    color: #6b6b6b;
+    opacity: .7;
+  }
+  .cal-week-hdr {
+    font-size: 10px;
   }
   /* Hver celle i kalenderen */
   .cal-cell {

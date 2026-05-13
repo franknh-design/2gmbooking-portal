@@ -186,14 +186,17 @@
       monthEl.innerHTML = `${ms[month]} ${year}${loadingBadge}`;
       grid.innerHTML = "";
 
-      // Fyll ukedags-headerne (én eller to grids).
+      // v3.11.2: Fyll ukedags-headerne med en ekstra venstre-kolonne for
+      // uke-nr-overskriften ("Uke"/"Wk"). Grid har nå 8 kolonner: uke + 7 dager.
       const wd = weekdays();
+      const wkHdr = window.I18n ? window.I18n.t("calendar.weekColShort") : "Uke";
       const wdEl1 = document.getElementById("cal-weekdays");
       const wdEl2 = document.getElementById("cal-weekdays-2");
       if (wdEl1 && !wdEl1.dataset.lang) wdEl1.dataset.lang = "";
       [wdEl1, wdEl2].forEach(host => {
         if (!host) return;
-        host.innerHTML = wd.map(d => `<span>${d}</span>`).join("");
+        host.innerHTML = `<span class="cal-week-hdr">${wkHdr}</span>`
+          + wd.map(d => `<span>${d}</span>`).join("");
       });
 
       // Spinner-overlay mens vi laster
@@ -207,25 +210,40 @@
       const jsDow = firstOfMonth.getDay();
       const monBased = (jsDow + 6) % 7;
 
-      for (let i = 0; i < monBased; i++) {
-        const empty = document.createElement("div");
-        empty.className = "cal-cell cal-cell-empty";
-        grid.appendChild(empty);
-      }
-
       const todayIso = isoOf(new Date());
+      const totalCells = monBased + daysInMonth;
+      const totalRows  = Math.ceil(totalCells / 7);
 
-      for (let d = 1; d <= daysInMonth; d++) {
-        const date = new Date(year, month, d);
-        const iso  = isoOf(date);
+      for (let row = 0; row < totalRows; row++) {
+        // v3.11.2: ISO-uke-nummer beregnes fra mandagen i denne raden, så
+        // tallet stemmer overens med standard norsk/europeisk ukekalender.
+        const mondayDayNum = row * 7 - monBased + 1;
+        const mondayDate = new Date(year, month, mondayDayNum);
+        const weekNum = isoWeek(mondayDate);
+        const wkCell = document.createElement("div");
+        wkCell.className = "cal-week-num";
+        wkCell.textContent = String(weekNum);
+        grid.appendChild(wkCell);
 
-        // Skjul datoer som er passert (men behold dagens dato)
-        if (iso < todayIso) {
-          const empty = document.createElement("div");
-          empty.className = "cal-cell cal-cell-empty";
-          grid.appendChild(empty);
-          continue;
-        }
+        for (let col = 0; col < 7; col++) {
+          const idx = row * 7 + col;
+          const d = idx - monBased + 1;
+          if (d < 1 || d > daysInMonth) {
+            const empty = document.createElement("div");
+            empty.className = "cal-cell cal-cell-empty";
+            grid.appendChild(empty);
+            continue;
+          }
+          const date = new Date(year, month, d);
+          const iso  = isoOf(date);
+
+          // Skjul datoer som er passert (men behold dagens dato)
+          if (iso < todayIso) {
+            const empty = document.createElement("div");
+            empty.className = "cal-cell cal-cell-empty";
+            grid.appendChild(empty);
+            continue;
+          }
 
         const cell = document.createElement("button");
         cell.type = "button";
@@ -287,6 +305,7 @@
         });
 
         grid.appendChild(cell);
+        }
       }
     },
 
@@ -348,6 +367,16 @@
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
+  }
+
+  // ISO-8601-ukenummer: torsdag i samme uke avgjør hvilket år uka tilhører.
+  // Følger samme regel som de fleste europeiske kalendere (mandag-start).
+  function isoWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   }
 
   // Re-rendre kalenderen ved språkendring (måneder + ukedager + tekst-celler)
