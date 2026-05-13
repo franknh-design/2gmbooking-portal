@@ -355,20 +355,19 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 
   if (!lookupIdForProperty) return [];
 
-  // v3.11.8: $select fjernet midlertidig — viste seg at noen rom-felt
-  // (mistenker LongTerm_EndDate) kommer tilbake undefined i Graph-responsen
-  // når $select brukes med antatt internt navn. Det fikk availability-
-  // kalkulatoren til å regne avsluttede long-term-perioder som permanente,
-  // og kalenderen viste «Fullt» på Rigg 24/Botnhågen for Ulmo AS.
-  // Beholder $filter på Active siden Yes/No-felt er pålitelig.
-  const items = await fetchAllItems(env, LIST_IDS.ROOMS, {
-    filter: "fields/Active eq true",
-    prefer: HONOR_NONINDEXED,
-  });
+  // v3.11.9: $filter på Active fjernet — viste seg at filteret gir tom
+  // respons (eller mister felt) selv om det «burde» være pålitelig. Det
+  // tipper alle dager på Rigg 24/Botnhågen til «Fullt» fordi 0 rom kom
+  // tilbake. Reverterer til pre-v3.11.0-oppførsel: hent alle rom og
+  // filtrer på Active=true JS-side.
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS);
 
   return items.filter(item => {
     const f = item.fields;
-    return String(f.PropertyLookupId) === String(lookupIdForProperty) && !!f.Title;
+    const matches = String(f.PropertyLookupId) === String(lookupIdForProperty);
+    const hasTitle = !!f.Title;
+    const isActive = f.Active === true;
+    return matches && hasTitle && isActive;
   });
 }
 
@@ -468,15 +467,15 @@ export async function updateBookingFields(env, itemId, fields) {
 // ============================================================================
 
 export async function getBookingsForProperty(env, propertyName) {
-  // v3.11.8: $select fjernet midlertidig for å være sikker på at vi ikke
-  // mister felt med uventet internt navn. Beholder Status-filteret som er
-  // pålitelig (Choice-kolonne).
-  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
-    filter: FILTER_ACTIVE_OR_UPCOMING,
-    prefer: HONOR_NONINDEXED,
+  // v3.11.9: $filter fjernet — reverter til v3.10.25-oppførsel for
+  // availability-flyten siden samme klasse bug (filter dropper rader)
+  // ramt Rooms-fetchen. Filtrerer på Property_Name + Status JS-side.
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS);
+  return items.filter(item => {
+    const f = item.fields;
+    if (f.Property_Name !== propertyName) return false;
+    return f.Status === "Active" || f.Status === "Upcoming";
   });
-
-  return items.filter(item => item.fields.Property_Name === propertyName);
 }
 
 // v3.10.13: Matcher på Billing_Company ELLER Company. Admin-appen bruker
