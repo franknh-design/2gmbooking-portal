@@ -796,6 +796,12 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   const roomTitleById = {};
   const roomLongTerm = rooms.map(r => {
     const ltStart = parseDateUTC(r.fields.LongTerm_StartDate);
+    // v1.11: respekter LongTerm_EndDate. Tidligere ble end satt til null
+    // uansett, så rom med en gammel/avsluttet long-term-periode ble regnet
+    // som permanent opptatt — kalenderen viste «Fullt» selv om rommet i
+    // realiteten var ledig (eks: Ulmo AS på Rigg 24/Rigg Botnhågen, der
+    // gamle rigg-leieforhold lå igjen med EndDate i fortid).
+    const ltEnd = parseDateUTC(r.fields.LongTerm_EndDate);
     const ltCompany = String(r.fields.LongTerm_Company || "").trim().toLowerCase();
     const propMeta = propertyMeta[r.fields.PropertyLookupId] || {};
     const ftCompany = String(propMeta.fullTenantCompany || "").trim().toLowerCase();
@@ -808,7 +814,7 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     return {
       id,
       longTermStart: isOwnLongTerm ? null : ltStart,
-      longTermEnd:   null,
+      longTermEnd:   isOwnLongTerm ? null : ltEnd,
     };
   });
 
