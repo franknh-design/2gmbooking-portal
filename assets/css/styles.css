@@ -1666,6 +1666,22 @@ input[type="date"]:disabled {
 }
 .mb-group-header:first-child { margin-top: 0; }
 
+/* v3.11.3: demo-banner øverst i Mine bookinger når lista består av
+   demo-bookinger (kunden har ingen ekte). Lavmælt orange band; forsvinner
+   automatisk når første ekte booking er på plass. */
+.mb-demo-banner {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #854F0B;
+  background: rgba(239,159,39,.12);
+  border-left: 3px solid #EF9F27;
+  border-radius: var(--border-radius-sm);
+}
+
 /* List-wrapper: 720px single-col, 2-col grid over 752px */
 .mb-list {
   list-style: none;

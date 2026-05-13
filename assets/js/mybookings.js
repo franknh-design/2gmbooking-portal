@@ -78,6 +78,64 @@
     return String(code).split("").join(" ");
   }
 
+  // v3.11.3: Demo-bookinger som vises i Mine bookinger så lenge kunden
+  // ikke har noen ekte bookinger. Forsvinner automatisk når første ekte
+  // booking er på plass. Ser ut akkurat som ekte bookinger (dørkode etc)
+  // men er ikke klikkbare — action-menyen kobles bort i _renderBookingCard.
+  function buildDemoBookings() {
+    const customerFirma = (window.Auth && window.Auth.customer && window.Auth.customer.name) || "";
+    const today = new Date();
+    const addDays = (n) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + n);
+      return d.toISOString().slice(0, 10);
+    };
+    return [
+      {
+        _isDemo: true,
+        id: "demo-active-1",
+        ref: "2GM-DEMO-A",
+        guest: "Per Eksempel",
+        company: customerFirma,
+        property: "Strandveien 112",
+        propertyAddress: "Strandveien 112, 1234 Stedet",
+        roomNumber: "201",
+        doorCode: "473829",
+        status: "Active",
+        checkIn: addDays(-5),
+        checkOut: addDays(10),
+      },
+      {
+        _isDemo: true,
+        id: "demo-upcoming-1",
+        ref: "2GM-DEMO-B",
+        guest: "Kari Mønster",
+        company: customerFirma,
+        property: "Strandveien 112",
+        propertyAddress: "Strandveien 112, 1234 Stedet",
+        roomNumber: "305",
+        doorCode: "918274",
+        status: "Upcoming",
+        checkIn: addDays(3),
+        checkOut: addDays(21),
+      },
+      {
+        _isDemo: true,
+        id: "demo-upcoming-2",
+        ref: "2GM-DEMO-C",
+        guest: "Lars Demonsen",
+        company: customerFirma,
+        property: "Sjøvegen 7",
+        propertyAddress: "Sjøvegen 7, 5678 Stedet",
+        roomNumber: "112",
+        doorCode: "562039",
+        status: "Upcoming",
+        checkIn: addDays(14),
+        checkOut: null,
+      },
+    ];
+  }
+
   function statusBadge(status, pending) {
     const wrap = document.createElement("span");
     wrap.className = "mb-status";
@@ -413,16 +471,23 @@
       }
 
       // v3.7.8: cache full liste så filter-bytte kan re-rendre uten ny fetch
-      this._lastBookings = bookings || [];
+      // v3.11.3: hvis ingen ekte bookinger, inject demo-bookinger så kunden
+      // ser hvordan portalen vil se ut. Forsvinner automatisk når første
+      // ekte booking er gjort.
+      this._isShowingDemo = false;
+      const realBookings = bookings || [];
+      if (realBookings.length === 0) {
+        this._lastBookings = buildDemoBookings();
+        this._isShowingDemo = true;
+      } else {
+        this._lastBookings = realBookings;
+      }
       const totalCount = this._lastBookings.length;
 
       // Oppdater filter-knappenes counts uansett (også når 0)
       this._updateFilterButtons(this._lastBookings);
 
       if (totalCount === 0) {
-        // Ingen bookinger overhodet → empty-state. Layout er alltid synlig.
-        // v3.10.10: ikke utvid panelet automatisk — det starter kollapset, og
-        // åpnes kun når brukeren klikker på tab/chevron.
         this._setState("empty");
         if (this.countEl) this.countEl.textContent = "";
         return;
@@ -453,6 +518,16 @@
       // eller chevron i headeren.
 
       this.listEl.innerHTML = "";
+
+      // v3.11.3: demo-banner — én linje øverst i lista som forteller
+      // kunden at dette er en eksempelvisning. Forsvinner med demoene
+      // når første ekte booking er på plass.
+      if (this._isShowingDemo) {
+        const banner = document.createElement("li");
+        banner.className = "mb-demo-banner";
+        banner.textContent = tx("mybookings.demoBanner");
+        this.listEl.appendChild(banner);
+      }
 
       // v3.5.3: gruppér på lokasjon (b.property) og sorter rom stigende
       // innenfor hver gruppe. Hjelper kunder med mange bookinger spredt
@@ -573,7 +648,8 @@
       // v3.5.2: åpner menyen for ALLE Active/Upcoming-bookinger, også
       // open-ended (uten checkOut) — kunden trenger Avslutt-handlingen
       // selv (kanskje særlig) når oppholdet er åpent.
-      const canEdit = (b.status === "Active" || b.status === "Upcoming");
+      // v3.11.3: demo-bookinger er ikke klikkbare — ingen action-meny.
+      const canEdit = !b._isDemo && (b.status === "Active" || b.status === "Upcoming");
       if (canEdit) {
         row.classList.add("mb-card-clickable");
         row.setAttribute("role", "button");
