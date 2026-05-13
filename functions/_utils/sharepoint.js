@@ -355,11 +355,13 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
 
   if (!lookupIdForProperty) return [];
 
-  // v3.11.0: $select + $filter på Active (Yes/No — pålitelig). PropertyLookupId-
-  // filteret holder vi på JS-side fordi Lookup-felt-filtrering i SharePoint
-  // har egne fallgruver vi ikke har testet.
+  // v3.11.8: $select fjernet midlertidig — viste seg at noen rom-felt
+  // (mistenker LongTerm_EndDate) kommer tilbake undefined i Graph-responsen
+  // når $select brukes med antatt internt navn. Det fikk availability-
+  // kalkulatoren til å regne avsluttede long-term-perioder som permanente,
+  // og kalenderen viste «Fullt» på Rigg 24/Botnhågen for Ulmo AS.
+  // Beholder $filter på Active siden Yes/No-felt er pålitelig.
   const items = await fetchAllItems(env, LIST_IDS.ROOMS, {
-    select: SELECT_ROOM,
     filter: "fields/Active eq true",
     prefer: HONOR_NONINDEXED,
   });
@@ -466,10 +468,10 @@ export async function updateBookingFields(env, itemId, fields) {
 // ============================================================================
 
 export async function getBookingsForProperty(env, propertyName) {
-  // v3.11.0: $select + Status-filter server-side. Property_Name-matching gjøres
-  // på JS-side fordi vi ikke har testet tekst-felt-filtrering grundig nok.
+  // v3.11.8: $select fjernet midlertidig for å være sikker på at vi ikke
+  // mister felt med uventet internt navn. Beholder Status-filteret som er
+  // pålitelig (Choice-kolonne).
   const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
-    select: SELECT_BOOKING,
     filter: FILTER_ACTIVE_OR_UPCOMING,
     prefer: HONOR_NONINDEXED,
   });
