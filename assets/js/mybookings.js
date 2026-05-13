@@ -659,17 +659,19 @@
       // v3.5.2: åpner menyen for ALLE Active/Upcoming-bookinger, også
       // open-ended (uten checkOut) — kunden trenger Avslutt-handlingen
       // selv (kanskje særlig) når oppholdet er åpent.
-      // v3.11.3: demo-bookinger er ikke klikkbare — ingen action-meny.
-      const canEdit = !b._isDemo && (b.status === "Active" || b.status === "Upcoming");
+      // v3.11.5: demo-bookinger åpner en info-popup som forklarer hvilke
+      // handlinger som blir tilgjengelige når bookingen er ekte.
+      const canEdit = (b.status === "Active" || b.status === "Upcoming");
       if (canEdit) {
         row.classList.add("mb-card-clickable");
         row.setAttribute("role", "button");
         row.setAttribute("tabindex", "0");
-        row.addEventListener("click", () => openActionMenu(b, this));
+        const handler = b._isDemo ? () => openDemoInfoDialog(b) : () => openActionMenu(b, this);
+        row.addEventListener("click", handler);
         row.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            openActionMenu(b, this);
+            handler();
           }
         });
       }
@@ -692,6 +694,86 @@
     dlg._mybookingsRef = mybookingsRef;
     if (typeof dlg.showModal === "function") dlg.showModal();
     else dlg.setAttribute("open", "");
+  }
+
+  // v3.11.5: Info-popup for demo-bookinger. Lister handlingene som blir
+  // tilgjengelige når kunden klikker på en ekte booking, slik at de ser
+  // hva portalen tilbyr før de gjør sin første bestilling.
+  function openDemoInfoDialog(booking) {
+    const dlg = ensureDemoInfoDialog();
+    if (!dlg) {
+      window.alert(tx("mybookings.demoInfoTitle") + "\n\n" + tx("mybookings.demoInfoBody"));
+      return;
+    }
+    dlg.querySelector(".demo-info-name").textContent = booking.guest || "";
+    dlg.querySelector(".demo-info-meta").textContent =
+      (booking.roomNumber ? tx("mybookings.room", { n: booking.roomNumber }) + " · " : "") +
+      (booking.property || "");
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+  }
+
+  function ensureDemoInfoDialog() {
+    let dlg = document.getElementById("demoInfoDialog");
+    if (dlg) {
+      dlg.querySelector(".demo-info-title").textContent = tx("mybookings.demoInfoTitle");
+      dlg.querySelector(".demo-info-intro").textContent = tx("mybookings.demoInfoIntro");
+      dlg.querySelector(".demo-info-extend-title").textContent = tx("mybookings.extend");
+      dlg.querySelector(".demo-info-extend-body").textContent = tx("mybookings.demoInfoExtend");
+      dlg.querySelector(".demo-info-end-title").textContent = tx("mybookings.endRental");
+      dlg.querySelector(".demo-info-end-body").textContent = tx("mybookings.demoInfoEnd");
+      dlg.querySelector(".demo-info-sms-title").textContent = tx("mybookings.smsDoorcode");
+      dlg.querySelector(".demo-info-sms-body").textContent = tx("mybookings.demoInfoSms");
+      dlg.querySelector(".demo-info-close-btn").textContent = tx("mybookings.demoInfoClose");
+      return dlg;
+    }
+    if (typeof HTMLDialogElement === "undefined") return null;
+    dlg = document.createElement("dialog");
+    dlg.id = "demoInfoDialog";
+    dlg.className = "extend-dlg demo-info-dlg";
+    dlg.innerHTML = `
+      <div class="extend-dlg-form demo-info-form">
+        <h3 class="extend-dlg-title demo-info-title">${escapeHtml(tx("mybookings.demoInfoTitle"))}</h3>
+        <p class="demo-info-guest">
+          <strong class="demo-info-name"></strong>
+          <span class="demo-info-meta"></span>
+        </p>
+        <p class="demo-info-intro">${escapeHtml(tx("mybookings.demoInfoIntro"))}</p>
+        <ul class="demo-info-list">
+          <li>
+            <span class="demo-info-icon">✏️</span>
+            <div>
+              <div class="demo-info-action-title demo-info-extend-title">${escapeHtml(tx("mybookings.extend"))}</div>
+              <div class="demo-info-action-body demo-info-extend-body">${escapeHtml(tx("mybookings.demoInfoExtend"))}</div>
+            </div>
+          </li>
+          <li>
+            <span class="demo-info-icon">🛑</span>
+            <div>
+              <div class="demo-info-action-title demo-info-end-title">${escapeHtml(tx("mybookings.endRental"))}</div>
+              <div class="demo-info-action-body demo-info-end-body">${escapeHtml(tx("mybookings.demoInfoEnd"))}</div>
+            </div>
+          </li>
+          <li>
+            <span class="demo-info-icon">📱</span>
+            <div>
+              <div class="demo-info-action-title demo-info-sms-title">${escapeHtml(tx("mybookings.smsDoorcode"))}</div>
+              <div class="demo-info-action-body demo-info-sms-body">${escapeHtml(tx("mybookings.demoInfoSms"))}</div>
+            </div>
+          </li>
+        </ul>
+        <div class="extend-dlg-buttons">
+          <button type="button" class="btn btn-primary demo-info-close-btn" data-action="close">${escapeHtml(tx("mybookings.demoInfoClose"))}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dlg);
+    dlg.addEventListener("click", (e) => {
+      if (e.target?.dataset?.action === "close") {
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+      }
+    });
+    return dlg;
   }
 
   function ensureActionMenu() {

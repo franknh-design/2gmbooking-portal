@@ -1678,6 +1678,56 @@ input[type="date"]:disabled {
 }
 .mb-group-header:first-child { margin-top: 0; }
 
+/* v3.11.5: demo-info-dialog — vises når kunden klikker på en demo-booking
+   og forklarer hvilke handlinger de får tilgang til med ekte bookinger. */
+.demo-info-dlg .demo-info-form { max-width: 480px; }
+.demo-info-guest {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.demo-info-guest .demo-info-name { display: block; font-size: 15px; color: var(--color-text-primary); }
+.demo-info-guest .demo-info-meta { display: block; margin-top: 2px; opacity: .8; }
+.demo-info-intro {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.demo-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.demo-info-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-sm);
+  border: .5px solid var(--color-border-secondary);
+}
+.demo-info-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.demo-info-action-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+.demo-info-action-body {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
 /* v3.11.3: demo-banner øverst i Mine bookinger når lista består av
    demo-bookinger (kunden har ingen ekte). Lavmælt orange band; forsvinner
    automatisk når første ekte booking er på plass. */
