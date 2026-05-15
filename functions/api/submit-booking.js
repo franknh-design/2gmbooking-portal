@@ -303,21 +303,38 @@ async function sendCustomerReceipt(env, data) {
     return;
   }
   const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning });
+  // v3.12.1: HTML-mal får html:true så gjestenavn etc. blir HTML-escapet.
+  // Plain text-mal beholder default (ingen escape).
   const subject = renderTemplate(template.subject, vars) || `Bestilling ${bookingRef} mottatt`;
-  const html = renderTemplate(template.bodyHtml, vars);
+  const html = renderTemplate(template.bodyHtml, vars, { html: true });
   const text = renderTemplate(template.bodyText, vars);
   if (!html && !text) {
     console.log("[Receipt] submit_received har tom BodyHtml + BodyText");
     return;
   }
   const fromName = (template.fromName || "2GM Eiendom").trim();
+  // v3.12.1: Avsenderdomenet styres via env-var slik at vi bytter til
+  // noreply@2gm.no uten kode-endring så snart Iteam har DNS + Resend
+  // har grønt domene. Default = onboarding@resend.dev (sandbox).
+  const fromAddress = (env.EMAIL_FROM_ADDRESS || "onboarding@resend.dev").trim();
   return sendEmail(env, {
     to: customerEmail,
-    from: `${fromName} <onboarding@resend.dev>`,
+    from: `${fromName} <${fromAddress}>`,
     subject,
     html: html || undefined,
     text: text || undefined,
   });
+}
+
+// v3.12.1: Norsk dato DD.MM.ÅÅÅÅ. Aksepterer ISO-streng eller Date;
+// returnerer tom streng på ugyldig input.
+function _fmtNoDate(input) {
+  if (!input) return "";
+  const d = input instanceof Date ? input : new Date(String(input).slice(0, 10) + "T12:00:00");
+  if (isNaN(d.getTime())) return String(input || "");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}.${mm}.${d.getUTCFullYear()}`;
 }
 
 function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning }) {
@@ -328,10 +345,13 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
   const checkIns = guests.map(g => g.checkIn).filter(Boolean).sort();
   const checkOuts = guests.map(g => g.checkOut).filter(Boolean).sort();
   const earliestCheckIn = checkIns[0] || "";
-  const latestCheckOut = checkOuts.length === guests.length ? checkOuts[checkOuts.length - 1] : "åpen";
+  const latestCheckOut = checkOuts.length === guests.length ? checkOuts[checkOuts.length - 1] : "";
+  // v3.12.1: alle datoer formateres som DD.MM.ÅÅÅÅ i ALLE plassholdere
+  // (inkludert inni guestList-linjene). Open-ended utsjekk vises som "åpen".
   const guestList = guests.map(g => {
-    const period = g.checkOut ? `${g.checkIn} → ${g.checkOut}` : `${g.checkIn} → åpen`;
-    return `• ${g.name} · ${period}`;
+    const ci = _fmtNoDate(g.checkIn);
+    const co = g.checkOut ? _fmtNoDate(g.checkOut) : "åpen";
+    return `• ${g.name} · ${ci} → ${co}`;
   }).join("\n");
   const portalUrl = token ? `https://2gmbooking-portal.pages.dev/?token=${encodeURIComponent(token)}` : "https://2gmbooking-portal.pages.dev/";
   return {
@@ -341,8 +361,8 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
     property: propertyName,
     guestCount: String(guestCount),
     guestList,
-    checkIn: earliestCheckIn,
-    checkOut: latestCheckOut,
+    checkIn: _fmtNoDate(earliestCheckIn),
+    checkOut: latestCheckOut ? _fmtNoDate(latestCheckOut) : "åpen",
     portalUrl,
     capacityWarning: capacityWarning || "",
   };

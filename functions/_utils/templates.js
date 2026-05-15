@@ -82,11 +82,26 @@ export async function getEmailTemplate(env, key) {
 // Erstatter {plassholder} i en streng. Ukjente plassholdere beholdes
 // ordrett så ingen tom-substitusjon overrasker mottakeren.
 // vars: { customer: "Acme AS", bookingRef: "2GM-AB12CD", ... }
-export function renderTemplate(str, vars) {
+//
+// opts.html=true HTML-escaper substituerte verdier slik at gjestenavn
+// med < & > " ikke ødelegger layouten i HTML-malen. Plain text-malen
+// bruker default (ingen escape).
+function _htmlEscape(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function renderTemplate(str, vars, opts) {
   if (!str) return "";
-  if (!vars) return str;
+  if (!vars) return String(str);
+  const html = opts && opts.html === true;
   return String(str).replace(/\{(\w+)\}/g, (m, key) => {
     const v = vars[key];
-    return v == null ? m : String(v);
+    if (v == null) return m;
+    return html ? _htmlEscape(v) : String(v);
   });
 }
