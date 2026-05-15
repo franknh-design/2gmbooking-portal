@@ -292,7 +292,10 @@
         const btn = e.target.closest("button[data-mb-filter]");
         if (btn) {
           const f = btn.getAttribute("data-mb-filter");
-          if (f === this._filter) return;
+          // v3.12.11: alltid re-render, også hvis _filter allerede er valgt
+          // verdi — sikrer at is-active-klassen syncer med UI selv hvis
+          // filter-state og knappenes is-active er ute av synk (typisk
+          // etter automatisk Upcoming→Active-switch i v3.9.2).
           this._filter = f;
           this._render(this._lastBookings, true);
           return;
