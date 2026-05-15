@@ -795,6 +795,10 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
   // ikke lekker rom-info på blandede properties (Rigg 24 osv.).
   const showFreeRooms = customerLower === "salmar as" && propertyName === "Strandveien 112";
   const roomTitleById = {};
+  // v1.12: spor hvilke rom som er Dirty per i dag — disse skal ikke telles
+  // som ledige FOR i dag (kan ikke gjøres klar samme dag). Future-datoer
+  // ignorerer Cleaning_Status siden rommet kan vaskes innen den datoen.
+  const dirtyRoomIds = new Set();
   const roomLongTerm = rooms.map(r => {
     const ltStart = parseDateUTC(r.fields.LongTerm_StartDate);
     // v1.11: respekter LongTerm_EndDate. Tidligere ble end satt til null
@@ -812,12 +816,20 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     );
     const id = String(r.id);
     roomTitleById[id] = r.fields.Title || id;
+    if (String(r.fields.Cleaning_Status || "").trim() === "Dirty") {
+      dirtyRoomIds.add(id);
+    }
     return {
       id,
       longTermStart: isOwnLongTerm ? null : ltStart,
       longTermEnd:   isOwnLongTerm ? null : ltEnd,
     };
   });
+
+  // I dag i UTC — sammenliknes mot loop-dato D for å begrense Dirty-filteret
+  // til kun denne dagen. Future-rom kan rekkes å vaskes.
+  const _todayUtc = new Date();
+  const todayUtcMs = Date.UTC(_todayUtc.getUTCFullYear(), _todayUtc.getUTCMonth(), _todayUtc.getUTCDate());
 
   // v1.9: ta med roomLookupId i hver booking-periode så occupiedToday kan
   // filtreres til kun bookinger på rom som er i den tellbare poolen. Tidligere
@@ -849,6 +861,14 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       if (!countableRoomIds.has(b.roomId)) continue;
       if (isDateInRangeInclusive(D, b.checkIn, b.checkOut)) {
         occupiedRoomIds.add(b.roomId);
+      }
+    }
+    // v1.12: Skitne rom telles som opptatt KUN i dag — de kan ikke gjøres
+    // klar til samme-dag-innsjekk. For future-datoer regnes de som ledige
+    // siden vask kan utføres innen den datoen.
+    if (D.getTime() === todayUtcMs) {
+      for (const rid of dirtyRoomIds) {
+        if (countableRoomIds.has(rid)) occupiedRoomIds.add(rid);
       }
     }
     const occupiedToday = occupiedRoomIds.size;
