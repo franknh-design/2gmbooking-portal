@@ -50,11 +50,11 @@ const PROPERTY_MAP = {
 // de skal kjøre. Hardkodet siden adressene er statiske; fyll inn de tomme
 // strengene etter hvert som de blir bekreftet og push på nytt.
 const PROPERTY_ADDRESSES = {
-  "Rigg 24":         "Aspeveien 2, 9300 Finnsnes",
-  "Rigg 44":         "Strandveien 108, 9300 Finnsnes",
-  "Rigg Botnhågen":  "Industriveien 4, 9300 Finnsnes",
+  "Rigg 24":         "Aspeveien 2",
+  "Rigg 44":         "Strandveien 108",
+  "Rigg Botnhågen":  "Industriveien 4",
   "Rigg Andslimoen": "",
-  "Strandveien 112": "Strandveien 112, 9300 Finnsnes",
+  "Strandveien 112": "",
 };
 
 export function propertyIdToName(id) {
