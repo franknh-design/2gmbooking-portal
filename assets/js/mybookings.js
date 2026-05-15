@@ -346,7 +346,10 @@
 
       const groupsHtml = sortedKeys.map(propKey => {
         const list = groups.get(propKey);
+        // v3.12.9: bruk adresse som primær overskrift, rig-navn som subline.
         const addr = list.find(b => b.propertyAddress)?.propertyAddress;
+        const heading = addr || propKey;
+        const subLine = addr ? propKey : "";
         const rows = list.map(b => {
           const nights = b.checkOut ? nightsBetween(b.checkIn, b.checkOut) : null;
           const dates = formatBookingDates(b.checkIn, b.checkOut) || "";
@@ -366,9 +369,9 @@
             <td class="ref">${escapeHtml(b.ref || "")}</td>
           </tr>`;
         }).join("");
-        const addrLine = addr ? `<div class="prop-addr">${escapeHtml(addr)}</div>` : "";
+        const subLineHtml = subLine ? `<div class="prop-addr">${escapeHtml(subLine)}</div>` : "";
         return `<section class="prop-group">
-          <h2>${escapeHtml(propKey)}</h2>${addrLine}
+          <h2>${escapeHtml(heading)}</h2>${subLineHtml}
           <table>
             <thead><tr>
               <th>Gjest</th><th>Rom</th><th>Dørkode</th><th>Periode</th><th>Lengde</th><th>Status</th><th>Ref</th>
@@ -576,7 +579,10 @@
         const group = groups.get(key);
         const header = document.createElement("li");
         header.className = "mb-group-header";
-        header.textContent = `${key} · ${group.length}`;
+        // v3.12.9: vis adresse som primær lokasjon — fallback til rig-navnet
+        // når property mangler oppslag (Andslimoen e.l.).
+        const addr = group.find(b => b.propertyAddress)?.propertyAddress;
+        header.textContent = `${addr || key} · ${group.length}`;
         this.listEl.appendChild(header);
         for (const b of group) {
           this.listEl.appendChild(this._renderBookingCard(b));
@@ -599,22 +605,17 @@
 
       // v3.6.1: rom og lokasjon på hver sin linje — rom prominent (primær,
       // 13/600), lokasjon mykere under (11/500, sekundær). Ikonet flankerer.
+      // v3.12.9: adresse er primær lokasjon — fallback til rig-navn når
+      // ingen adresse er kjent. Egen .mb-card-addr-linje fjernet (duplikat).
       const propEl = document.createElement("div");
       propEl.className = "mb-card-prop";
       const roomTxt = b.roomNumber ? tx("mybookings.room", { n: b.roomNumber }) : "";
-      const locTxt  = b.property || "—";
+      const locTxt  = b.propertyAddress || b.property || "—";
       const inner = b.roomNumber
         ? `<span class="mb-card-prop-room">${escapeHtml(roomTxt)}</span><span class="mb-card-prop-loc">${escapeHtml(locTxt)}</span>`
         : `<span class="mb-card-prop-room">${escapeHtml(locTxt)}</span>`;
       propEl.innerHTML = SVG_BUILDING + `<span class="mb-card-prop-text">${inner}</span>`;
       left.appendChild(propEl);
-
-      if (b.propertyAddress) {
-        const addrEl = document.createElement("div");
-        addrEl.className = "mb-card-addr";
-        addrEl.textContent = b.propertyAddress;
-        left.appendChild(addrEl);
-      }
       row.appendChild(left);
 
       // ----- MIDT: dørkode med nøkkel-ikon (auto-bredde) -----
