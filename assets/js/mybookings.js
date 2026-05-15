@@ -175,7 +175,11 @@
     // v3.7.8: filter-state — "active" | "upcoming" | "all"
     // v3.10.20: default "all" så kunden ser alle bookinger (aktive +
     // kommende) med én gang — tidligere skjulte default-filteret kommende.
-    _filter: "all",
+    // v3.12.4: byttet til "upcoming" så nye bestillinger (Upcoming + Pending)
+    // er det første kunden ser når de åpner panelet. Aktive (Status=Active)
+    // gjelder kun bookinger som er sjekket inn nå — sjelden den viktigste
+    // visningen for en kunde med fremtidige bestillinger.
+    _filter: "upcoming",
     _lastBookings: [],
 
     init({ token }) {
