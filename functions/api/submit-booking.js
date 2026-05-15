@@ -175,9 +175,12 @@ export async function onRequestPost(context) {
     }
 
     // 9. Send e-postvarsel til Frank + kvittering til kunden (parallelt,
-    // fire-and-forget). Vi vil ikke holde submit-svaret i 5+ sekunder hvis
-    // Resend er treig — kunden bryr seg om at bookingen ble lagret, ikke om
-    // e-posten allerede har truffet innboksen.
+    // fire-and-forget). v3.12.3: bruk context.waitUntil så Cloudflare holder
+    // worker'en levende til begge e-postene er levert, selv etter at
+    // responsen er sendt. Tidligere brukte vi Promise.race([emailPromise, 3s])
+    // som returnerte etter 3 sek — siden customer-receipt-pathen krever en
+    // Graph-rundtur for templates (kald start ~2-3s) ble både admin-varslet
+    // og kunde-kvitteringen kuttet av worker-termineringen.
     const emailPromise = Promise.allSettled([
       sendBookingNotification(env, {
         bookingRef,
@@ -196,11 +199,16 @@ export async function onRequestPost(context) {
       }),
     ]);
 
-    // Vent maksimalt 3 sekunder på e-postene, ellers gå videre
-    await Promise.race([
-      emailPromise,
-      new Promise(resolve => setTimeout(resolve, 3000)),
-    ]);
+    if (context.waitUntil) {
+      context.waitUntil(emailPromise);
+    } else {
+      // Local dev / eldre runtime uten waitUntil — fallback til kort vent
+      // så vi ihvertfall venter på Resend før vi returnerer.
+      await Promise.race([
+        emailPromise,
+        new Promise(resolve => setTimeout(resolve, 5000)),
+      ]);
+    }
 
     // 10. Logg token-bruk
     // (gjenbruker logTokenUsage fra token-validering)
