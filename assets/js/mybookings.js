@@ -582,7 +582,10 @@
         // v3.12.9: vis adresse som primær lokasjon — fallback til rig-navnet
         // når property mangler oppslag (Andslimoen e.l.).
         const addr = group.find(b => b.propertyAddress)?.propertyAddress;
-        header.textContent = `${addr || key} · ${group.length}`;
+        const countLabel = group.length === 1
+          ? tx("mybookings.countSingular")
+          : tx("mybookings.countPlural", { n: group.length });
+        header.textContent = `${addr || key} · ${countLabel}`;
         this.listEl.appendChild(header);
         for (const b of group) {
           this.listEl.appendChild(this._renderBookingCard(b));
