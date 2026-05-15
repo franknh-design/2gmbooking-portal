@@ -10,9 +10,9 @@
 
   const LOCATIONS = [
     { id: "strandveien112", name: "Strandveien 112",  totalRooms: 12 },
-    { id: "rigg24",         name: "Rigg 24",          totalRooms: 8  },
-    { id: "rigg44",         name: "Rigg 44",          totalRooms: 8  },
-    { id: "riggbotnhagen",  name: "Riggbotnhågen",    totalRooms: 6  },
+    { id: "rigg24",         name: "Aspeveien 2",      totalRooms: 8  },
+    { id: "rigg44",         name: "Strandveien 108",  totalRooms: 8  },
+    { id: "riggbotnhagen",  name: "Industriveien 4",  totalRooms: 6  },
     { id: "andslimoen",     name: "Andslimoen",       totalRooms: 10 }
   ];
 
