@@ -24,6 +24,7 @@ import {
 } from "../_utils/sharepoint.js";
 
 import { sendEmail } from "../_utils/email.js";
+import { getEmailTemplate, renderTemplate } from "../_utils/templates.js";
 
 // Hvor varselet om ny booking går
 const NOTIFY_EMAIL = "frank@2gm.no";
@@ -173,17 +174,29 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "save_failed" }, 500);
     }
 
-    // 9. Send e-postvarsel til Frank (asynkront - blokkerer ikke svaret)
-    const emailPromise = sendBookingNotification(env, {
-      bookingRef,
-      tokenRow,
-      propertyName,
-      guests,
-      capacityWarning,
-      partialFailure: result.failed.length > 0 ? result.failed : null,
-    });
+    // 9. Send e-postvarsel til Frank + kvittering til kunden (parallelt,
+    // fire-and-forget). Vi vil ikke holde submit-svaret i 5+ sekunder hvis
+    // Resend er treig — kunden bryr seg om at bookingen ble lagret, ikke om
+    // e-posten allerede har truffet innboksen.
+    const emailPromise = Promise.allSettled([
+      sendBookingNotification(env, {
+        bookingRef,
+        tokenRow,
+        propertyName,
+        guests,
+        capacityWarning,
+        partialFailure: result.failed.length > 0 ? result.failed : null,
+      }),
+      sendCustomerReceipt(env, {
+        bookingRef,
+        tokenRow,
+        propertyName,
+        guests,
+        capacityWarning,
+      }),
+    ]);
 
-    // Vent maksimalt 3 sekunder på e-post, ellers gå videre
+    // Vent maksimalt 3 sekunder på e-postene, ellers gå videre
     await Promise.race([
       emailPromise,
       new Promise(resolve => setTimeout(resolve, 3000)),
@@ -271,6 +284,68 @@ async function sendBookingNotification(env, data) {
     subject,
     text: lines.join("\n"),
   });
+}
+
+// ----------------------------------------------------------------------------
+// Kunde-kvittering (submit_received-template fra PortalEmailTemplates)
+// ----------------------------------------------------------------------------
+
+async function sendCustomerReceipt(env, data) {
+  const { tokenRow, bookingRef, propertyName, guests, capacityWarning } = data;
+  const customerEmail = (tokenRow.fields.Epost || "").trim();
+  if (!customerEmail) {
+    console.log("[Receipt] Customer_Tokens.Epost er tom for token — hopper over kvittering");
+    return;
+  }
+  const template = await getEmailTemplate(env, "submit_received");
+  if (!template) {
+    console.log("[Receipt] submit_received-template mangler eller er deaktivert");
+    return;
+  }
+  const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning });
+  const subject = renderTemplate(template.subject, vars) || `Bestilling ${bookingRef} mottatt`;
+  const html = renderTemplate(template.bodyHtml, vars);
+  const text = renderTemplate(template.bodyText, vars);
+  if (!html && !text) {
+    console.log("[Receipt] submit_received har tom BodyHtml + BodyText");
+    return;
+  }
+  const fromName = (template.fromName || "2GM Eiendom").trim();
+  return sendEmail(env, {
+    to: customerEmail,
+    from: `${fromName} <onboarding@resend.dev>`,
+    subject,
+    html: html || undefined,
+    text: text || undefined,
+  });
+}
+
+function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning }) {
+  const customer = tokenRow.fields.Firma || "";
+  const contact = tokenRow.fields.Kontaktperson || "";
+  const token = tokenRow.fields.Token || "";
+  const guestCount = guests.length;
+  const checkIns = guests.map(g => g.checkIn).filter(Boolean).sort();
+  const checkOuts = guests.map(g => g.checkOut).filter(Boolean).sort();
+  const earliestCheckIn = checkIns[0] || "";
+  const latestCheckOut = checkOuts.length === guests.length ? checkOuts[checkOuts.length - 1] : "åpen";
+  const guestList = guests.map(g => {
+    const period = g.checkOut ? `${g.checkIn} → ${g.checkOut}` : `${g.checkIn} → åpen`;
+    return `• ${g.name} · ${period}`;
+  }).join("\n");
+  const portalUrl = token ? `https://2gmbooking-portal.pages.dev/?token=${encodeURIComponent(token)}` : "https://2gmbooking-portal.pages.dev/";
+  return {
+    customer,
+    contact,
+    bookingRef,
+    property: propertyName,
+    guestCount: String(guestCount),
+    guestList,
+    checkIn: earliestCheckIn,
+    checkOut: latestCheckOut,
+    portalUrl,
+    capacityWarning: capacityWarning || "",
+  };
 }
 
 // ----------------------------------------------------------------------------
