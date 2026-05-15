@@ -2855,3 +2855,74 @@ input[type="date"]:disabled {
   }
   .m-submit-btn:active { transform: translateY(1px); }
 }
+
+/* v3.12.6: Overbooking-bekreftelse-dialog — vises før submit hvis det er
+   kapasitetskonflikt på valgte datoer. Stilen matcher portal-paneler:
+   hvitt kort, mykt skygge, primary-knapp svart, secondary-knapp grå. */
+.overbooking-confirm-dlg {
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  max-width: 460px;
+  width: calc(100vw - 32px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  background: #fff;
+}
+.overbooking-confirm-dlg::backdrop {
+  background: rgba(0,0,0,0.45);
+}
+.overbooking-dlg-body {
+  padding: 24px 26px 22px;
+  font-family: inherit;
+  color: #111;
+}
+.overbooking-dlg-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #b45309;
+}
+.overbooking-dlg-warn {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: #fef3c7;
+  border-radius: 8px;
+  color: #78350f;
+}
+.overbooking-dlg-lead {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 20px;
+  color: #374151;
+}
+.overbooking-dlg-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.overbooking-dlg-cancel,
+.overbooking-dlg-send {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.overbooking-dlg-cancel {
+  background: #f3f4f6;
+  color: #111;
+  border: 1px solid #d1d5db;
+}
+.overbooking-dlg-cancel:hover { background: #e5e7eb; }
+.overbooking-dlg-send {
+  background: #111;
+  color: #fff;
+}
+.overbooking-dlg-send:hover { background: #1f2937; }
+

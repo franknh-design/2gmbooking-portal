@@ -618,10 +618,21 @@
       // på huset hver dag. Bestillingen blokkeres ikke ved mangel — i
       // stedet bygges advarsel som vises til kunden og legges ved
       // e-postvarselet til Frank.
+      // v3.12.6: Hvis shortfall → vis bekreftelse-dialog før submit. Kunde
+      // må eksplisitt klikke "Send likevel" for å overstyre. Setter rett
+      // forventning: 2GM forsøker å finne løsning, men ikke garantert.
       const shortfalls = await this._collectShortfalls(locId, guests);
       const warning = shortfalls.length
         ? buildWarningMessage(shortfalls)
         : null;
+      if (warning) {
+        const proceed = await _confirmOverbooking(warning);
+        if (!proceed) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = tx("booking.submit");
+          return;
+        }
+      }
 
       // Alle bestillinger opprettes som Upcoming + Pending_Confirmation i
       // SharePoint, uavhengig av kapasitet. Frank løser konflikter manuelt
@@ -851,6 +862,44 @@
       });
 
     return `${tx("booking.warningPrefix")} ${sentences.join(" ")} ${tx("booking.warningSuffix")}`;
+  }
+
+  // v3.12.6: Bekreftelse-dialog ved kapasitetskonflikt. Kunden får tydelig
+  // beskjed om at det ikke er nok ledig nå, men oppfordres til å sende
+  // bestillingen likevel — vi forsøker å finne en løsning. Returnerer en
+  // Promise<boolean>: true = send likevel, false = avbryt/rediger.
+  function _confirmOverbooking(warningText) {
+    return new Promise((resolve) => {
+      if (typeof HTMLDialogElement === "undefined") {
+        // Eldre nettlesere uten <dialog>: bruk native confirm som fallback.
+        const fallbackMsg = warningText + "\n\nSend bestillingen likevel? 2GM Eiendom vil forsøke å finne en løsning for deg.";
+        resolve(window.confirm(fallbackMsg));
+        return;
+      }
+      const dlg = document.createElement("dialog");
+      dlg.className = "overbooking-confirm-dlg";
+      dlg.innerHTML = `
+        <div class="overbooking-dlg-body">
+          <h3 class="overbooking-dlg-title">Ikke nok ledige rom på valgt periode</h3>
+          <p class="overbooking-dlg-warn">${escapeHtml(warningText)}</p>
+          <p class="overbooking-dlg-lead">Send bestillingen likevel — vi forsøker å finne en løsning for deg så snart vi får sett på den.</p>
+          <div class="overbooking-dlg-actions">
+            <button type="button" class="overbooking-dlg-cancel">Avbryt og endre</button>
+            <button type="button" class="overbooking-dlg-send">Send bestilling likevel</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dlg);
+      const cleanup = (answer) => {
+        try { dlg.close(); } catch (_) {}
+        dlg.remove();
+        resolve(answer);
+      };
+      dlg.querySelector(".overbooking-dlg-cancel").addEventListener("click", () => cleanup(false));
+      dlg.querySelector(".overbooking-dlg-send").addEventListener("click", () => cleanup(true));
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); cleanup(false); });
+      dlg.showModal();
+    });
   }
 
   // Re-rendre dynamisk innhold ved språkbytte (badge, gjeste-rader, summaries).
