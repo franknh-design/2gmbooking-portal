@@ -753,15 +753,25 @@
       `;
       panel.appendChild(thanks);
 
-      // v3.8.5: scroll til Mine bookinger ved klikk — Mine bookinger ligger
-      // nederst, og filteret er allerede satt til "Kommende" så den nye
-      // bookingen er den første kunden ser når lista kommer i view.
+      // v3.12.2: åpne Mine bookinger-panelet via tab-raden (accordion-modus
+       // gjør at panelet er kollapset som default — bare scrollIntoView holdt
+       // ikke; kunden så bare headeren). Bruker eksisterende portal-nav-knapp
+       // så vi får panel-bytte + collapse-de-andre + scroll i én operasjon.
       const seeBtn = thanks.querySelector("#thanks-see-booking");
       if (seeBtn) {
         seeBtn.addEventListener("click", () => {
+          const navBtn = document.querySelector('.portal-nav-btn[data-target="mybookings-panel"]');
+          if (navBtn) {
+            navBtn.click();
+            return;
+          }
+          // Fallback hvis tab-raden ikke finnes (eldre layout).
           const mb = document.getElementById("mybookings-panel");
-          if (mb && typeof mb.scrollIntoView === "function") {
-            mb.scrollIntoView({ behavior: "smooth", block: "start" });
+          if (mb) {
+            mb.classList.remove("collapsed");
+            if (typeof mb.scrollIntoView === "function") {
+              mb.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
           }
         });
       }
