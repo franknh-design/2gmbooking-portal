@@ -33,7 +33,7 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { property, fromDate, toDate, token } = body || {};
+    const { property, fromDate, toDate, token, details } = body || {};
 
     // Valider property-id mot kjent mapping
     const propertyName = propertyIdToName(property);
@@ -75,6 +75,7 @@ export async function onRequestPost(context) {
       fromDate,
       toDate,
       customerCompany,
+      { details: details === true },
     );
 
     return jsonResponse({

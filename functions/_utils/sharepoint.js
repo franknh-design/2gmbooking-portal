@@ -820,7 +820,7 @@ function _firstWorkingDayUtcMs(utcMs) {
   return t;
 }
 
-export async function calculateAvailability(env, propertyName, fromISO, toISO, customerCompany) {
+export async function calculateAvailability(env, propertyName, fromISO, toISO, customerCompany, options) {
   const fromDate = parseDateUTC(fromISO);
   const toDate   = parseDateUTC(toISO);
 
@@ -952,6 +952,33 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       }
       freeRooms.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
       dayObj.freeRooms = freeRooms;
+    }
+    // v3.12.14: admin-debug — når options.details=true, returner rom-titler
+    // for ledige, skitne (per dag-policy), og opptatte rom. Gjør at admin
+    // kan verifisere hvilke rom portalen mener er ledige uten å lese kode.
+    if (options && options.details === true) {
+      const detail = { free: [], dirty: [], booked: [] };
+      const sortNumeric = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+      for (const id of countableRoomIds) {
+        if (occupiedRoomIds.has(id)) continue;
+        detail.free.push(roomTitleById[id] || id);
+      }
+      // Skitne rom som faktisk blokkerer denne dagen (per working-day-regelen):
+      if (D.getTime() <= firstWorkingDayUtcMs) {
+        for (const id of dirtyRoomIds) {
+          if (countableRoomIds.has(id)) detail.dirty.push(roomTitleById[id] || id);
+        }
+      }
+      for (const b of bookingPeriods) {
+        if (!countableRoomIds.has(b.roomId)) continue;
+        if (isDateInRangeInclusive(D, b.checkIn, b.checkOut)) {
+          detail.booked.push(roomTitleById[b.roomId] || b.roomId);
+        }
+      }
+      detail.free.sort(sortNumeric);
+      detail.dirty.sort(sortNumeric);
+      detail.booked.sort(sortNumeric);
+      dayObj.detail = detail;
     }
     days.push(dayObj);
   }
