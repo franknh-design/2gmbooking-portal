@@ -367,7 +367,11 @@ export async function getRoomsForProperty(env, propertyName, propertyLookupMap) 
     const matches = String(f.PropertyLookupId) === String(lookupIdForProperty);
     const hasTitle = !!f.Title;
     const isActive = f.Active === true;
-    return matches && hasTitle && isActive;
+    // v3.12.15: ekskluder Kjøkken-rom fra bookable inventory. De er rom-rader
+    // i SharePoint for vasker-logging (Cleaning_Status, lock-event-historikk),
+    // men skal ikke vises som ledige rom kunder kan bestille i portalen.
+    const isKitchen = /^kj(ø|o)kken\b/i.test(String(f.Title || "").trim());
+    return matches && hasTitle && isActive && !isKitchen;
   });
 }
 
