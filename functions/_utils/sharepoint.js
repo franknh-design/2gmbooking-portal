@@ -762,6 +762,64 @@ function isDateInRangeInclusive(D, start, end) {
   return D <= end;
 }
 
+// v3.12.13: Norske helligdager + working-day-logikk for Dirty-rom.
+// Porter Gauss' påske-algoritme + isNonWorkingDay fra admin-appens utils.js,
+// men UTC-trygt (parseDateUTC bruker UTC-midnight, så vi må matche).
+const _DAY_MS = 24 * 60 * 60 * 1000;
+const _holidayCacheUtc = {};
+
+function _easterSundayUtcMs(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const L = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * L) / 451);
+  const month = Math.floor((h + L - 7 * m + 114) / 31);
+  const day = ((h + L - 7 * m + 114) % 31) + 1;
+  return Date.UTC(year, month - 1, day);
+}
+
+function _norwegianHolidaysUtc(year) {
+  if (_holidayCacheUtc[year]) return _holidayCacheUtc[year];
+  const set = new Set();
+  const easter = _easterSundayUtcMs(year);
+  // Bevegelige (relative til 1. påskedag)
+  for (const offset of [-3, -2, 0, 1, 39, 49, 50]) set.add(easter + offset * _DAY_MS);
+  // Faste
+  set.add(Date.UTC(year, 0, 1));   // Nyttårsdag
+  set.add(Date.UTC(year, 4, 1));   // Arbeidernes dag
+  set.add(Date.UTC(year, 4, 17));  // Grunnlovsdag
+  set.add(Date.UTC(year, 11, 25)); // 1. juledag
+  set.add(Date.UTC(year, 11, 26)); // 2. juledag
+  _holidayCacheUtc[year] = set;
+  return set;
+}
+
+function _isNonWorkingDayUtc(utcMs) {
+  const d = new Date(utcMs);
+  const dow = d.getUTCDay();
+  if (dow === 0 || dow === 6) return true; // søn=0, lør=6
+  return _norwegianHolidaysUtc(d.getUTCFullYear()).has(utcMs);
+}
+
+// Returnerer ms for første working-day på eller etter utcMs. Max 14 dagers
+// lookahead (påsken kan ha 4 påfølgende helligdager + helg).
+function _firstWorkingDayUtcMs(utcMs) {
+  let t = utcMs;
+  for (let i = 0; i < 14; i++) {
+    if (!_isNonWorkingDayUtc(t)) return t;
+    t += _DAY_MS;
+  }
+  return t;
+}
+
 export async function calculateAvailability(env, propertyName, fromISO, toISO, customerCompany) {
   const fromDate = parseDateUTC(fromISO);
   const toDate   = parseDateUTC(toISO);
@@ -826,10 +884,14 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     };
   });
 
-  // I dag i UTC — sammenliknes mot loop-dato D for å begrense Dirty-filteret
-  // til kun denne dagen. Future-rom kan rekkes å vaskes.
+  // I dag i UTC + første working-day fra i dag. Dirty-rom forblir "opptatt"
+  // til og med første working-day (vaskere jobber kun hverdager). Hvis i dag
+  // er en hverdag = blokkerer kun i dag (som v3.12.5). Hvis i dag er lør/søn
+  // /helligdag = blokkerer alle ikke-arbeidsdager + neste hverdag, så ledig
+  // først fra dagen etter at vasker har rukket å vaske.
   const _todayUtc = new Date();
   const todayUtcMs = Date.UTC(_todayUtc.getUTCFullYear(), _todayUtc.getUTCMonth(), _todayUtc.getUTCDate());
+  const firstWorkingDayUtcMs = _firstWorkingDayUtcMs(todayUtcMs);
 
   // v1.9: ta med roomLookupId i hver booking-periode så occupiedToday kan
   // filtreres til kun bookinger på rom som er i den tellbare poolen. Tidligere
@@ -863,10 +925,12 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
         occupiedRoomIds.add(b.roomId);
       }
     }
-    // v1.12: Skitne rom telles som opptatt KUN i dag — de kan ikke gjøres
-    // klar til samme-dag-innsjekk. For future-datoer regnes de som ledige
-    // siden vask kan utføres innen den datoen.
-    if (D.getTime() === todayUtcMs) {
+    // v3.12.13: Skitne rom telles som opptatt frem til og med første
+    // working-day fra i dag. Vaskere jobber kun mandag-fredag (eks helligdager),
+    // så en booking laget lørdag/søndag/helligdag kan IKKE forvente at rommet
+    // blir vasket før mandag morgen — det vaskes mandag, blir klart for
+    // innsjekk tirsdag. Tidligere v1.12-regel ("kun i dag") feilet i helger.
+    if (D.getTime() <= firstWorkingDayUtcMs) {
       for (const rid of dirtyRoomIds) {
         if (countableRoomIds.has(rid)) occupiedRoomIds.add(rid);
       }
