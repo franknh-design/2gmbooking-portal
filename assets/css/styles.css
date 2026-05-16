@@ -1656,6 +1656,28 @@ input[type="date"]:disabled {
 .thanks-see-booking-btn:hover  { opacity: .85; transform: translateY(-1px); }
 .thanks-see-booking-btn:active { transform: translateY(0); }
 
+/* v3.12.12: "Lukk"-knapp i takke-skjermen — sekundær (outline), kollapser
+   Bestilling-seksjonen så kunden får en tydelig avslutning på flyten. */
+.thanks-close-btn {
+  display: block;
+  margin: 4px auto 0;
+  padding: 8px 18px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.thanks-close-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+}
+
 /* v3.5.3: gruppe-header i Mine bookinger — strekker seg over begge kolonner
    i 2-col grid og viser lokasjons-navn + antall. Cards under arver vanlig
    list-styling. */

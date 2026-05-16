@@ -761,6 +761,9 @@
           ${escapeHtml(tx("booking.thanksSeeBooking"))}
         </button>
         <p class="thanks-foot">${tx("booking.thanksFoot")}</p>
+        <button type="button" class="thanks-close-btn" id="thanks-close">
+          ${escapeHtml(tx("booking.close"))}
+        </button>
       `;
       panel.appendChild(thanks);
 
@@ -784,6 +787,20 @@
               mb.scrollIntoView({ behavior: "smooth", block: "start" });
             }
           }
+        });
+      }
+
+      // v3.12.12: "Lukk"-knapp kollapser hele Bestilling-seksjonen
+      // (kunden klaget over at "Du kan lukke vinduet"-teksten ikke hadde
+      // noen knapp). Kunden kan re-åpne via toggle eller +Ny bestilling
+      // i top-navet.
+      const closeBtn = thanks.querySelector("#thanks-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          const section = document.getElementById("bestilling-panel");
+          const toggle  = document.getElementById("bestilling-toggle");
+          if (section) section.classList.add("collapsed");
+          if (toggle)  toggle.setAttribute("aria-expanded", "false");
         });
       }
     }
