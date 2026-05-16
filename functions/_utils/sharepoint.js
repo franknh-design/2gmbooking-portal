@@ -140,7 +140,7 @@ async function fetchAllItems(env, listId, options = {}) {
 const HONOR_NONINDEXED = "HonorNonIndexedQueriesWarningMayFailRandomly";
 
 // v3.11.0: $select-konstanter per liste. Kun felt koden faktisk leser.
-const SELECT_BOOKING = "Title,Person_Name,Company,Billing_Company,Property_Name,Check_In,Check_Out,Status,Pending_Confirmation,RoomLookupId,Door_Code,Notes";
+const SELECT_BOOKING = "Title,Person_Name,Company,Billing_Company,Property_Name,Check_In,Check_Out,Status,Pending_Confirmation,RoomLookupId,Door_Code,Notes,Requested_CheckOut";
 const SELECT_ROOM = "Title,Door_Code,Cleaning_Status,DailyRate,PropertyLookupId,Floor,Active,LongTerm_Company,LongTerm_Price,LongTerm_StartDate,LongTerm_EndDate";
 const SELECT_PROPERTY_FULL = "Title,FullTenant_Company,DailyRate,SMS_Template,WiFi_SSID,WiFi_Password,Welcome_Message,Floor1_Info,Floor2_Info";
 const SELECT_TOKEN = "Title,Token,Pin,Aktiv,Firma,Kontaktperson,Telefon,Epost,Utlopsdato,TillatteLokasjoner,MaksRomPerBestilling,AntallBestillinger,SistBrukt,LastSeen,Sprak";

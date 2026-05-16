@@ -76,6 +76,10 @@ export async function onRequestPost(context) {
     // v1.1: Marker bookingen som Pending_Confirmation og appende notat med
     // forespurt dato. Best-effort — hvis PATCH'en feiler sender vi fortsatt
     // e-posten så admin ikke mister forespørselen.
+    // v1.2 (portal v3.12.16): Lagre forespurt dato strukturert i nytt felt
+    // Requested_CheckOut (DateTime) så admin ser den på selve bookingen — ikke
+    // bare som tekst i Notes. Graceful fallback: hvis SharePoint-kolonnen ikke
+    // finnes ennå, retry uten feltet (Notes + Pending_Confirmation går alltid).
     const todayISO = new Date().toISOString().slice(0, 10);
     const reqISO = String(requestedCheckOut).slice(0, 10);
     const noteLine = `[Forlengelse forespurt ${todayISO}: ny utflytting ${reqISO}]`;
@@ -83,14 +87,24 @@ export async function onRequestPost(context) {
     const newNotes = existingNotes
       ? `${existingNotes}\n${noteLine}`
       : noteLine;
+    // Graph forventer ISO-string for DateTime-kolonner. Bruk midnight UTC så
+    // datoen vises korrekt uansett admin-tidsone.
+    const requestedIso = `${reqISO}T00:00:00Z`;
+    const baseFields = { Pending_Confirmation: true, Notes: newNotes };
     try {
       await updateBookingFields(env, match.id, {
-        Pending_Confirmation: true,
-        Notes: newNotes,
+        ...baseFields,
+        Requested_CheckOut: requestedIso,
       });
     } catch (patchErr) {
       // eslint-disable-next-line no-console
-      console.warn("[extend-booking] PATCH failed, falling back to email-only:", patchErr?.message || patchErr);
+      console.warn("[extend-booking] PATCH med Requested_CheckOut feilet, prøver uten:", patchErr?.message || patchErr);
+      try {
+        await updateBookingFields(env, match.id, baseFields);
+      } catch (retryErr) {
+        // eslint-disable-next-line no-console
+        console.warn("[extend-booking] PATCH også uten Requested_CheckOut feilet, går videre med e-post:", retryErr?.message || retryErr);
+      }
     }
 
     // Send e-post til admin som backup-varsel uavhengig av PATCH-resultatet.
