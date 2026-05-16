@@ -100,6 +100,10 @@ export async function onRequestPost(context) {
         checkOut: f.Check_Out || null,
         status: f.Status || "",
         pendingConfirmation: f.Pending_Confirmation === true,
+        // v3.12.17: returner forespurt ny utflyttingsdato (satt av extend-booking)
+        // så portalens "Mine bookinger" senere kan vise "Forespurt: ..." til
+        // kunden, og så CLI-verifikasjon av extend-flyten kan lese feltet.
+        requestedCheckOut: f.Requested_CheckOut || null,
         roomNumber: room ? room.title : null,
         doorCode: doorCode,
       };
