@@ -662,6 +662,13 @@ input, select, button { font-family: inherit; }
   font-weight: 600;
   color: var(--color-text-primary);
 }
+/* v3.12.18: subtittel ved siden av "Tilgjengelighet" — viser valgt lokasjon
+   ("— Aspeveien 2") så kunden ser hvilket bygg kalenderen gjelder uten å lese
+   dropdownen. Mykere farge + normalvekt for å ikke konkurrere med tittelen. */
+.panel-title-sub {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
 
 /* =========================================================
    Legende

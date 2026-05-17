@@ -59,12 +59,25 @@
       document.getElementById("cal-prev").addEventListener("click", () => this.shift(-1));
       document.getElementById("cal-next").addEventListener("click", () => this.shift(+1));
 
+      this._updateTitleSub();
       this.renderAndLoad();
     },
 
     setLocation(locationId) {
       this.locationId = locationId;
+      this._updateTitleSub();
       this.renderAndLoad();
+    },
+
+    // v3.12.18: Vis valgt lokasjon i panel-tittelen ("Tilgjengelighet — Aspeveien 2")
+    // så kunden ser hvilken lokasjon kalenderen gjelder uten å lese dropdownen.
+    _updateTitleSub() {
+      const el = document.getElementById("cal-location-sub");
+      if (!el) return;
+      const loc = window.MockData && window.MockData.getLocation
+        ? window.MockData.getLocation(this.locationId)
+        : null;
+      el.textContent = loc && loc.name ? ` — ${loc.name}` : "";
     },
 
     setRange(fromIso, toIso) {
