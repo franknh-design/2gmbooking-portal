@@ -1587,13 +1587,24 @@ input[type="date"]:disabled {
   color: #78350F;
 }
 
-/* v3.8.6: subtil "Sist oppdatert HH:MM"-tekst under filter-pillene som
-   forteller kunden at lista poller seg selv. */
+/* v3.8.6: subtil "Sist oppdatert HH:MM"-tekst.
+   v3.12.19: nå rendret inne i toggle-knappen under tittelen, så margins
+   strammet inn — ingen negative offsets. */
 .mb-last-refreshed {
-  margin: -4px 0 10px;
+  margin: 2px 0 0;
   font-size: 11px;
   color: var(--color-text-secondary);
   opacity: .7;
+}
+/* v3.12.19: vertikal stack for tittel + "Sist oppdatert"-linja inni toggle-
+   knappen. Boksen blir venstrejustert; chevron pushes til høyre av margin-
+   left:auto. align-items:center på .panel-head holder chevron sentrert
+   vertikalt mot hele teksten. */
+.mb-toggle-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .panel-mybookings .badge {

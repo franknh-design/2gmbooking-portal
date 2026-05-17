@@ -260,15 +260,18 @@
 
     // v3.8.6: viser "Sist oppdatert HH:MM" så kunden ser at lista poller seg
     // selv. Oppdateres etter hver vellykket fetch (manuell + auto-poll).
+    // v3.12.19: rendres inne i toggle-knappen (.mb-toggle-text) i stedet for
+    // som søsken etter filterraden, så hele header-arealet er klikkbart for
+    // expand/collapse — kunden trenger ikke treffe selve chevron-en.
     _updateLastRefreshed() {
       let el = document.getElementById("mybookings-last-refreshed");
       if (!el) {
-        const filtersWrap = document.getElementById("mybookings-filters");
-        if (!filtersWrap || !filtersWrap.parentNode) return;
+        const host = document.querySelector("#mybookings-toggle .mb-toggle-text");
+        if (!host) return;
         el = document.createElement("p");
         el.id = "mybookings-last-refreshed";
         el.className = "mb-last-refreshed";
-        filtersWrap.parentNode.insertBefore(el, filtersWrap.nextSibling);
+        host.appendChild(el);
       }
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, "0");

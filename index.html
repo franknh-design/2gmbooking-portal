@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.12.18 -->
+<!-- v3.12.19 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -224,7 +224,11 @@
     <div class="mybookings-top">
       <section class="panel panel-mybookings collapsed" id="mybookings-panel" aria-label="Mine bookinger" hidden>
         <button type="button" class="panel-head mb-toggle" id="mybookings-toggle" aria-expanded="false">
-          <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
+          <span class="mb-toggle-text">
+            <h2 class="panel-title" data-i18n="mybookings.title">Mine bookinger</h2>
+            <!-- v3.12.19: "Sist oppdatert HH:MM" rendres inne i knappen av JS
+                 så hele header-arealet (inkl. meta-linja) er klikkbart. -->
+          </span>
           <span class="badge" id="mybookings-count" hidden></span>
           <span class="mb-chevron" aria-hidden="true">▾</span>
         </button>
@@ -283,7 +287,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.12.18</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.12.19</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
