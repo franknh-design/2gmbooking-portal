@@ -604,6 +604,11 @@ input, select, button { font-family: inherit; }
 .bestilling-section.collapsed .bestilling-toggle { margin-bottom: 0; }
 .bestilling-section.collapsed .bestilling-body { display: none; }
 .bestilling-section.collapsed .mb-chevron { transform: rotate(-90deg); }
+/* v3.12.20: subtil hover-bakgrunn på hele toggle-knappen så det er åpenbart
+   at headeren er klikkbar — ikke bare chevron-en. */
+.bestilling-toggle:hover {
+  background: var(--color-background-secondary);
+}
 @media (max-width: 900px) {
   .bestilling-section { padding: 0 16px; margin-top: 12px; }
   .bestilling-toggle { padding: 12px 16px; margin-bottom: 12px; }
@@ -1472,19 +1477,26 @@ input[type="date"]:disabled {
    Mine bookinger. Trenger derfor egen bunn-padding så lista ikke sitter
    klistret mot footer.
    ========================================================= */
-.mybookings-top {
+/* v3.12.20: .mybookings-top og .invoices-top konsolidert i delt regel.
+   Tidligere stod paddings/max-width definert to ganger nesten 700 linjer
+   fra hverandre — det er en latent kilde til drift. Når selve panelet er
+   hidden (demo-modus eller ingen token) kollapses wrapperen helt så vi
+   ikke får tom luft før footer. */
+.mybookings-top,
+.invoices-top {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px 24px;
 }
-/* Når selve panelet er hidden (demo-modus eller ingen token) skal wrapperen
-   kollapse helt så vi ikke får tom luft før footer. */
-.mybookings-top:has(#mybookings-panel[hidden]) {
+.mybookings-top:has(#mybookings-panel[hidden]),
+.invoices-top:has(#invoices-panel[hidden]) {
   padding: 0;
 }
 @media (max-width: 900px) {
-  .mybookings-top { padding: 0 16px 16px; }
-  .mybookings-top:has(#mybookings-panel[hidden]) { padding: 0; }
+  .mybookings-top,
+  .invoices-top { padding: 0 16px 16px; }
+  .mybookings-top:has(#mybookings-panel[hidden]),
+  .invoices-top:has(#invoices-panel[hidden]) { padding: 0; }
 }
 
 /* Mine bookinger panel-head fungerer som toggle-knapp. */
@@ -1517,6 +1529,12 @@ input[type="date"]:disabled {
 }
 .mb-toggle:hover .mb-chevron {
   background: var(--color-background-secondary);
+}
+/* v3.12.20: subtil hover-bakgrunn på hele toggle-knappen. Border-radius
+   slik at hover-tinten ikke har skarpe kanter når den ligger uten padding. */
+.mb-toggle:hover {
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-sm);
 }
 .panel-mybookings.collapsed .mb-chevron {
   transform: rotate(-90deg);
@@ -2121,16 +2139,8 @@ input[type="date"]:disabled {
    Fakturaarkiv (v3.10.0) — nederst, under Mine bookinger.
    Sortbart, søkbart, ekspanderbare rader pr. måned.
    ========================================================= */
-.invoices-top {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px 24px;
-}
-.invoices-top:has(#invoices-panel[hidden]) { padding: 0; }
-@media (max-width: 900px) {
-  .invoices-top { padding: 0 16px 16px; }
-  .invoices-top:has(#invoices-panel[hidden]) { padding: 0; }
-}
+/* v3.12.20: .invoices-top wrapper-regler er flyttet opp og delt med
+   .mybookings-top — se rundt linje 1480. */
 
 .inv-toggle {
   width: 100%;
@@ -2142,6 +2152,11 @@ input[type="date"]:disabled {
   margin: 0 0 14px;
   font: inherit;
   color: inherit;
+}
+/* v3.12.20: subtil hover-bakgrunn på hele toggle-knappen (matcher .mb-toggle). */
+.inv-toggle:hover {
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-sm);
 }
 .panel-invoices.collapsed .mb-chevron { transform: rotate(-90deg); }
 .panel-invoices.collapsed .panel-head { margin-bottom: 0; }
