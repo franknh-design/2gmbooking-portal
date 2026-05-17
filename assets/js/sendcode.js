@@ -79,7 +79,7 @@
         <p class="sms-cost-note sc-cost" style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 0"></p>
 
         <div class="extend-dlg-buttons sc-list-buttons">
-          <button type="button" class="btn btn-ghost" data-action="close"></button>
+          <button type="button" data-action="close"></button>
         </div>
       </form>
     `;
