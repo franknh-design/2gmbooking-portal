@@ -1442,6 +1442,29 @@ input[type="date"]:disabled {
   flex-direction: column;
   gap: 14px;
 }
+
+/* v3.13.0: PIN-bokser — 6 separate sifferfelter i én rad. Arver kantene fra
+   global input[type="text"]-regel, men trenger egen sentrering og typografi
+   så sifrene står midt i og er lette å lese. */
+.pin-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.pin-box {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  padding: 12px 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  caret-color: var(--c-brand);
+}
+@media (max-width: 360px) {
+  .pin-boxes { gap: 6px; }
+  .pin-box   { font-size: 20px; padding: 10px 0; }
+}
+
 .auth-hint {
   margin: 0;
   font-size: 12px;

@@ -151,6 +151,114 @@
           this._handlePinSubmit();
         });
       }
+
+      this._wirePinBoxes();
+    },
+
+    // v3.13.0: 6 separate sifferbokser med auto-advance, backspace-til-forrige,
+    // paste som sprer sifrene utover, og auto-submit når alle 6 er fylt.
+    _wirePinBoxes() {
+      const boxes = this._getPinBoxes();
+      if (!boxes.length) return;
+
+      boxes.forEach((box, idx) => {
+        box.addEventListener("input", (e) => {
+          // Filtrer bort alt som ikke er siffer (norske tastaturer kan sende
+          // f.eks. "²"/"³" via Shift+tall, og iOS-autofyll av OTP sender hele
+          // koden inn i én boks — vi sprer den utover under).
+          const raw = String(box.value || "");
+          const digits = raw.replace(/\D/g, "");
+
+          if (digits.length > 1) {
+            this._spreadDigits(digits, idx);
+            return;
+          }
+
+          box.value = digits;
+          if (digits && idx < boxes.length - 1) {
+            boxes[idx + 1].focus();
+            boxes[idx + 1].select();
+          }
+          this._maybeAutoSubmit();
+        });
+
+        box.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !box.value && idx > 0) {
+            // Hopp til forrige boks og tøm den så bruker kan rette uten å
+            // måtte klikke seg bakover manuelt.
+            e.preventDefault();
+            const prev = boxes[idx - 1];
+            prev.value = "";
+            prev.focus();
+          } else if (e.key === "ArrowLeft" && idx > 0) {
+            e.preventDefault();
+            boxes[idx - 1].focus();
+            boxes[idx - 1].select();
+          } else if (e.key === "ArrowRight" && idx < boxes.length - 1) {
+            e.preventDefault();
+            boxes[idx + 1].focus();
+            boxes[idx + 1].select();
+          }
+        });
+
+        box.addEventListener("paste", (e) => {
+          const text = (e.clipboardData || window.clipboardData).getData("text") || "";
+          const digits = text.replace(/\D/g, "");
+          if (!digits) return;
+          e.preventDefault();
+          this._spreadDigits(digits, idx);
+        });
+
+        box.addEventListener("focus", () => {
+          // Select så neste tastetrykk overskriver eksisterende siffer.
+          setTimeout(() => box.select(), 0);
+        });
+      });
+    },
+
+    _getPinBoxes() {
+      return Array.from(document.querySelectorAll("#auth-pin-boxes .pin-box"));
+    },
+
+    _getPin() {
+      return this._getPinBoxes().map(b => b.value || "").join("");
+    },
+
+    _clearPin() {
+      const boxes = this._getPinBoxes();
+      boxes.forEach(b => { b.value = ""; });
+      if (boxes[0]) boxes[0].focus();
+    },
+
+    _focusFirstPin() {
+      const boxes = this._getPinBoxes();
+      if (boxes[0]) {
+        setTimeout(() => boxes[0].focus(), 50);
+      }
+    },
+
+    _spreadDigits(digits, startIdx) {
+      const boxes = this._getPinBoxes();
+      let i = startIdx;
+      for (const ch of digits) {
+        if (i >= boxes.length) break;
+        boxes[i].value = ch;
+        i++;
+      }
+      const nextFocusIdx = Math.min(i, boxes.length - 1);
+      boxes[nextFocusIdx].focus();
+      boxes[nextFocusIdx].select();
+      this._maybeAutoSubmit();
+    },
+
+    _maybeAutoSubmit() {
+      if (this._submitting) return;
+      const pin = this._getPin();
+      if (pin.length === 6) {
+        this._submitting = true;
+        // Liten delay så siste tastetrykk er fullt synlig før vi sender.
+        setTimeout(() => this._handlePinSubmit(), 80);
+      }
     },
 
     _showLoading() {
@@ -211,21 +319,18 @@
       const pinForm = document.getElementById("auth-pin-form");
       if (pinForm) pinForm.hidden = false;
 
-      const pinInput = document.getElementById("auth-pin");
-      if (pinInput) {
-        pinInput.value = "";
-        setTimeout(() => pinInput.focus(), 50);
-      }
+      this._clearPin();
+      this._focusFirstPin();
 
       document.getElementById("auth-screen").hidden = false;
       document.getElementById("portal").hidden = true;
     },
 
     async _handlePinSubmit() {
-      const pinEl = document.getElementById("auth-pin");
-      const pin = String(pinEl.value || "").replace(/\D/g, "");
+      const pin = this._getPin().replace(/\D/g, "");
 
       if (pin.length !== 6) {
+        this._submitting = false;
         return this._showError(window.I18n ? window.I18n.t("auth.codeMustBe6") : "PIN-koden må være 6 sifre.");
       }
 
@@ -244,16 +349,18 @@
           // for mange mislykkede PIN-forsøk. Vi tømmer feltet og forteller
           // kunden at de må vente — lockout-vinduet er 1 time.
           this._showError(window.I18n ? window.I18n.t("auth.pinLocked") : "For mange mislykkede forsøk. Prøv igjen om en time.");
-          if (pinEl) { pinEl.value = ""; pinEl.blur(); }
+          this._clearPin();
+          this._getPinBoxes().forEach(b => b.blur());
         } else {
           this._showError(window.I18n ? window.I18n.t("auth.pinWrong") : "Feil PIN. Prøv igjen.");
-          if (pinEl) { pinEl.value = ""; pinEl.focus(); }
+          this._clearPin();
         }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[AUTH] PIN-validering feilet:", err);
         this._showError(window.I18n ? window.I18n.t("auth.networkError") : "Kunne ikke kontakte serveren.");
       } finally {
+        this._submitting = false;
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset._origText || (window.I18n ? window.I18n.t("auth.confirm") : "Logg inn"); }
       }
     },

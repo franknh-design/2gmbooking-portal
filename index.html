@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.12.22 -->
+<!-- v3.13.0 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -23,21 +23,22 @@
       <h1 class="auth-title" data-i18n="auth.title">Bestillingsportal</h1>
       <p class="auth-sub" id="auth-customer-sub" data-i18n="auth.loggingIn">Logger inn…</p>
 
-      <!-- v3.7.8: PIN-basert innlogging — én-stegs flyt, ingen SMS. -->
+      <!-- v3.7.8: PIN-basert innlogging — én-stegs flyt, ingen SMS.
+           v3.13.0: 6 separate bokser i stedet for ett felt — OTP-stil med
+           auto-advance, backspace-til-forrige, paste fyller alle, og
+           auto-submit når alle 6 sifre er tastet. -->
       <form id="auth-pin-form" class="auth-form" novalidate>
-        <label class="field">
+        <div class="field">
           <span class="field-label" data-i18n="auth.pinLabel">PIN-kode</span>
-          <input
-            type="text"
-            id="auth-pin"
-            name="pin"
-            inputmode="numeric"
-            maxlength="6"
-            data-i18n-placeholder="auth.pinPlaceholder"
-            placeholder="6 sifre"
-            autocomplete="off"
-          />
-        </label>
+          <div id="auth-pin-boxes" class="pin-boxes" role="group" aria-label="PIN-kode 6 sifre">
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="Siffer 1" />
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Siffer 2" />
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Siffer 3" />
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Siffer 4" />
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Siffer 5" />
+            <input class="pin-box" type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Siffer 6" />
+          </div>
+        </div>
         <button type="submit" class="btn btn-primary" data-i18n="auth.confirm">Logg inn</button>
         <p class="auth-hint" data-i18n="auth.pinHint">PIN-koden får du av 2GM Eiendom.</p>
       </form>
@@ -287,7 +288,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.12.22</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.13.0</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
