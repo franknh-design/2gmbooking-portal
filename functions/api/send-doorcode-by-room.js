@@ -12,7 +12,7 @@
 //   1. Validér token + finn Firma
 //   2. Hent booking på id og verifiser at den tilhører kundens firma
 //   3. Hent rom + property → bygg SMS med samme template som admin
-//   4. POST til Flask-proxy /notify/sms
+//   4. POST til Flask-proxy /notify/text
 //   5. Logg gebyret (5 kr) til Notes på bookingen
 //
 // Returnerer samme shape som /api/send-doorcode for kompatibilitet.
@@ -130,7 +130,7 @@ export async function onRequestPost(context) {
     const message = renderTemplate(template, vars);
 
     const notifyBase = env.NOTIFY_PROXY_BASE || DEFAULT_NOTIFY_BASE;
-    const smsResp = await fetch(`${notifyBase}/notify/sms`, {
+    const smsResp = await fetch(`${notifyBase}/notify/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: cleanPhone, message }),

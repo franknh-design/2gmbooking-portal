@@ -14,7 +14,7 @@
 //      bruker, oppdateres ved Tuya create_pin).
 //   4. Slå opp Person_Name i Persons-lista (fuzzy match som admin) og hent
 //      telefonnummer (Mobile/Phone/Telefon).
-//   5. POST til Flask-proxyens /notify/sms — Flask signerer mot KeySMS.
+//   5. POST til Flask-proxyens /notify/text — Flask signerer mot KeySMS.
 //
 // Returnerer:
 //   { ok: true, sentTo: "+4791234567" }          — fra-maskert? nei, vi lar
@@ -172,7 +172,7 @@ export async function onRequestPost(context) {
     const message = renderTemplate(template, vars);
 
     const notifyBase = env.NOTIFY_PROXY_BASE || DEFAULT_NOTIFY_BASE;
-    const smsResp = await fetch(`${notifyBase}/notify/sms`, {
+    const smsResp = await fetch(`${notifyBase}/notify/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: person.phone, message }),
