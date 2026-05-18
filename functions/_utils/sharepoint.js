@@ -31,6 +31,8 @@ const LIST_IDS = {
   //   - LockedUntil     (Dato og klokkeslett)
   //   - LastAttempt     (Dato og klokkeslett)
   PIN_ATTEMPTS: "9808abe5-8f13-4305-8840-e84c5721953b",
+  // v1.8 (QR-vaskeverifisering): WashOverrides-listen.
+  WASH_OVERRIDES: "626a9546-60b2-4203-91fe-ca28a1a77e94",
 };
 
 // v1.7: PIN-rate-limit-konfigurasjon. 5 mislykkede forsøk per token utløser
@@ -1123,4 +1125,149 @@ export async function checkCapacityConflict(env, propertyName, fromISO, toISO, r
   }
 
   return conflicts;
+}
+
+// ============================================================================
+// v1.8 — QR-vaskeverifisering (functions/api/c.js)
+// ============================================================================
+
+const _roomCache = new Map();
+const ROOM_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Henter ett rom på id. Returnerer { id, Title, PropertyLookupId,
+ * Tuya_Device_ID, propertyTitle } eller null.
+ * Cacher per-isolate i 5 min så samme QR-scan i kjapp rekkefølge ikke
+ * spammer Graph.
+ */
+export async function findRoomById(env, roomId) {
+  if (!roomId) return null;
+  const key = String(roomId);
+  const cached = _roomCache.get(key);
+  if (cached && cached.expires > Date.now()) return cached.room;
+
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.ROOMS}/items/${encodeURIComponent(key)}?$expand=fields($select=Title,PropertyLookupId,Tuya_Device_ID)`;
+  let item;
+  try {
+    item = await graphRequest(env, path);
+  } catch (e) {
+    return null;
+  }
+  const fields = item && item.fields ? item.fields : {};
+  const room = {
+    id: String(item.id),
+    Title: fields.Title || '',
+    PropertyLookupId: fields.PropertyLookupId ? String(fields.PropertyLookupId) : '',
+    Tuya_Device_ID: fields.Tuya_Device_ID || '',
+    propertyTitle: '',
+  };
+  if (room.PropertyLookupId) {
+    try {
+      const propPath = `/sites/${SITE_ID}/lists/${LIST_IDS.PROPERTIES}/items/${encodeURIComponent(room.PropertyLookupId)}?$expand=fields($select=Title)`;
+      const prop = await graphRequest(env, propPath);
+      room.propertyTitle = (prop && prop.fields && prop.fields.Title) || '';
+    } catch (_) {}
+  }
+  _roomCache.set(key, { room, expires: Date.now() + ROOM_CACHE_TTL_MS });
+  return room;
+}
+
+/**
+ * Finn aktiv eller nærmest-upcoming booking for et rom.
+ * Returnerer { id, Person_Name, Check_In } eller null.
+ */
+export async function findActiveBookingForRoom(env, roomId) {
+  if (!roomId) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayIso = today.toISOString();
+  const inTwoWeeks = new Date(today.getTime() + 14 * 86400000).toISOString();
+
+  const filter = `fields/RoomLookupId eq ${encodeURIComponent(roomId)} and (fields/Status eq 'Active' or fields/Status eq 'Upcoming')`;
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items?$expand=fields($select=Person_Name,Check_In,Check_Out,Status,RoomLookupId)&$filter=${encodeURIComponent(filter)}&$top=20`;
+  let result;
+  try {
+    result = await graphRequest(env, path, { headers: { 'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly' } });
+  } catch (e) {
+    return null;
+  }
+  const items = (result && result.value) || [];
+  if (!items.length) return null;
+
+  let pick = null;
+  for (const it of items) {
+    const f = it.fields || {};
+    if (f.Status === 'Active' && f.Check_In && f.Check_In <= todayIso) {
+      pick = { id: String(it.id), Person_Name: f.Person_Name || '', Check_In: f.Check_In };
+      break;
+    }
+  }
+  if (!pick) {
+    const upcomings = items
+      .filter(it => (it.fields || {}).Status === 'Upcoming')
+      .filter(it => {
+        const ci = (it.fields || {}).Check_In;
+        return ci && ci >= todayIso && ci <= inTwoWeeks;
+      })
+      .sort((a, b) => ((a.fields || {}).Check_In || '').localeCompare((b.fields || {}).Check_In || ''));
+    if (upcomings.length) {
+      const it = upcomings[0];
+      const f = it.fields || {};
+      pick = { id: String(it.id), Person_Name: f.Person_Name || '', Check_In: f.Check_In };
+    }
+  }
+  return pick;
+}
+
+/**
+ * Sjekk om det allerede finnes en Completed-WashOverride for booking-en i dag
+ * (innenfor siste 30 min). Brukes til idempotency.
+ * Returnerer { ChangedAt: ISO } hvis funnet, ellers null.
+ */
+export async function findExistingCompletedToday(env, bookingId) {
+  if (!bookingId) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayIsoStart = today.toISOString();
+  const tomorrow = new Date(today.getTime() + 86400000).toISOString();
+
+  const filter = `fields/BookingLookupId eq ${encodeURIComponent(bookingId)} and fields/Action eq 'Completed' and fields/NewDate ge '${todayIsoStart}' and fields/NewDate lt '${tomorrow}'`;
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.WASH_OVERRIDES}/items?$expand=fields($select=ChangedAt,NewDate,Status)&$filter=${encodeURIComponent(filter)}&$top=5`;
+  try {
+    const result = await graphRequest(env, path, { headers: { 'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly' } });
+    const items = (result && result.value) || [];
+    const recent = items.find(it => {
+      const f = it.fields || {};
+      if (f.Status === 'Reverted') return false;
+      if (!f.ChangedAt) return false;
+      const ageMs = Date.now() - new Date(f.ChangedAt).getTime();
+      return ageMs >= 0 && ageMs < 30 * 60 * 1000;
+    });
+    return recent ? { ChangedAt: recent.fields.ChangedAt } : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Skriv en WashOverride-rad. Returnerer det opprettede item-objektet.
+ * NB: BookingLookupId må sendes som "BookingLookupIdLookupId" (dobbel suffix)
+ * for at Graph skal sette Lookup-IDen — se js/wash.js:saveWashOverride v20.29.14.
+ */
+export async function createWashOverride(env, { bookingId, action, newDate, source, reasonText }) {
+  const fields = {
+    BookingLookupIdLookupId: parseInt(bookingId, 10),
+    Action: action || 'Completed',
+    Status: 'Active',
+    ChangedAt: new Date().toISOString(),
+    ChangedBy_Email: source,
+    Reason: reasonText,
+  };
+  if (newDate) {
+    const d = newDate instanceof Date ? newDate : new Date(newDate);
+    fields.NewDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+  }
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.WASH_OVERRIDES}/items`;
+  return await graphRequest(env, path, {
+    method: 'POST',
+    body: JSON.stringify({ fields }),
+  });
 }
