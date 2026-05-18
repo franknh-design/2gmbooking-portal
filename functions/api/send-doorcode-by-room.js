@@ -133,7 +133,7 @@ export async function onRequestPost(context) {
     const smsResp = await fetch(`${notifyBase}/notify/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: cleanPhone, message }),
+      body: JSON.stringify({ to: cleanPhone, body: message }),
     });
     let smsJson = null;
     try { smsJson = await smsResp.json(); } catch (_) {}
