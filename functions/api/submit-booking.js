@@ -86,6 +86,12 @@ export async function onRequestPost(context) {
       if (!g.name || typeof g.name !== "string") {
         return jsonResponse({ ok: false, error: "guest_missing_name" }, 400);
       }
+      // v3.14.0: telefon er obligatorisk og må være norsk format
+      // (8 sifre med ledende 2-9, evt. +47/0047-prefiks). Defense in depth —
+      // frontend validerer allerede, men vi stoler ikke på det.
+      if (!g.phone || typeof g.phone !== "string" || !_isValidNoPhone(g.phone)) {
+        return jsonResponse({ ok: false, error: "guest_invalid_phone" }, 400);
+      }
       if (!g.checkIn || isNaN(new Date(g.checkIn).getTime())) {
         return jsonResponse({ ok: false, error: "guest_invalid_checkin" }, 400);
       }
@@ -153,6 +159,9 @@ export async function onRequestPost(context) {
     const PENDING_TAG = "AVVENTER ROMTILDELING";
     const rowsToCreate = guests.map(g => {
       const noteParts = [bookingRef, PENDING_TAG];
+      // v3.14.0: gjestens telefon legges i Notes så admin kan kontakte
+      // gjesten direkte / sende dørkode uten å slå opp via Persons-listen.
+      if (g.phone) noteParts.push(`Tlf: ${g.phone}`);
       if (capacityWarning) noteParts.push(capacityWarning);
       return {
         bookingRef,
@@ -249,7 +258,9 @@ async function sendBookingNotification(env, data) {
     const period = g.checkOut
       ? `${g.checkIn} → ${g.checkOut}`
       : `${g.checkIn} → open-ended`;
-    return `  ${i + 1}. ${g.name} · ${period}`;
+    // v3.14.0: telefon på samme linje som navn så admin kan ringe/SMSe direkte
+    const phonePart = g.phone ? ` · ${g.phone}` : "";
+    return `  ${i + 1}. ${g.name}${phonePart} · ${period}`;
   }).join("\n");
 
   const subject = capacityWarning
@@ -393,4 +404,14 @@ function corsHeaders() {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
+}
+
+// v3.14.0: norsk telefonvalidering — duplikat av frontend-regelen i
+// booking.js. Stripper whitespace/skilletegn + valgfri +47/0047/47-prefiks
+// og krever 8 sifre med ledende 2-9 (gyldige norske start-sifre).
+function _isValidNoPhone(s) {
+  const cleaned = String(s || "")
+    .replace(/[\s\-()./]/g, "")
+    .replace(/^(\+47|0047|47)/, "");
+  return /^[2-9]\d{7}$/.test(cleaned);
 }

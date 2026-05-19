@@ -1202,6 +1202,22 @@ input[type="date"]:disabled {
   gap: 8px;
   align-items: center;
 }
+/* v3.14.0: navn + telefon stables i én kolonne. */
+.guest-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.guest-inputs input { width: 100%; }
+.guest-inputs input.invalid {
+  border-color: var(--c-red-400, #E24B4A);
+  background: var(--c-red-50, #FCEBEB);
+}
+.guest-inputs input.invalid:focus {
+  outline: 2px solid var(--c-red-200, #F09595);
+  outline-offset: 0;
+}
 .guest-num {
   font-size: 12px;
   font-weight: 600;

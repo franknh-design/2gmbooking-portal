@@ -221,6 +221,7 @@
         const idx = row.dataset.guestIdx;
         existing[idx] = {
           name: row.querySelector("[data-field='name']").value,
+          phone: (row.querySelector("[data-field='phone']") || {}).value || "",
           from: row.querySelector("[data-field='from']").value,
           to: row.querySelector("[data-field='to']").value,
           openEnded: row.querySelector("[data-field='openEnded']").checked,
@@ -259,6 +260,11 @@
       numEl.className = "guest-num";
       numEl.textContent = tx("booking.guestRoom", { n: idx });
 
+      // v3.14.0: navn + telefon stables vertikalt i et inputs-wrapper så
+      // grid-strukturen (70 / 1fr / auto) holder seg uforandret.
+      const inputs = document.createElement("div");
+      inputs.className = "guest-inputs";
+
       const nameEl = document.createElement("input");
       nameEl.type = "text";
       nameEl.placeholder = tx("booking.guestName");
@@ -266,11 +272,34 @@
       nameEl.value = prev.name || "";
       nameEl.required = true;
 
+      const phoneEl = document.createElement("input");
+      phoneEl.type = "tel";
+      phoneEl.placeholder = tx("booking.guestPhone");
+      phoneEl.dataset.field = "phone";
+      phoneEl.value = prev.phone || "";
+      phoneEl.autocomplete = "tel";
+      phoneEl.inputMode = "tel";
+      phoneEl.required = true;
+      // Live-validering: marker .invalid mens kunden skriver så feilen er
+      // synlig før submit. Sletter klassen så snart input igjen er gyldig
+      // (eller tom — tom valideres ved submit).
+      phoneEl.addEventListener("input", () => {
+        const v = phoneEl.value.trim();
+        if (!v) { phoneEl.classList.remove("invalid"); return; }
+        phoneEl.classList.toggle("invalid", !isValidNoPhone(v));
+      });
+      phoneEl.addEventListener("blur", () => {
+        const v = phoneEl.value.trim();
+        phoneEl.classList.toggle("invalid", !!v && !isValidNoPhone(v));
+      });
+
+      inputs.append(nameEl, phoneEl);
+
       const toggle = document.createElement("button");
       toggle.type = "button";
       toggle.className = "guest-toggle";
 
-      main.append(numEl, nameEl, toggle);
+      main.append(numEl, inputs, toggle);
 
       // Sammendrag (vises når panelet er kollapset)
       const summary = document.createElement("p");
@@ -499,9 +528,12 @@
       return Array.from(rows).map((row, i) => {
         const period = this._effectivePeriodForRow(row, topFrom, topTo, topOpen);
         const name = row.querySelector("[data-field='name']").value.trim();
+        const phoneRaw = (row.querySelector("[data-field='phone']") || {}).value || "";
         return {
           index: i + 1,
           name,
+          phoneRaw: phoneRaw.trim(),
+          phone: normalizeNoPhone(phoneRaw),
           from: period.from,
           to: period.to,
           openEnded: period.openEnded,
@@ -594,6 +626,20 @@
         return this._showMsg(tx("booking.errAllNames"), "error");
       }
 
+      // v3.14.0: telefonvalidering — alle gjester må ha norsk mobil/fasttelefon.
+      // Markerer det første ugyldige feltet visuelt og scroll'er det inn i view
+      // før vi viser feilmeldingen.
+      for (const g of guests) {
+        if (!g.phoneRaw) {
+          this._focusGuestField(g.index, "phone");
+          return this._showMsg(tx("booking.errAllPhones"), "error");
+        }
+        if (!isValidNoPhone(g.phoneRaw)) {
+          this._focusGuestField(g.index, "phone");
+          return this._showMsg(tx("booking.errPhoneInvalid", { n: g.index, name: g.name }), "error");
+        }
+      }
+
       // Hver gjest må ha en gyldig effektiv periode (egen eller felles)
       for (const g of guests) {
         if (!g.from) {
@@ -660,6 +706,7 @@
       // basert på sin effektive periode (egen eller fellesperioden).
       const apiGuests = guests.map(g => ({
         name: g.name,
+        phone: g.phone,
         checkIn: g.from,
         checkOut: g.openEnded ? null : g.to
       }));
@@ -804,6 +851,35 @@
         });
       }
     }
+  };
+
+  // ---------- telefonvalidering (norsk) ----------
+
+  // v3.14.0: norsk telefonnummer.
+  // Aksepterer formater som "+47 912 34 567", "0047 91234567", "91234567",
+  // "22 12 34 56" osv. Strips bort mellomrom, bindestrek, parenteser før
+  // sjekken. Krever 8 sifre med ledende 2-9 (gyldig norsk start: 2-7=fast/
+  // service, 4=mobil/IP, 8=spesial, 9=mobil). Tillater +47/0047/47-prefiks.
+  function normalizeNoPhone(s) {
+    return String(s || "").replace(/[\s\-()./]/g, "");
+  }
+  function isValidNoPhone(s) {
+    const cleaned = normalizeNoPhone(s).replace(/^(\+47|0047|47)/, "");
+    return /^[2-9]\d{7}$/.test(cleaned);
+  }
+
+  // Eksponer for _buildGuestRow's live-validering — moduleskoperte funksjoner
+  // er ikke synlige inni metoden via `this`.
+  Booking._focusGuestField = function _focusGuestField(idx, field) {
+    const row = document.querySelector(`#guests-list .guest-row[data-guest-idx='${idx}']`);
+    if (!row) return;
+    const el = row.querySelector(`[data-field='${field}']`);
+    if (!el) return;
+    el.classList.add("invalid");
+    if (typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    el.focus();
   };
 
   // ---------- date- og tekst-hjelpere ----------
