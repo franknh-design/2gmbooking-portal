@@ -160,31 +160,6 @@
   --space-6: 32px;
 }
 
-/* ====== Dark mode ====== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background-primary:   #1F1E1B;
-    --color-background-secondary: #2C2B27;
-    --color-background-tertiary:  #181816;
-    --color-background-info:      var(--c-blue-900);
-    --color-background-success:   var(--c-green-900);
-    --color-background-warning:   var(--c-amber-900);
-    --color-background-danger:    var(--c-red-900);
-
-    --color-text-primary:   #F1EFE8;
-    --color-text-secondary: #B4B2A9;
-    --color-text-tertiary:  #888780;
-    --color-text-info:      var(--c-blue-100);
-    --color-text-success:   var(--c-green-100);
-    --color-text-warning:   var(--c-amber-100);
-    --color-text-danger:    var(--c-red-100);
-
-    --color-border-tertiary:  rgba(255, 255, 255, 0.08);
-    --color-border-secondary: rgba(255, 255, 255, 0.15);
-    --color-border-primary:   rgba(255, 255, 255, 0.25);
-  }
-}
-
 * { box-sizing: border-box; }
 
 /* HTML hidden-attributtet må vinne over senere display:flex/grid-regler */
