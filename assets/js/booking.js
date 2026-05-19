@@ -272,28 +272,50 @@
       nameEl.value = prev.name || "";
       nameEl.required = true;
 
+      // v3.14.2: forfylt "+47 "-prefiks så kunden visuelt skjønner at det
+      // skal være norsk nummer. "(Norsk)"-etiketten ligger absolute til
+      // høyre i input-en og er alltid synlig — placeholder forsvinner når
+      // feltet har innhold, så vi kan ikke stole på den alene.
+      const phoneWrap = document.createElement("div");
+      phoneWrap.className = "phone-wrap";
+
       const phoneEl = document.createElement("input");
       phoneEl.type = "tel";
       phoneEl.placeholder = tx("booking.guestPhone");
       phoneEl.dataset.field = "phone";
-      phoneEl.value = prev.phone || "";
+      phoneEl.value = prev.phone || "+47 ";
       phoneEl.autocomplete = "tel";
       phoneEl.inputMode = "tel";
       phoneEl.required = true;
       // Live-validering: marker .invalid mens kunden skriver så feilen er
-      // synlig før submit. Sletter klassen så snart input igjen er gyldig
-      // (eller tom — tom valideres ved submit).
+      // synlig før submit. "+47 " alene regnes ikke som invalid (tom-tilstand).
+      const isEffectivelyEmpty = (v) => {
+        const cleaned = String(v || "").replace(/[\s\-()./]/g, "").replace(/^(\+47|0047|47)/, "");
+        return cleaned === "";
+      };
       phoneEl.addEventListener("input", () => {
         const v = phoneEl.value.trim();
-        if (!v) { phoneEl.classList.remove("invalid"); return; }
+        if (!v || isEffectivelyEmpty(v)) { phoneEl.classList.remove("invalid"); return; }
         phoneEl.classList.toggle("invalid", !isValidNoPhone(v));
       });
       phoneEl.addEventListener("blur", () => {
         const v = phoneEl.value.trim();
-        phoneEl.classList.toggle("invalid", !!v && !isValidNoPhone(v));
+        phoneEl.classList.toggle("invalid", !!v && !isEffectivelyEmpty(v) && !isValidNoPhone(v));
+      });
+      // Sett cursor etter "+47 " så kunden bare kan begynne å taste sifrene.
+      phoneEl.addEventListener("focus", () => {
+        if (phoneEl.value === "+47 " || phoneEl.value === "+47") {
+          const end = phoneEl.value.length;
+          try { phoneEl.setSelectionRange(end, end); } catch (_) {}
+        }
       });
 
-      inputs.append(nameEl, phoneEl);
+      const phoneHint = document.createElement("span");
+      phoneHint.className = "phone-hint";
+      phoneHint.textContent = tx("booking.guestPhoneHint");
+
+      phoneWrap.append(phoneEl, phoneHint);
+      inputs.append(nameEl, phoneWrap);
 
       const toggle = document.createElement("button");
       toggle.type = "button";
@@ -627,10 +649,10 @@
       }
 
       // v3.14.0: telefonvalidering — alle gjester må ha norsk mobil/fasttelefon.
-      // Markerer det første ugyldige feltet visuelt og scroll'er det inn i view
-      // før vi viser feilmeldingen.
+      // v3.14.2: kun "+47 "/"+47" (uten sifre) regnes som tom — gir
+      // "fyll inn"-feil, ikke "ugyldig", siden kunden ikke har skrevet noe.
       for (const g of guests) {
-        if (!g.phoneRaw) {
+        if (!g.phone || /^(\+47|0047|47)?$/.test(g.phone)) {
           this._focusGuestField(g.index, "phone");
           return this._showMsg(tx("booking.errAllPhones"), "error");
         }

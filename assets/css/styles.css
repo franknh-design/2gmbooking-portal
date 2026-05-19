@@ -1218,6 +1218,29 @@ input[type="date"]:disabled {
   outline: 2px solid var(--c-red-200, #F09595);
   outline-offset: 0;
 }
+/* v3.14.2: "(Norsk)"-etikett alltid synlig inne i telefonfeltet til høyre.
+   Padding-right gir plass slik at inntastet tekst ikke kolliderer. */
+.phone-wrap {
+  position: relative;
+}
+.phone-wrap input {
+  padding-right: 58px;
+}
+.phone-hint {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--c-muted, #888780);
+  pointer-events: none;
+  user-select: none;
+  background: linear-gradient(to right, transparent, #fff 35%);
+  padding: 2px 0 2px 10px;
+}
+.phone-wrap input.invalid + .phone-hint {
+  background: linear-gradient(to right, transparent, var(--c-red-50, #FCEBEB) 35%);
+}
 .guest-num {
   font-size: 12px;
   font-weight: 600;
