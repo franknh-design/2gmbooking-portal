@@ -159,14 +159,14 @@ export async function onRequestPost(context) {
     const PENDING_TAG = "AVVENTER ROMTILDELING";
     const rowsToCreate = guests.map(g => {
       const noteParts = [bookingRef, PENDING_TAG];
-      // v3.14.0: gjestens telefon legges i Notes så admin kan kontakte
-      // gjesten direkte / sende dørkode uten å slå opp via Persons-listen.
-      if (g.phone) noteParts.push(`Tlf: ${g.phone}`);
       if (capacityWarning) noteParts.push(capacityWarning);
       return {
         bookingRef,
         propertyName,
         guestName: g.name,
+        // v3.14.1: telefon går i sin egen Mobile-kolonne (createBookingRow),
+        // ikke lenger i Notes — admin-appen leser b.Mobile direkte.
+        guestPhone: g.phone || null,
         companyName: tokenRow.fields.Firma || "",
         checkIn: g.checkIn,
         checkOut: g.checkOut || null,

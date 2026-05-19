@@ -710,6 +710,10 @@ export async function createBookingRow(env, fields) {
     Property_Name: fields.propertyName,
     Person_Name: fields.guestName,
     Company: fields.companyName,
+    // v3.14.1: Mobile = gjestens telefon. Admin-appen (bookings.js v20.14.7)
+    // leser feltet direkte fra Booking-raden, så portal-bookinger vises med
+    // riktig nummer uten Persons-list-fallback.
+    Mobile: fields.guestPhone || null,
     Check_In: fields.checkIn,
     Check_Out: fields.checkOut || null,
     Status: "Upcoming",
