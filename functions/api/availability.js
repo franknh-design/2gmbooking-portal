@@ -21,7 +21,11 @@ import {
   propertyIdToName,
   calculateAvailability,
   findToken,
+  getAllRates,
+  getRoomsByIdMap,
+  getPropertiesByIdMap,
 } from "../_utils/sharepoint.js";
+import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
 
 // Maksimalt antall dager per spørring. Klienten bør be om én måned om gangen.
 // Forhindrer DoS-aktige spørringer ("gi meg 10 år") som ville hentet og
@@ -78,10 +82,44 @@ export async function onRequestPost(context) {
       { details: details === true },
     );
 
+    // Nattpris + utvask-gebyr for kundens firma på denne eiendommen, så
+    // portalen kan vise pris i kalenderen og bestillings-sammendraget.
+    // Flat pr. (firma, eiendom) — varierer ikke pr. dato. Feiler myk:
+    // pricing=null hvis rate-oppslaget kaster, og kalenderen skjuler da prisen.
+    let pricing = null;
+    try {
+      const [allRates, roomsById, propertiesById] = await Promise.all([
+        getAllRates(env),
+        getRoomsByIdMap(env),
+        getPropertiesByIdMap(env),
+      ]);
+      const rateInfo = getDailyRate({
+        company: customerCompany,
+        propertyTitle: propertyName,
+        allRates,
+        roomsById,
+        propertiesById,
+      });
+      const feeInfo = getCheckoutFee({
+        company: customerCompany,
+        propertyTitle: propertyName,
+        allRates,
+      });
+      pricing = {
+        rate: rateInfo.rate,
+        rateSource: rateInfo.source,
+        checkoutFee: feeInfo.fee,
+        vatPercent: 25,
+      };
+    } catch (e) {
+      console.error("availability pricing error:", e);
+    }
+
     return jsonResponse({
       property,
       propertyName,
       days: result.days,
+      pricing,
     });
   } catch (err) {
     console.error("availability error:", err);

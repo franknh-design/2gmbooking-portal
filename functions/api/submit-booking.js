@@ -21,8 +21,12 @@ import {
   generateBookingRef,
   createBookingRows,
   checkCapacityConflict,
+  getAllRates,
+  getRoomsByIdMap,
+  getPropertiesByIdMap,
 } from "../_utils/sharepoint.js";
 
+import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
 import { sendEmail } from "../_utils/email.js";
 import { getEmailTemplate, renderTemplate } from "../_utils/templates.js";
 
@@ -321,7 +325,16 @@ async function sendCustomerReceipt(env, data) {
     console.log("[Receipt] submit_received-template mangler eller er deaktivert");
     return;
   }
-  const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning });
+  // Pris-estimat pr. gjest (nights × nattpris + utvask). Feiler mykt:
+  // priceBlock blir tom streng hvis rate-oppslaget kaster, og {priceBlock}
+  // i malen rendres da til ingenting.
+  let priceBlock = "";
+  try {
+    priceBlock = await buildPriceBlock(env, { tokenRow, propertyName, guests });
+  } catch (e) {
+    console.error("[Receipt] priceBlock-feil:", e);
+  }
+  const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock });
   // v3.12.1: HTML-mal får html:true så gjestenavn etc. blir HTML-escapet.
   // Plain text-mal beholder default (ingen escape).
   const subject = renderTemplate(template.subject, vars) || `Bestilling ${bookingRef} mottatt`;
@@ -356,7 +369,75 @@ function _fmtNoDate(input) {
   return `${dd}.${mm}.${d.getUTCFullYear()}`;
 }
 
-function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning }) {
+// Antall hele netter mellom to ISO-datoer. Returnerer 0 hvis checkOut
+// mangler (open-ended) eller datoene er ugyldige.
+function _nightsBetween(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return 0;
+  const ci = new Date(String(checkIn).slice(0, 10) + "T12:00:00");
+  const co = new Date(String(checkOut).slice(0, 10) + "T12:00:00");
+  if (isNaN(ci.getTime()) || isNaN(co.getTime())) return 0;
+  const n = Math.round((co - ci) / (24 * 60 * 60 * 1000));
+  return n > 0 ? n : 0;
+}
+
+// nb-NO-formatert heltall (tusenskille), uten "kr"-suffiks.
+function _fmtKr(amount) {
+  return Number(amount || 0).toLocaleString("nb-NO");
+}
+
+// Bygger pris-estimatet til kvitteringen: én linje pr. gjest +
+// totalsum eks./inkl. 25 % mva + forbeholds-linje. Prisen er flat pr.
+// (firma, eiendom) — samme nattpris og utvask-gebyr for alle gjestene.
+// Open-ended gjester (uten checkOut) får ingen natt-total, bare "åpen".
+async function buildPriceBlock(env, { tokenRow, propertyName, guests }) {
+  const company = tokenRow.fields.Firma || "";
+  const [allRates, roomsById, propertiesById] = await Promise.all([
+    getAllRates(env),
+    getRoomsByIdMap(env),
+    getPropertiesByIdMap(env),
+  ]);
+  const rate = getDailyRate({
+    company,
+    propertyTitle: propertyName,
+    allRates,
+    roomsById,
+    propertiesById,
+  }).rate || 0;
+  const fee = getCheckoutFee({ company, propertyTitle: propertyName, allRates }).fee || 0;
+
+  // Ingen avtalt nattpris ⇒ ingen estimat-blokk (forbeholdet dekker det).
+  if (!(rate > 0)) return "";
+
+  let totalEx = 0;
+  const lines = guests.map((g) => {
+    const ci = _fmtNoDate(g.checkIn);
+    const hasCheckout = !!g.checkOut;
+    const co = hasCheckout ? _fmtNoDate(g.checkOut) : "åpen";
+    const nights = hasCheckout ? _nightsBetween(g.checkIn, g.checkOut) : 0;
+    if (hasCheckout && nights > 0) {
+      const lineTotal = nights * rate + fee;
+      totalEx += lineTotal;
+      return `• ${g.name} · ${ci}–${co} (${nights} netter) · `
+        + `${nights}×${_fmtKr(rate)} + utvask ${_fmtKr(fee)} = ${_fmtKr(lineTotal)} kr`;
+    }
+    // Open-ended: ingen natt-total, men utvask-gebyret påløper uansett.
+    totalEx += fee;
+    return `• ${g.name} · ${ci}–${co} (åpen) · `
+      + `nattpris ${_fmtKr(rate)} kr/natt + utvask ${_fmtKr(fee)} kr — `
+      + `total beregnes ved utsjekk`;
+  });
+
+  const vat = Math.round(totalEx * 0.25);
+  const totalInc = totalEx + vat;
+  lines.push(
+    `TOTALT: ${_fmtKr(totalEx)} kr eks. mva · + 25 % mva ${_fmtKr(vat)} kr `
+      + `· ${_fmtKr(totalInc)} kr inkl. mva`,
+  );
+  lines.push(`Estimat — med forbehold om feil. Endelig faktura kan avvike.`);
+  return lines.join("\n");
+}
+
+function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock }) {
   const customer = tokenRow.fields.Firma || "";
   const contact = tokenRow.fields.Kontaktperson || "";
   const token = tokenRow.fields.Token || "";
@@ -384,6 +465,10 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
     checkOut: latestCheckOut ? _fmtNoDate(latestCheckOut) : "åpen",
     portalUrl,
     capacityWarning: capacityWarning || "",
+    // Pris-estimat-blokk — plain-text med \n, samme behandling som guestList.
+    // Tom streng hvis pris ikke kunne beregnes; {priceBlock} rendres da til
+    // ingenting i både bodyText og bodyHtml.
+    priceBlock: priceBlock || "",
   };
 }
 

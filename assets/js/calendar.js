@@ -46,6 +46,9 @@
     // availabilityMap: Map<isoDate, { available, occupied, totalActive }>
     availabilityMap:  null,
     availabilityMap2: null, // for auto-utvidet neste måned
+    // pricing: { rate, rateSource, checkoutFee, vatPercent } eller null —
+    // flat pris for kundens firma på valgt lokasjon (samme for hele måneden).
+    pricing: null,
     isLoading: false,
 
     init({ locationId, onSelect }) {
@@ -112,6 +115,7 @@
       // Tøm tidligere data og marker som loading
       this.availabilityMap  = null;
       this.availabilityMap2 = null;
+      this.pricing = null;
       this.isLoading = true;
       this.render();
 
@@ -131,13 +135,17 @@
           fetches.push(window.Api.getAvailability(this.locationId, extra.year, extra.month));
         }
         const results = await Promise.all(fetches);
-        this.availabilityMap  = results[0]; // null ved feil, Map ved suksess
-        this.availabilityMap2 = extra ? results[1] : null;
+        // v3.13.x: getAvailability returnerer nå {byDate, pricing} (eller null).
+        const res0 = results[0];
+        this.availabilityMap  = res0 ? res0.byDate : null;
+        this.availabilityMap2 = (extra && results[1]) ? results[1].byDate : null;
+        this.pricing = res0 ? res0.pricing : null;
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[CAL] availability-feil:", err);
         this.availabilityMap  = null;
         this.availabilityMap2 = null;
+        this.pricing = null;
       } finally {
         this.isLoading = false;
         this.render();
@@ -179,6 +187,45 @@
         );
       } else if (extraWrap) {
         extraWrap.hidden = true;
+      }
+
+      this._renderPriceLine();
+      this._notifyBookingPricing();
+    },
+
+    /**
+     * Pris-linje over kalender-rutenettet: nattpris for kundens firma på
+     * valgt lokasjon, eks. og inkl. 25 % mva. Skjules hvis pris mangler
+     * (anonymt oppslag, ingen avtalt rate, eller API-feil).
+     */
+    _renderPriceLine() {
+      const el = document.getElementById("cal-price");
+      if (!el) return;
+
+      const p = this.pricing;
+      if (!p || !(p.rate > 0)) {
+        el.hidden = true;
+        el.innerHTML = "";
+        return;
+      }
+
+      const ex  = Math.round(p.rate);
+      const inc = Math.round(p.rate * 1.25);
+      el.innerHTML =
+        `<span class="cal-price-main">Pris: ${formatKr(ex)} kr/natt eks. mva `
+        + `· ${formatKr(inc)} kr inkl. mva</span>`
+        + `<span class="cal-price-note">Med forbehold om feil.</span>`;
+      el.hidden = false;
+    },
+
+    /**
+     * Etter hver kalender-render: be bestillingsskjemaet oppdatere sitt
+     * pris-estimat. Prisen lastes asynkront sammen med availability, så uten
+     * dette ville price-summary stå tom til neste rom/dato-endring.
+     */
+    _notifyBookingPricing() {
+      if (window.Booking && typeof window.Booking._renderPriceSummary === "function") {
+        window.Booking._renderPriceSummary();
       }
     },
 
@@ -380,6 +427,12 @@
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
+  }
+
+  // nb-NO-formatert heltall (tusenskille), uten "kr"-suffiks — kalleren
+  // legger på "kr". Speiler formatKr() i invoices.js.
+  function formatKr(amount) {
+    return Number(amount).toLocaleString("nb-NO");
   }
 
   // ISO-8601-ukenummer: torsdag i samme uke avgjør hvilket år uka tilhører.

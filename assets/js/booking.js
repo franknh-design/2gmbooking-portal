@@ -47,6 +47,7 @@
 
     _emitDateChange() {
       this._refreshGuestSummaries();
+      this._renderPriceSummary();
       if (typeof this.onDateChange === "function") {
         this.onDateChange(this.getDateRange());
       }
@@ -234,6 +235,8 @@
         list.appendChild(this._buildGuestRow(i, existing[String(i)] || {}));
       }
       this._refreshGuestSummaries();
+      // Rom-antall påvirker både rad-antall og pris (rom × natt + utvask/gjest).
+      this._renderPriceSummary();
     },
 
     _buildGuestRow(idx, prev) {
@@ -485,6 +488,59 @@
       return tx("booking.fullPeriod", { from: fromStr, to: formatDdMm(period.to) });
     },
 
+    /**
+     * Live pris-estimat under skjemaet (og i mobil-sheet'et). Bruker den
+     * flate prisen Calendar.pricing fikk fra availability-API-et. Skjules
+     * når det ikke finnes pris, ingen rate, eller perioden er ufullstendig
+     * (open-ended eller manglende datoer ⇒ ingen hele netter å regne på).
+     */
+    _renderPriceSummary() {
+      const desktop = document.getElementById("price-summary");
+      const mobile  = document.getElementById("m-price-summary");
+      const hide = () => {
+        [desktop, mobile].forEach(el => {
+          if (el) { el.hidden = true; el.innerHTML = ""; }
+        });
+      };
+
+      const pricing = window.Calendar && window.Calendar.pricing;
+      if (!pricing || !(pricing.rate > 0)) return hide();
+
+      const rooms  = this._getRooms();
+      const guests = rooms; // 1 gjest pr. rom
+      const { from, to } = this.getDateRange();
+      const openEnded = this.isOpenEnded();
+
+      // Hele netter mellom fra og til. 0 ved open-ended eller manglende dato.
+      let nights = 0;
+      if (!openEnded && from && to) {
+        nights = Math.round(
+          (parseIsoLocal(to) - parseIsoLocal(from)) / (24 * 60 * 60 * 1000)
+        );
+      }
+      if (nights <= 0) return hide();
+
+      const rate        = Math.round(pricing.rate);
+      const checkoutFee = Math.round(pricing.checkoutFee || 0);
+      const subtotal    = rooms * nights * rate;
+      const utvaskSum   = checkoutFee * guests;
+      const totalEx     = subtotal + utvaskSum;
+      const totalInc    = Math.round(totalEx * 1.25);
+
+      const html =
+        `<span class="ps-line">${rooms} rom × ${nights} netter × ${formatKr(rate)} kr `
+          + `= ${formatKr(subtotal)} kr</span>`
+        + `<span class="ps-line">+ utvask ${formatKr(checkoutFee)} kr × ${guests} `
+          + `gjest(er) = ${formatKr(utvaskSum)} kr</span>`
+        + `<span class="ps-total">Total: ${formatKr(totalEx)} kr eks. mva `
+          + `· ${formatKr(totalInc)} kr inkl. mva</span>`
+        + `<span class="ps-note">Med forbehold om feil. Endelig faktura kan avvike.</span>`;
+
+      [desktop, mobile].forEach(el => {
+        if (el) { el.innerHTML = html; el.hidden = false; }
+      });
+    },
+
     _refreshAvailabilityBadge() {
       const badge = document.getElementById("avail-badge");
       const locId  = this.getSelectedLocationId();
@@ -506,16 +562,18 @@
       // Vis "Henter…" mens vi venter
       badge.textContent = tx("booking.fetching");
 
-      window.Api.getAvailability(locId, year, month).then(map => {
+      window.Api.getAvailability(locId, year, month).then(res => {
         // Brukeren kan ha endret dato eller lokasjon mens vi ventet —
         // sjekk at vi fortsatt viser samme valg
         if (this.getSelectedLocationId() !== locId) return;
         if (fromEl.value !== isoLocal(date)) return;
 
-        if (!map) {
+        // v3.13.x: getAvailability returnerer nå {byDate, pricing} (eller null).
+        if (!res) {
           badge.textContent = tx("booking.unknown");
           return;
         }
+        const map = res.byDate;
 
         const entry = map.get(isoLocal(date)) || { available: 0, totalActive: 0 };
         const total = entry.totalActive;
@@ -598,7 +656,9 @@
       const availabilityByDate = new Map();
       await Promise.all(Array.from(monthsNeeded).map(async (key) => {
         const [y, m] = key.split("-").map(Number);
-        const monthMap = await window.Api.getAvailability(locationId, y, m);
+        // v3.13.x: getAvailability returnerer {byDate, pricing} (eller null).
+        const res = await window.Api.getAvailability(locationId, y, m);
+        const monthMap = res ? res.byDate : null;
         if (monthMap) {
           for (const [iso, info] of monthMap.entries()) {
             availabilityByDate.set(iso, info);
@@ -942,6 +1002,12 @@
 
   function formatDdMm(iso) {
     return iso.slice(8, 10) + "." + iso.slice(5, 7);
+  }
+
+  // nb-NO-formatert heltall (tusenskille), uten "kr"-suffiks — kalleren
+  // legger på "kr". Speiler formatKr() i invoices.js.
+  function formatKr(amount) {
+    return Number(amount).toLocaleString("nb-NO");
   }
 
   function joinNo(items) {

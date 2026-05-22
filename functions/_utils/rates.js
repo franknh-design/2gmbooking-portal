@@ -76,3 +76,31 @@ export function getDailyRate({ personName, company, propertyTitle, roomId, allRa
 
   return { rate: 0, source: "No rate set" };
 }
+
+// Utsjekks-/utvask-gebyr — Rates-rader med FeeType='checkout'. Samme
+// firma+eiendom-prioritet som nattprisen (men ingen person/rom-tier — gebyret
+// er pr. firma). Beløpet ligger i DailyRate-kolonnen, som for nattrater.
+// Returnerer { fee: 0 } hvis ingen rad finnes — kalleren behandler det som
+// «ingen utvask», og estimat-forbeholdet dekker avviket.
+export function getCheckoutFee({ company, propertyTitle, allRates }) {
+  const pt = String(propertyTitle || "").toLowerCase().trim();
+  const co = String(company || "").toLowerCase().trim();
+  const isCheckout = r => String(r.FeeType || "").toLowerCase() === "checkout";
+
+  if (co) {
+    // 1. Company + Property
+    let r = allRates.find(x => isCheckout(x)
+      && String(x.Company || "").toLowerCase() === co
+      && String(x.Property || "").toLowerCase() === pt
+      && Number(x.DailyRate));
+    if (r) return { fee: Number(r.DailyRate), source: "Company+Property" };
+
+    // 2. Company any property
+    r = allRates.find(x => isCheckout(x)
+      && String(x.Company || "").toLowerCase() === co
+      && !x.Property && Number(x.DailyRate));
+    if (r) return { fee: Number(r.DailyRate), source: "Company" };
+  }
+
+  return { fee: 0, source: "No checkout fee" };
+}

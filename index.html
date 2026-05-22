@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.14.7 -->
+<!-- v3.14.8 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -119,6 +119,9 @@
             <button type="button" class="btn btn-ghost" id="cal-next" data-i18n-aria="calendar.next" aria-label="Neste måned">›</button>
           </div>
 
+          <!-- Nattpris for kundens firma på valgt lokasjon — fylles av calendar.js -->
+          <div class="cal-price" id="cal-price" hidden></div>
+
           <div class="cal-weekdays" id="cal-weekdays" aria-hidden="true"></div>
           <div class="cal-grid" id="cal-grid" role="grid"></div>
 
@@ -197,6 +200,9 @@
               <div id="guests-list" class="guests-list"></div>
             </fieldset>
           </div>
+
+          <!-- Live pris-estimat — fylles av booking.js når rom/datoer endres -->
+          <div class="price-summary" id="price-summary" hidden></div>
 
           <button type="submit" class="btn btn-primary btn-submit" id="submit-btn" data-i18n="booking.submit">
             Send bestilling
@@ -289,7 +295,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.14.7</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.14.8</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
@@ -332,6 +338,9 @@
         <!-- Container der vi flytter inn guests-list når "Avvikende datoer"
              åpnes — så bruker kan sette per-rom-datoer uten å forlate sheet'et. -->
         <div id="mDeviatingHost"></div>
+
+        <!-- Live pris-estimat (mobil) — speiler #price-summary -->
+        <div class="price-summary" id="m-price-summary" hidden></div>
 
         <button type="button" id="m-submit" class="m-submit-btn" data-i18n="booking.submit">Send bestilling</button>
       </div>
