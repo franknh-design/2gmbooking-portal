@@ -320,7 +320,18 @@ async function sendCustomerReceipt(env, data) {
     console.log("[Receipt] Customer_Tokens.Epost er tom for token — hopper over kvittering");
     return;
   }
-  const template = await getEmailTemplate(env, "submit_received");
+  // Velg språkvariant av templaten ut fra Customer_Tokens.Sprak. Konvensjon
+  // '<baseKey>_<lang>' (f.eks. 'submit_received_en'). getEmailTemplate
+  // returnerer null både for manglende og inaktive maler, så enkel fallback
+  // til base-templaten holder.
+  const lang = String(tokenRow.fields.Sprak || "nb").toLowerCase();
+  let template = null;
+  if (lang && lang !== "nb") {
+    template = await getEmailTemplate(env, "submit_received_" + lang);
+  }
+  if (!template) {
+    template = await getEmailTemplate(env, "submit_received");
+  }
   if (!template) {
     console.log("[Receipt] submit_received-template mangler eller er deaktivert");
     return;
