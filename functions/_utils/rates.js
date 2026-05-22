@@ -77,30 +77,37 @@ export function getDailyRate({ personName, company, propertyTitle, roomId, allRa
   return { rate: 0, source: "No rate set" };
 }
 
-// Utsjekks-/utvask-gebyr — Rates-rader med FeeType='checkout'. Samme
-// firma+eiendom-prioritet som nattprisen (men ingen person/rom-tier — gebyret
-// er pr. firma). Beløpet ligger i DailyRate-kolonnen, som for nattrater.
-// Returnerer { fee: 0 } hvis ingen rad finnes — kalleren behandler det som
-// «ingen utvask», og estimat-forbeholdet dekker avviket.
+// Utsjekks-/utvask-gebyr — Rates-rader med FeeType='checkout'. Beløpet ligger
+// i DailyRate-kolonnen, som for nattrater. Speiler admin-appens getCheckoutFee
+// (js/rates.js): 1) Firma+Eiendom  2) Firma  3) Eiendom-default  4) 0.
+// Eiendom-default-nivået er viktig — utvask-gebyret er typisk satt pr. RIGG,
+// ikke pr. firma. Returnerer { fee: 0 } hvis ingen rad finnes.
 export function getCheckoutFee({ company, propertyTitle, allRates }) {
   const pt = String(propertyTitle || "").toLowerCase().trim();
   const co = String(company || "").toLowerCase().trim();
-  const isCheckout = r => String(r.FeeType || "").toLowerCase() === "checkout";
+  // Bare rader eksplisitt merket som checkout-gebyr, med et beløp.
+  const checkoutRates = (allRates || []).filter(
+    r => String(r.FeeType || "").toLowerCase() === "checkout" && Number(r.DailyRate),
+  );
+  if (!checkoutRates.length) return { fee: 0, source: "No checkout fee" };
 
+  // 1. Firma + eiendom
   if (co) {
-    // 1. Company + Property
-    let r = allRates.find(x => isCheckout(x)
-      && String(x.Company || "").toLowerCase() === co
-      && String(x.Property || "").toLowerCase() === pt
-      && Number(x.DailyRate));
-    if (r) return { fee: Number(r.DailyRate), source: "Company+Property" };
-
-    // 2. Company any property
-    r = allRates.find(x => isCheckout(x)
-      && String(x.Company || "").toLowerCase() === co
-      && !x.Property && Number(x.DailyRate));
-    if (r) return { fee: Number(r.DailyRate), source: "Company" };
+    const r = checkoutRates.find(rt =>
+      String(rt.Company || "").toLowerCase() === co
+      && String(rt.Property || "").toLowerCase() === pt);
+    if (r) return { fee: Number(r.DailyRate) || 0, source: "Company+Property" };
   }
+  // 2. Firma (uten eiendom)
+  if (co) {
+    const r = checkoutRates.find(rt =>
+      String(rt.Company || "").toLowerCase() === co && !rt.Property);
+    if (r) return { fee: Number(r.DailyRate) || 0, source: "Company" };
+  }
+  // 3. Eiendom-default (uten firma)
+  const propRate = checkoutRates.find(rt =>
+    String(rt.Property || "").toLowerCase() === pt && !rt.Company);
+  if (propRate) return { fee: Number(propRate.DailyRate) || 0, source: "Property" };
 
   return { fee: 0, source: "No checkout fee" };
 }
