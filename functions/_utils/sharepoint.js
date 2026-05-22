@@ -718,6 +718,10 @@ export async function createBookingRow(env, fields) {
     Check_Out: fields.checkOut || null,
     Status: "Upcoming",
     Pending_Confirmation: true,
+    // v3.14.5: Source merker bookingen som portal-skapt. Admin-appens
+    // Awaiting-panel skiller portal fra in-house på dette feltet — uten det
+    // måtte den gjette ut fra 2GM-ref-formatet (som begge bruker).
+    Source: "Portal",
     Notes: fields.notes || "",
   };
 
