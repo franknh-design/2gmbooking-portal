@@ -138,6 +138,7 @@
       "booking.thanksSub":   "2GM Eiendom tar kontakt med deg så snart vi har bekreftet rom og perioder.",
       "booking.thanksFoot":  "Du kan lukke vinduet.",
       "booking.thanksSeeBooking": "Se din booking ↓",
+      "booking.thanksNewBooking": "+ Ny bestilling",
       "booking.joinAnd":     "og",
 
       // Mine bookinger
@@ -452,6 +453,7 @@
       "booking.thanksSub":   "2GM Eiendom will contact you as soon as we've confirmed rooms and dates.",
       "booking.thanksFoot":  "You may close this window.",
       "booking.thanksSeeBooking": "View your booking ↓",
+      "booking.thanksNewBooking": "+ New booking",
       "booking.joinAnd":     "and",
 
       // My bookings

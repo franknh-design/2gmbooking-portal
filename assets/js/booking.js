@@ -829,6 +829,9 @@
         <button type="button" class="thanks-see-booking-btn" id="thanks-see-booking">
           ${escapeHtml(tx("booking.thanksSeeBooking"))}
         </button>
+        <button type="button" class="thanks-see-booking-btn" id="thanks-new-booking">
+          ${escapeHtml(tx("booking.thanksNewBooking"))}
+        </button>
         <p class="thanks-foot">${tx("booking.thanksFoot")}</p>
         <button type="button" class="thanks-close-btn" id="thanks-close">
           ${escapeHtml(tx("booking.close"))}
@@ -857,6 +860,15 @@
             }
           }
         });
+      }
+
+      // v3.14.4: "Ny bestilling" — full reload tilbakestiller portalen til et
+      // friskt skjema. _lockPortalAndShowThanks skjuler #booking-form og bytter
+      // panel-tittelen, og det finnes ingen ren invers — reload er sikrest.
+      // Token ligger i URL-en, så økten beholdes.
+      const newBtn = thanks.querySelector("#thanks-new-booking");
+      if (newBtn) {
+        newBtn.addEventListener("click", () => { window.location.reload(); });
       }
 
       // v3.12.12: "Lukk"-knapp kollapser hele Bestilling-seksjonen
