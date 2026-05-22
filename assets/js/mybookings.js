@@ -712,6 +712,14 @@
     }
     dlg._booking = booking;
     dlg._mybookingsRef = mybookingsRef;
+    // v3.14.6: "Kanseller bestillingen" kun for ikke-startede bookinger
+    // (Status=Upcoming). Aktive opphold beholder "Avslutt leien" — å sette
+    // en aktiv booking Cancelled ville fjerne fakturerbare netter.
+    const isUpcoming = booking.status === "Upcoming";
+    const cancelActionBtn = dlg.querySelector('[data-action="cancel"]');
+    if (cancelActionBtn) cancelActionBtn.hidden = !isUpcoming;
+    const endActionBtn = dlg.querySelector('[data-action="end"]');
+    if (endActionBtn) endActionBtn.hidden = isUpcoming;
     if (typeof dlg.showModal === "function") dlg.showModal();
     else dlg.setAttribute("open", "");
   }
@@ -809,6 +817,8 @@
       dlg.querySelector('[data-action="extend"]').textContent = tx("mybookings.extend");
       const endBtn = dlg.querySelector('[data-action="end"]');
       if (endBtn) endBtn.textContent = tx("mybookings.endRental");
+      const cancelBtn = dlg.querySelector('[data-action="cancel"]');
+      if (cancelBtn) cancelBtn.textContent = tx("mybookings.cancelBooking");
       const smsBtn = dlg.querySelector('[data-action="sms-doorcode"]');
       if (smsBtn) {
         // v3.10.17: Erstatter hele knappen så både hovedtekst og hint
@@ -829,6 +839,7 @@
         <div class="action-menu-buttons">
           <button type="button" data-action="extend" class="action-menu-btn action-menu-btn-primary">${escapeHtml(tx("mybookings.extend"))}</button>
           <button type="button" data-action="end"    class="action-menu-btn">${escapeHtml(tx("mybookings.endRental"))}</button>
+          <button type="button" data-action="cancel" class="action-menu-btn">${escapeHtml(tx("mybookings.cancelBooking"))}</button>
           ${smsBtnHtml()}
           <button type="button" data-action="close"  class="action-menu-btn">${escapeHtml(tx("extend.cancel"))}</button>
         </div>
@@ -850,6 +861,11 @@
         const ref = dlg._mybookingsRef;
         dlg.close ? dlg.close() : dlg.removeAttribute("open");
         openEndDialog(b, ref);
+      } else if (action === "cancel") {
+        const b = dlg._booking;
+        const ref = dlg._mybookingsRef;
+        dlg.close ? dlg.close() : dlg.removeAttribute("open");
+        cancelBookingFlow(b, ref);
       } else if (action === "sms-doorcode") {
         const b = dlg._booking;
         const ref = dlg._mybookingsRef;
@@ -859,6 +875,25 @@
     });
 
     return dlg;
+  }
+
+  // v3.14.6: Kunde-initiert kansellering av en ikke-startet booking. Krever
+  // en "er du sikker?"-bekreftelse, kaller cancel-booking-API'et (setter
+  // Status=Cancelled + sender bekreftelses-e-post til kunden), og frisker
+  // opp lista etterpå.
+  async function cancelBookingFlow(booking, mybookingsRef) {
+    if (!booking || !mybookingsRef) return;
+    if (!window.confirm(tx("cancel.confirm", { ref: booking.ref }))) return;
+    const res = await window.Api.cancelBooking({
+      token: mybookingsRef.token,
+      bookingRef: booking.ref,
+    });
+    if (!res || !res.ok) {
+      window.alert(tx("cancel.errFail", { err: (res && res.error) || "unknown" }));
+      return;
+    }
+    window.alert(tx("cancel.success"));
+    if (typeof mybookingsRef.refresh === "function") mybookingsRef.refresh(false);
   }
 
   // v3.10.15-17: Sender dørkode på SMS til gjesten. Først prøver backend å

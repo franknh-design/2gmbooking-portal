@@ -339,6 +339,34 @@
   }
 
   // --------------------------------------------------------------------------
+  // cancel-booking — kunde kansellerer en ikke-startet booking
+  // --------------------------------------------------------------------------
+
+  async function cancelBooking({ token, bookingRef }) {
+    if (!token || !bookingRef) {
+      return { ok: false, error: "missing_arguments" };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/cancel-booking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, bookingRef })
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error("[API] cancel-booking feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[API] cancel-booking exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // invoice-archive — historiske opphold gruppert per måned
   // --------------------------------------------------------------------------
 
@@ -471,6 +499,7 @@
     getCustomerFreeRooms,
     requestExtension,
     requestEnd,
+    cancelBooking,
     getInvoiceArchive,
     sendDoorcodeSms,
     heartbeat
