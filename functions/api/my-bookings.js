@@ -92,6 +92,10 @@ export async function onRequestPost(context) {
       // regenerere PIN for hver booking som skal vises i portalen.
       const doorCode = (f.Door_Code || "").trim() || null;
       return {
+        // v3.14.7: SharePoint item-id — unik per booking-rad. Brukes av
+        // portalens Upcoming→Active-deteksjon; uten id falt den tilbake til
+        // undefined og feilutløste filter-bytte.
+        id: item.id,
         ref: f.Title || "",
         property: f.Property_Name || "",
         propertyAddress: propertyAddress(f.Property_Name),

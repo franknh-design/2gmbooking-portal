@@ -480,11 +480,16 @@
       // bytt til "Aktive" så den nye live-bookingen er åpenbart synlig.
       // Ignorerer "all"-filteret (kunden har eksplisitt valgt det) og
       // "active" (allerede riktig fane).
+      // v3.14.7: krev en sann id. Booking-objektene fra /my-bookings manglet
+      // id-feltet — da ble `undefined` lagt i settet, og enhver Active-booking
+      // matchet `wasUpcomingIds.has(undefined)`. Resultat: hvert klikk på
+      // «Kommende» trigget falskt newlyActive og hoppet rett til «Aktive».
+      // my-bookings returnerer nå id; `b.id &&`-guarden hindrer regresjon.
       const wasUpcomingIds = new Set();
       for (const b of (this._lastBookings || [])) {
-        if (b && b.status === "Upcoming") wasUpcomingIds.add(b.id);
+        if (b && b.id && b.status === "Upcoming") wasUpcomingIds.add(b.id);
       }
-      const newlyActive = (bookings || []).some(b => b && b.status === "Active" && wasUpcomingIds.has(b.id));
+      const newlyActive = (bookings || []).some(b => b && b.id && b.status === "Active" && wasUpcomingIds.has(b.id));
       if (newlyActive && this._filter === "upcoming") {
         this._filter = "active";
       }
