@@ -475,6 +475,34 @@
     }
   }
 
+  // Persisterer kundens valgte språk i Customer_Tokens.Sprak så admin-
+  // utløste e-poster (notifyPortalEmail / sendBatchPortalConfirmation) kan
+  // velge riktig språkvariant av templaten. Fire-and-forget: feil logges
+  // til console, men UI'et blokkeres aldri.
+  async function setLanguage(lang) {
+    const token = (window.Auth && window.Auth.token) || null;
+    if (!token || !lang) return { ok: false, error: "missing_arguments" };
+    try {
+      const response = await fetch(`${API_BASE}/set-language`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, lang }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.warn("[API] set-language feilet:", response.status, data);
+        return { ok: false, error: data.error || "http_error", status: response.status };
+      }
+      return data;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[API] set-language exception:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
   // v3.10.11: Lett heartbeat — la admin se hvem som har portalen åpen.
   async function heartbeat(token) {
     if (!token || typeof token !== "string") return { ok: false };
@@ -506,6 +534,7 @@
     cancelBooking,
     getInvoiceArchive,
     sendDoorcodeSms,
+    setLanguage,
     heartbeat
   };
 })();

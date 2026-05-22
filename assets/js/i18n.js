@@ -696,6 +696,17 @@
     document.documentElement.lang = lang === "en" ? "en" : "nb";
     applyDom();
     document.dispatchEvent(new CustomEvent("i18n:change", { detail: { lang } }));
+    // Persistér valget på Customer_Tokens.Sprak (fire-and-forget) så
+    // admin-utløste e-poster (notifyPortalEmail) plukker rett språkvariant
+    // av templaten. Gjøres etter applyDom så UI-en aldri venter på nettverk.
+    // Auth.token mangler i pre-login-fasen — da hopper Api.setLanguage av selv.
+    try {
+      if (window.Api && typeof window.Api.setLanguage === "function") {
+        window.Api.setLanguage(lang);
+      }
+    } catch (_) {
+      // Stille feil — språkbytte må aldri brytes av en API-feil
+    }
   }
 
   function applyDom(root) {
