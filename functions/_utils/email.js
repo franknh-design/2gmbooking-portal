@@ -7,10 +7,20 @@
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
-// Standard avsenderadresse. Resend tillater onboarding@resend.dev uten
-// domene-verifisering. Når 2gm.no er DKIM-verifisert hos Resend, bytt
-// til "noreply@2gm.no".
+// Sandbox-fallback. onboarding@resend.dev fungerer uten domene-verifisering,
+// men leverer kun til Resend-kontoeieren. Når env-varen EMAIL_FROM_ADDRESS er
+// satt (f.eks. noreply@2gm.no på et DKIM-verifisert domene) brukes den i
+// stedet — se _defaultFrom().
 const DEFAULT_FROM = "2GM Booking <onboarding@resend.dev>";
+
+// v3.14.3: avsender for kall som ikke selv oppgir `from`. Leser
+// EMAIL_FROM_ADDRESS slik at admin-varslene (end-/extend-/submit-booking)
+// følger samme verifiserte avsender som kunde-kvitteringen, i stedet for
+// den hardkodede sandbox-adressen.
+function _defaultFrom(env) {
+  const addr = (env && env.EMAIL_FROM_ADDRESS || "").trim();
+  return addr ? `2GM Booking <${addr}>` : DEFAULT_FROM;
+}
 
 /**
  * Send en e-post via Resend.
@@ -32,7 +42,7 @@ export async function sendEmail(env, { to, subject, text, html, from }) {
   }
 
   const payload = {
-    from: from || DEFAULT_FROM,
+    from: from || _defaultFrom(env),
     to: Array.isArray(to) ? to : [to],
     subject,
   };
