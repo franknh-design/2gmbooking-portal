@@ -403,7 +403,6 @@ async function buildPriceBlock(env, { tokenRow, propertyName, guests }) {
     roomsById,
     propertiesById,
   }).rate || 0;
-  const fee = getCheckoutFee({ company, propertyTitle: propertyName, allRates }).fee || 0;
 
   // Ingen avtalt nattpris ⇒ ingen estimat-blokk (forbeholdet dekker det).
   if (!(rate > 0)) return "";
@@ -414,6 +413,8 @@ async function buildPriceBlock(env, { tokenRow, propertyName, guests }) {
     const hasCheckout = !!g.checkOut;
     const co = hasCheckout ? _fmtNoDate(g.checkOut) : "åpen";
     const nights = hasCheckout ? _nightsBetween(g.checkIn, g.checkOut) : 0;
+    // Utvask-gebyr pr. gjest — 1-natt-opphold får evt. rabattert sats.
+    const fee = getCheckoutFee({ company, propertyTitle: propertyName, allRates, nights }).fee || 0;
     if (hasCheckout && nights > 0) {
       const lineTotal = nights * rate + fee;
       totalEx += lineTotal;

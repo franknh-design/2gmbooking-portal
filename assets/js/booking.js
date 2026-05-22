@@ -521,7 +521,10 @@
       if (nights <= 0) return hide();
 
       const rate        = Math.round(pricing.rate);
-      const checkoutFee = Math.round(pricing.checkoutFee || 0);
+      // 1-natt-opphold bruker rabattert utvask-sats; ellers normal sats.
+      const checkoutFee = Math.round(
+        (nights === 1 ? pricing.checkoutFee1 : pricing.checkoutFee) || 0
+      );
       const subtotal    = rooms * nights * rate;
       const utvaskSum   = checkoutFee * guests;
       const totalEx     = subtotal + utvaskSum;

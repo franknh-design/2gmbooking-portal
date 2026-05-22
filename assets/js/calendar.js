@@ -46,8 +46,9 @@
     // availabilityMap: Map<isoDate, { available, occupied, totalActive }>
     availabilityMap:  null,
     availabilityMap2: null, // for auto-utvidet neste måned
-    // pricing: { rate, rateSource, checkoutFee, vatPercent } eller null —
-    // flat pris for kundens firma på valgt lokasjon (samme for hele måneden).
+    // pricing: { rate, rateSource, checkoutFee, checkoutFee1, vatPercent } eller
+    // null — flat pris for kundens firma på valgt lokasjon (samme for hele
+    // måneden). checkoutFee1 = utvask-sats ved 1-natt-opphold (evt. rabattert).
     pricing: null,
     isLoading: false,
 

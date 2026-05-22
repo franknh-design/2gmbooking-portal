@@ -100,15 +100,25 @@ export async function onRequestPost(context) {
         roomsById,
         propertiesById,
       });
+      // To gebyr-oppslag: normalt (≥2 netter) og 1-natt-rabattert.
+      // Kalkulatoren i frontend velger riktig sats ut fra valgt periode.
       const feeInfo = getCheckoutFee({
         company: customerCompany,
         propertyTitle: propertyName,
         allRates,
+        nights: 2,
+      });
+      const feeInfo1 = getCheckoutFee({
+        company: customerCompany,
+        propertyTitle: propertyName,
+        allRates,
+        nights: 1,
       });
       pricing = {
         rate: rateInfo.rate,
         rateSource: rateInfo.source,
         checkoutFee: feeInfo.fee,
+        checkoutFee1: feeInfo1.fee,
         vatPercent: 25,
       };
     } catch (e) {

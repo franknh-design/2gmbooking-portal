@@ -77,37 +77,52 @@ export function getDailyRate({ personName, company, propertyTitle, roomId, allRa
   return { rate: 0, source: "No rate set" };
 }
 
-// Utsjekks-/utvask-gebyr — Rates-rader med FeeType='checkout'. Beløpet ligger
-// i DailyRate-kolonnen, som for nattrater. Speiler admin-appens getCheckoutFee
-// (js/rates.js): 1) Firma+Eiendom  2) Firma  3) Eiendom-default  4) 0.
-// Eiendom-default-nivået er viktig — utvask-gebyret er typisk satt pr. RIGG,
-// ikke pr. firma. Returnerer { fee: 0 } hvis ingen rad finnes.
-export function getCheckoutFee({ company, propertyTitle, allRates }) {
+// 3-tier oppslag for et gebyr av gitt FeeType. Brukt for både 'checkout'
+// (normalt utvask-gebyr) og 'checkout1rabatt' (1-natt-rabatt). Beløpet ligger
+// i DailyRate-kolonnen. Prioritet: 1) Firma+Eiendom  2) Firma  3) Eiendom-default.
+// Returnerer { fee, source }; { fee: 0 } hvis ingen rad finnes.
+function lookupFeeByType(feeType, company, propertyTitle, allRates) {
   const pt = String(propertyTitle || "").toLowerCase().trim();
   const co = String(company || "").toLowerCase().trim();
-  // Bare rader eksplisitt merket som checkout-gebyr, med et beløp.
-  const checkoutRates = (allRates || []).filter(
-    r => String(r.FeeType || "").toLowerCase() === "checkout" && Number(r.DailyRate),
+  const ft = String(feeType || "").toLowerCase();
+  const feeRates = (allRates || []).filter(
+    r => String(r.FeeType || "").toLowerCase() === ft && Number(r.DailyRate),
   );
-  if (!checkoutRates.length) return { fee: 0, source: "No checkout fee" };
+  if (!feeRates.length) return { fee: 0, source: "No fee" };
 
   // 1. Firma + eiendom
   if (co) {
-    const r = checkoutRates.find(rt =>
+    const r = feeRates.find(rt =>
       String(rt.Company || "").toLowerCase() === co
       && String(rt.Property || "").toLowerCase() === pt);
     if (r) return { fee: Number(r.DailyRate) || 0, source: "Company+Property" };
   }
   // 2. Firma (uten eiendom)
   if (co) {
-    const r = checkoutRates.find(rt =>
+    const r = feeRates.find(rt =>
       String(rt.Company || "").toLowerCase() === co && !rt.Property);
     if (r) return { fee: Number(r.DailyRate) || 0, source: "Company" };
   }
   // 3. Eiendom-default (uten firma)
-  const propRate = checkoutRates.find(rt =>
+  const propRate = feeRates.find(rt =>
     String(rt.Property || "").toLowerCase() === pt && !rt.Company);
   if (propRate) return { fee: Number(propRate.DailyRate) || 0, source: "Property" };
 
-  return { fee: 0, source: "No checkout fee" };
+  return { fee: 0, source: "No fee" };
+}
+
+// Utsjekks-/utvask-gebyr — Rates-rader med FeeType='checkout'. Beløpet ligger
+// i DailyRate-kolonnen, som for nattrater. Speiler admin-appens getCheckoutFee
+// (js/rates.js): 1) Firma+Eiendom  2) Firma  3) Eiendom-default  4) 0.
+// Eiendom-default-nivået er viktig — utvask-gebyret er typisk satt pr. RIGG,
+// ikke pr. firma. Returnerer { fee: 0 } hvis ingen rad finnes.
+// nights: ved nøyaktig 1 natt trekkes en fast rabatt (FeeType='checkout1rabatt',
+// samme 3-tier-oppslag), gulvet på 0. nights undefined/≥2/0 ⇒ normalt gebyr.
+export function getCheckoutFee({ company, propertyTitle, allRates, nights }) {
+  const normal = lookupFeeByType("checkout", company, propertyTitle, allRates);
+  if (nights === 1) {
+    const discount = lookupFeeByType("checkout1rabatt", company, propertyTitle, allRates);
+    return { fee: Math.max(0, normal.fee - discount.fee), source: normal.source };
+  }
+  return { fee: normal.fee, source: normal.source };
 }

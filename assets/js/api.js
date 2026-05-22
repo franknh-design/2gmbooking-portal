@@ -118,8 +118,8 @@
         }
 
         // v3.13.x: availability returnerer nå også et pricing-objekt
-        // ({rate, rateSource, checkoutFee, vatPercent}) — pakk det sammen med
-        // byDate-mappet så kalenderen kan vise pris uten et eget API-kall.
+        // ({rate, rateSource, checkoutFee, checkoutFee1, vatPercent}) — pakk det
+        // sammen med byDate-mappet så kalenderen kan vise pris uten et eget API-kall.
         const result = { byDate, pricing: data.pricing || null };
         availabilityCache.set(key, result);
         return result;
