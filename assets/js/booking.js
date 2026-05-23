@@ -313,11 +313,9 @@
         }
       });
 
-      const phoneHint = document.createElement("span");
-      phoneHint.className = "phone-hint";
-      phoneHint.textContent = tx("booking.guestPhoneHint");
-
-      phoneWrap.append(phoneEl, phoneHint);
+      // v3.14.13: "(Norsk)"-hinten fjernet — kunden ser allerede "+47"-prefiks
+      // i feltet, og etiketten ble visuelt redundant.
+      phoneWrap.append(phoneEl);
       inputs.append(nameEl, phoneWrap);
 
       const toggle = document.createElement("button");
