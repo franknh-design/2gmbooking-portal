@@ -146,7 +146,7 @@ const SELECT_BOOKING = "Title,Person_Name,Company,Billing_Company,Property_Name,
 const SELECT_ROOM = "Title,Door_Code,Cleaning_Status,DailyRate,PropertyLookupId,Floor,Active,LongTerm_Company,LongTerm_Price,LongTerm_StartDate,LongTerm_EndDate";
 const SELECT_PROPERTY_FULL = "Title,FullTenant_Company,DailyRate,SMS_Template,WiFi_SSID,WiFi_Password,Welcome_Message,Floor1_Info,Floor2_Info";
 const SELECT_TOKEN = "Title,Token,Pin,Aktiv,Firma,Kontaktperson,Telefon,Epost,Utlopsdato,TillatteLokasjoner,MaksRomPerBestilling,AntallBestillinger,SistBrukt,LastSeen,Sprak";
-const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon";
+const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon,Email,Company";
 const SELECT_RATE = "Person_Name,Company,Property,DailyRate,FeeType";
 
 // v3.11.0: Status-klauseler vi gjenbruker. Bookings.Status er Choice-felt —
@@ -714,6 +714,9 @@ export async function createBookingRow(env, fields) {
     // leser feltet direkte fra Booking-raden, så portal-bookinger vises med
     // riktig nummer uten Persons-list-fallback.
     Mobile: fields.guestPhone || null,
+    // E-post er valgfritt. Samme mønster som Mobile — admin leser b.Email
+    // direkte. Strippes på null/undefined nedenfor så vi unngår 500 fra Graph.
+    Email: fields.guestEmail || null,
     Check_In: fields.checkIn,
     Check_Out: fields.checkOut || null,
     Status: "Upcoming",
@@ -756,6 +759,65 @@ export async function createBookingRows(env, rows) {
   });
 
   return { succeeded, failed };
+}
+
+// ============================================================================
+// Persons-upsert (portal → Persons-listen)
+// ============================================================================
+//
+// Speiler admin-appens _ensurePersonRowForBooking (bookings.js v20.14.7):
+//   - Match case-insensitivt på Title (eller Person_Name/Name fallback).
+//   - Match → PATCH Mobile/Email kun hvis Persons-raden er tom på det feltet.
+//     Bevisst konservativt: portalen skal aldri overskrive admin-redigerte verdier.
+//     (Admin-appens egen variant overskriver — den har korrekturansvar; portalen ikke.)
+//   - Ingen match → opprett ny rad med Title + Mobile + Email + Company.
+// Idempotent og fail-soft — kalleren wrapper i Promise.allSettled så én
+// gjest-feil ikke stopper de andre.
+export async function upsertPersonForBooking(env, { name, phone, email, company }) {
+  const target = String(name || "").trim().toLowerCase();
+  if (!target) return { skipped: true, reason: "no_name" };
+
+  const items = await fetchAllItems(env, LIST_IDS.PERSONS, { select: SELECT_PERSON });
+  const existing = items.find(it => {
+    const f = it.fields || {};
+    const n = String(f.Title || f.Person_Name || f.Name || "").trim().toLowerCase();
+    return n === target;
+  });
+
+  if (existing) {
+    const f = existing.fields || {};
+    const curMobile = String(f.Mobile || f.Phone || f.Telefon || "").trim();
+    const curEmail  = String(f.Email || "").trim();
+    const patch = {};
+    // Fyll kun tomme felter — vi overskriver ikke det admin allerede har
+    // kuratert. Portalen er én av flere kilder (admin, support-telefon),
+    // og kunden i portalen vet ikke nødvendigvis hvilket nummer som er
+    // det "riktige" for denne personen.
+    if (phone && !curMobile) patch.Mobile = phone;
+    if (email && !curEmail)  patch.Email  = email;
+    if (!Object.keys(patch).length) return { matched: existing.id, patched: false };
+
+    const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PERSONS}/items/${existing.id}/fields`;
+    await graphRequest(env, path, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { matched: existing.id, patched: true, fields: patch };
+  }
+
+  // Ny Person — Title er primær-nøkkelen i lista (admin's _ensurePersonRowForBooking
+  // setter både Title og Name til samme verdi siden noen historiske rader bruker
+  // Name-kolonnen).
+  const fields = { Title: name };
+  if (phone)   fields.Mobile = phone;
+  if (email)   fields.Email = email;
+  if (company) fields.Company = company;
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PERSONS}/items`;
+  const created = await graphRequest(env, path, {
+    method: "POST",
+    body: JSON.stringify({ fields }),
+  });
+  return { created: created && created.id, fields };
 }
 
 // ============================================================================

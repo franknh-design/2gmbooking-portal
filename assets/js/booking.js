@@ -223,6 +223,7 @@
         existing[idx] = {
           name: row.querySelector("[data-field='name']").value,
           phone: (row.querySelector("[data-field='phone']") || {}).value || "",
+          email: (row.querySelector("[data-field='email']") || {}).value || "",
           from: row.querySelector("[data-field='from']").value,
           to: row.querySelector("[data-field='to']").value,
           openEnded: row.querySelector("[data-field='openEnded']").checked,
@@ -316,7 +317,27 @@
       // v3.14.13: "(Norsk)"-hinten fjernet — kunden ser allerede "+47"-prefiks
       // i feltet, og etiketten ble visuelt redundant.
       phoneWrap.append(phoneEl);
-      inputs.append(nameEl, phoneWrap);
+
+      // E-post (valgfritt). Følger samme placement-mønster som phone, men er
+      // simpler — ingen prefiks-wrapper, kun input + live regex-validering.
+      // Tom verdi er gyldig; en utfylt verdi som ikke matcher regex'en
+      // markeres .invalid både underveis (input) og ved blur.
+      const emailEl = document.createElement("input");
+      emailEl.type = "email";
+      emailEl.placeholder = tx("booking.guestEmail");
+      emailEl.dataset.field = "email";
+      emailEl.value = prev.email || "";
+      emailEl.autocomplete = "email";
+      emailEl.inputMode = "email";
+      const validateEmail = () => {
+        const v = emailEl.value.trim();
+        if (!v) { emailEl.classList.remove("invalid"); return; }
+        emailEl.classList.toggle("invalid", !isValidEmail(v));
+      };
+      emailEl.addEventListener("input", validateEmail);
+      emailEl.addEventListener("blur", validateEmail);
+
+      inputs.append(nameEl, phoneWrap, emailEl);
 
       const toggle = document.createElement("button");
       toggle.type = "button";
@@ -520,6 +541,7 @@
 
       const rate        = Math.round(pricing.rate);
       // 1-natt-opphold bruker rabattert utvask-sats; ellers normal sats.
+      const normalFee   = Math.round(pricing.checkoutFee || 0);
       const checkoutFee = Math.round(
         (nights === 1 ? pricing.checkoutFee1 : pricing.checkoutFee) || 0
       );
@@ -528,11 +550,20 @@
       const totalEx     = subtotal + utvaskSum;
       const totalInc    = Math.round(totalEx * 1.25);
 
+      // v3.14.14: vis rabatt-prosent inline når 1-natts-rabatten faktisk slår
+      // inn (checkoutFee1 < normal). Beregner mot normalFee — så kunden ser
+      // hvor mye rabatten er verdt uten å gjette.
+      const isDiscounted = nights === 1 && normalFee > 0 && checkoutFee < normalFee;
+      const discountPct  = isDiscounted ? Math.round(100 * (normalFee - checkoutFee) / normalFee) : 0;
+      const discountSuffix = isDiscounted
+        ? ` <span class="ps-discount">(${discountPct}% rabatt, 1-natts opphold)</span>`
+        : "";
+
       const html =
         `<span class="ps-line">${rooms} rom × ${nights} netter × ${formatKr(rate)} kr `
           + `= ${formatKr(subtotal)} kr</span>`
         + `<span class="ps-line">+ utvask ${formatKr(checkoutFee)} kr × ${guests} `
-          + `gjest(er) = ${formatKr(utvaskSum)} kr</span>`
+          + `gjest(er) = ${formatKr(utvaskSum)} kr${discountSuffix}</span>`
         + `<span class="ps-total">Total: ${formatKr(totalEx)} kr eks. mva `
           + `· ${formatKr(totalInc)} kr inkl. mva</span>`
         + `<span class="ps-note">Med forbehold om feil. Endelig faktura kan avvike.</span>`;
@@ -610,11 +641,13 @@
         const period = this._effectivePeriodForRow(row, topFrom, topTo, topOpen);
         const name = row.querySelector("[data-field='name']").value.trim();
         const phoneRaw = (row.querySelector("[data-field='phone']") || {}).value || "";
+        const emailRaw = (row.querySelector("[data-field='email']") || {}).value || "";
         return {
           index: i + 1,
           name,
           phoneRaw: phoneRaw.trim(),
           phone: normalizeNoPhone(phoneRaw),
+          email: emailRaw.trim(),
           from: period.from,
           to: period.to,
           openEnded: period.openEnded,
@@ -723,6 +756,15 @@
         }
       }
 
+      // E-post er valgfritt, men hvis satt må den passere regex'en. Speiler
+      // phone-mønsteret men uten "fyll inn"-grenen siden tom verdi er gyldig.
+      for (const g of guests) {
+        if (g.email && !isValidEmail(g.email)) {
+          this._focusGuestField(g.index, "email");
+          return this._showMsg(tx("booking.errEmailInvalid", { n: g.index, name: g.name }), "error");
+        }
+      }
+
       // Hver gjest må ha en gyldig effektiv periode (egen eller felles)
       for (const g of guests) {
         if (!g.from) {
@@ -787,9 +829,12 @@
 
       // Bygg gjeste-payload til ekte API. Hver gjest får checkIn/checkOut
       // basert på sin effektive periode (egen eller fellesperioden).
+      // E-post sendes med dersom kunden har fylt den ut; tom verdi → null
+      // så submit-booking.js slipper å gjette på falsy strings.
       const apiGuests = guests.map(g => ({
         name: g.name,
         phone: g.phone,
+        email: g.email || null,
         checkIn: g.from,
         checkOut: g.openEnded ? null : g.to
       }));
@@ -961,6 +1006,13 @@
   function isValidNoPhone(s) {
     const cleaned = normalizeNoPhone(s).replace(/^(\+47|0047|47)/, "");
     return /^[2-9]\d{7}$/.test(cleaned);
+  }
+
+  // Enkel e-post-regex — bevisst lett (ingen RFC 5322-compliance). Krever
+  // ett @-tegn, ingen whitespace, og minst ett punktum i domain-delen. Tom
+  // verdi håndteres av kalleren før denne kalles.
+  function isValidEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
   }
 
   // Eksponer for _buildGuestRow's live-validering — moduleskoperte funksjoner

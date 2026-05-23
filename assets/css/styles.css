@@ -1119,6 +1119,11 @@ input, select, button { font-family: inherit; }
   color: var(--c-muted);
   opacity: .8;
 }
+.price-summary .ps-discount {
+  font-style: italic;
+  color: #1D9E75;
+  font-size: 12px;
+}
 
 .field {
   display: flex;

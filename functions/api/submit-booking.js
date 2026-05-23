@@ -24,6 +24,7 @@ import {
   getAllRates,
   getRoomsByIdMap,
   getPropertiesByIdMap,
+  upsertPersonForBooking,
 } from "../_utils/sharepoint.js";
 
 import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
@@ -95,6 +96,11 @@ export async function onRequestPost(context) {
       // frontend validerer allerede, men vi stoler ikke på det.
       if (!g.phone || typeof g.phone !== "string" || !_isValidNoPhone(g.phone)) {
         return jsonResponse({ ok: false, error: "guest_invalid_phone" }, 400);
+      }
+      // E-post er valgfritt; tom/missing/null = OK. Settes — må passere regex'en.
+      // Server-side gjentakelse av frontend-regelen (defense in depth).
+      if (g.email != null && g.email !== "" && !_isValidEmail(g.email)) {
+        return jsonResponse({ ok: false, error: "guest_invalid_email" }, 400);
       }
       if (!g.checkIn || isNaN(new Date(g.checkIn).getTime())) {
         return jsonResponse({ ok: false, error: "guest_invalid_checkin" }, 400);
@@ -171,6 +177,9 @@ export async function onRequestPost(context) {
         // v3.14.1: telefon går i sin egen Mobile-kolonne (createBookingRow),
         // ikke lenger i Notes — admin-appen leser b.Mobile direkte.
         guestPhone: g.phone || null,
+        // E-post (valgfritt) går i Bookings.Email — samme mønster som Mobile.
+        // Admin-appen leser b.Email direkte i bookings.js og render.js.
+        guestEmail: g.email || null,
         companyName: tokenRow.fields.Firma || "",
         checkIn: g.checkIn,
         checkOut: g.checkOut || null,
@@ -186,6 +195,20 @@ export async function onRequestPost(context) {
       console.error("All booking rows failed:", result.failed);
       return jsonResponse({ ok: false, error: "save_failed" }, 500);
     }
+
+    // 8b. Persons-upsert per gjest (best-effort, fire-and-forget). Hver gjest
+    // som har navn matches case-insensitivt mot Persons.Title; finnes match
+    // PATCH'es Mobile/Email kun hvis tomme på Persons-raden. Uten match
+    // opprettes ny rad med Title + Mobile + Email. Feiler stille — bookingen
+    // er allerede committed, så Persons-write skal ikke kunne brekke flowen.
+    const personsPromise = Promise.allSettled(
+      guests.map(g => upsertPersonForBooking(env, {
+        name: g.name,
+        phone: g.phone || null,
+        email: g.email || null,
+        company: tokenRow.fields.Firma || null,
+      }))
+    );
 
     // 9. Send e-postvarsel til Frank + kvittering til kunden (parallelt,
     // fire-and-forget). v3.12.3: bruk context.waitUntil så Cloudflare holder
@@ -214,11 +237,14 @@ export async function onRequestPost(context) {
 
     if (context.waitUntil) {
       context.waitUntil(emailPromise);
+      // Persons-upsert blokkerer ikke responsen — Cloudflare holder worker'en
+      // levende mens Graph-kallene fullfører i bakgrunnen.
+      context.waitUntil(personsPromise);
     } else {
       // Local dev / eldre runtime uten waitUntil — fallback til kort vent
       // så vi ihvertfall venter på Resend før vi returnerer.
       await Promise.race([
-        emailPromise,
+        Promise.all([emailPromise, personsPromise]),
         new Promise(resolve => setTimeout(resolve, 5000)),
       ]);
     }
@@ -264,7 +290,9 @@ async function sendBookingNotification(env, data) {
       : `${g.checkIn} → open-ended`;
     // v3.14.0: telefon på samme linje som navn så admin kan ringe/SMSe direkte
     const phonePart = g.phone ? ` · ${g.phone}` : "";
-    return `  ${i + 1}. ${g.name}${phonePart} · ${period}`;
+    // E-post (valgfritt) — kommer med samme regel som telefon.
+    const emailPart = g.email ? ` · ${g.email}` : "";
+    return `  ${i + 1}. ${g.name}${phonePart}${emailPart} · ${period}`;
   }).join("\n");
 
   const subject = capacityWarning
@@ -511,4 +539,10 @@ function _isValidNoPhone(s) {
     .replace(/[\s\-()./]/g, "")
     .replace(/^(\+47|0047|47)/, "");
   return /^[2-9]\d{7}$/.test(cleaned);
+}
+
+// E-post-regex — speiler isValidEmail i booking.js (frontend). Bevisst lett,
+// ingen RFC 5322. Kalleren har allerede sjekket at strengen ikke er tom.
+function _isValidEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
 }
