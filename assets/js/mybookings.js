@@ -888,9 +888,10 @@
   // opp lista etterpå.
   async function cancelBookingFlow(booking, mybookingsRef) {
     if (!booking || !mybookingsRef) return;
-    if (!window.confirm(tx("cancel.confirm", { ref: booking.ref }))) return;
+    if (!window.confirm(tx("cancel.confirm", { ref: bookingDisplayLabel(booking) }))) return;
     const res = await window.Api.cancelBooking({
       token: mybookingsRef.token,
+      bookingId: booking.id,
       bookingRef: booking.ref,
     });
     if (!res || !res.ok) {
@@ -923,6 +924,7 @@
   async function _trySendDoorcode(booking, mybookingsRef, phoneOverride, guest) {
     const payload = {
       token: mybookingsRef.token,
+      bookingId: booking.id,
       bookingRef: booking.ref,
     };
     if (phoneOverride) payload.phoneOverride = phoneOverride;
@@ -1038,14 +1040,16 @@
     const dlg = ensureEndDialog();
     if (!dlg) {
       const ans = window.prompt(
-        tx("end.fallbackPrompt", { ref: booking.ref }),
+        tx("end.fallbackPrompt", { ref: bookingDisplayLabel(booking) }),
         new Date().toISOString().slice(0, 10)
       );
       if (ans) submitEnd(booking, ans, mybookingsRef);
       return;
     }
 
-    const refTxt     = booking.ref;
+    // v3.14.15: Fall tilbake til gjest + romnr hvis Title (ref) ikke er satt på
+    // bookingen — "Booking ," (uten innhold) så broken ut for kunden.
+    const refTxt     = bookingDisplayLabel(booking);
     const currentTxt = booking.checkOut
       ? (formatIso(booking.checkOut) || booking.checkOut)
       : tx("end.openEnded");
@@ -1136,6 +1140,7 @@
 
     const res = await window.Api.requestEnd({
       token: mybookingsRef.token,
+      bookingId: booking.id,
       bookingRef: booking.ref,
       requestedCheckOut,
     });
@@ -1163,7 +1168,7 @@
     if (!dlg) {
       const min = laterIso(booking.checkOut, 1);
       const ans = window.prompt(
-        tx("extend.fallbackPrompt", { ref: booking.ref, min }),
+        tx("extend.fallbackPrompt", { ref: bookingDisplayLabel(booking), min }),
         min
       );
       if (ans) submitExtension(booking, ans, mybookingsRef);
@@ -1171,7 +1176,8 @@
     }
 
     // Bygg sub-teksten med fete ref og current i et trygt template.
-    const refTxt     = booking.ref;
+    // v3.14.15: fall tilbake til gjest + romnr hvis Title (ref) ikke er satt.
+    const refTxt     = bookingDisplayLabel(booking);
     const currentTxt = formatIso(booking.checkOut) || booking.checkOut;
     const subRaw     = tx("extend.subPart", { ref: "{REF}", current: "{CUR}" });
     const subSafe    = subRaw
@@ -1257,6 +1263,17 @@
       .replace(/'/g, "&#39;");
   }
 
+  // v3.14.15: Display-label for dialog-tekster når booking-Title (ref) mangler.
+  // Foretrekker ref hvis satt; ellers "Rom <nr>" eller gjestens navn så
+  // modal-teksten ikke får et tomrom ("Booking ,").
+  function bookingDisplayLabel(b) {
+    if (!b) return "";
+    if (b.ref) return b.ref;
+    if (b.roomNumber) return `Rom ${b.roomNumber}`;
+    if (b.guest) return b.guest;
+    return "";
+  }
+
   async function submitExtension(booking, requestedCheckOut, mybookingsRef, dlg) {
     const msgEl = dlg ? dlg.querySelector(".extend-dlg-msg") : null;
     const submitBtn = dlg ? dlg.querySelector('[data-action="submit"]') : null;
@@ -1266,6 +1283,7 @@
 
     const res = await window.Api.requestExtension({
       token: mybookingsRef.token,
+      bookingId: booking.id,
       bookingRef: booking.ref,
       requestedCheckOut,
     });

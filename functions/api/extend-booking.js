@@ -30,12 +30,15 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { token, bookingRef, requestedCheckOut } = body || {};
+    const { token, bookingId, bookingRef, requestedCheckOut } = body || {};
 
     if (!token || typeof token !== "string") {
       return jsonResponse({ ok: false, error: "missing_token" }, 400);
     }
-    if (!bookingRef || typeof bookingRef !== "string") {
+    // v3.14.15: bookingId primær, bookingRef fallback. Se end-booking.js for kontekst.
+    const hasId = bookingId && typeof bookingId === "string";
+    const hasRef = bookingRef && typeof bookingRef === "string";
+    if (!hasId && !hasRef) {
       return jsonResponse({ ok: false, error: "missing_ref" }, 400);
     }
     if (!requestedCheckOut || isNaN(new Date(requestedCheckOut).getTime())) {
@@ -53,15 +56,22 @@ export async function onRequestPost(context) {
     }
 
     // Finn alle bookinger som tilhører kundens firma og let opp den med
-    // matching ref. Reuser eksisterende helper så vi slipper egen liste-spørring.
+    // matching id/ref. Reuser eksisterende helper så vi slipper egen liste-spørring.
     const items = await getBookingsForCompany(env, company);
-    const match = items.find(it => (it.fields?.Title || "").trim() === bookingRef.trim());
+    const match = items.find(it => {
+      if (hasId && String(it.id) === String(bookingId).trim()) return true;
+      if (hasRef && (it.fields?.Title || "").trim() === bookingRef.trim()) return true;
+      return false;
+    });
 
     if (!match) {
       return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
     }
 
     const f = match.fields || {};
+    const refForDisplay = (f.Title || "").trim() ||
+      [f.Person_Name, f.Property_Name].filter(Boolean).join(" – ") ||
+      `id:${match.id}`;
     const currentCheckOut = f.Check_Out || null;
 
     // Sanity: ny utflytting må være etter current (hvis current finnes)
@@ -109,7 +119,7 @@ export async function onRequestPost(context) {
 
     // Send e-post til admin som backup-varsel uavhengig av PATCH-resultatet.
     const emailResult = await sendExtensionRequest(env, {
-      bookingRef,
+      bookingRef: refForDisplay,
       tokenRow,
       booking: f,
       requestedCheckOut,

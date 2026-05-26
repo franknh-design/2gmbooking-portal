@@ -20,12 +20,15 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { token, bookingRef } = body || {};
+    const { token, bookingId, bookingRef } = body || {};
 
     if (!token || typeof token !== "string") {
       return jsonResponse({ ok: false, error: "missing_token" }, 400);
     }
-    if (!bookingRef || typeof bookingRef !== "string") {
+    // v3.14.15: bookingId primær, bookingRef fallback. Se end-booking.js for kontekst.
+    const hasId = bookingId && typeof bookingId === "string";
+    const hasRef = bookingRef && typeof bookingRef === "string";
+    if (!hasId && !hasRef) {
       return jsonResponse({ ok: false, error: "missing_ref" }, 400);
     }
 
@@ -40,12 +43,19 @@ export async function onRequestPost(context) {
     }
 
     const items = await getBookingsForCompany(env, company);
-    const match = items.find(it => (it.fields?.Title || "").trim() === bookingRef.trim());
+    const match = items.find(it => {
+      if (hasId && String(it.id) === String(bookingId).trim()) return true;
+      if (hasRef && (it.fields?.Title || "").trim() === bookingRef.trim()) return true;
+      return false;
+    });
     if (!match) {
       return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
     }
 
     const f = match.fields || {};
+    const refForDisplay = (f.Title || "").trim() ||
+      [f.Person_Name, f.Property_Name].filter(Boolean).join(" – ") ||
+      `id:${match.id}`;
 
     if (f.Status === "Cancelled") {
       // Allerede kansellert — idempotent, ikke en feil.
@@ -71,7 +81,7 @@ export async function onRequestPost(context) {
 
     // Bekreftelse til kunden + varsel til admin. sendEmail feiler stille,
     // så en e-postfeil blokkerer ikke selve kanselleringen.
-    await sendCancelEmails(env, { bookingRef, tokenRow, booking: f });
+    await sendCancelEmails(env, { bookingRef: refForDisplay, tokenRow, booking: f });
 
     return jsonResponse({ ok: true });
 

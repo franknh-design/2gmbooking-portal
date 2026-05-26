@@ -29,6 +29,7 @@
 import {
   findToken,
   findBookingByRefForCompany,
+  findBookingByIdForCompany,
   findPersonPhoneByName,
   getRoomsByIdMap,
   getPropertiesFullByIdMap,
@@ -70,12 +71,16 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { token, bookingRef, phoneOverride } = body || {};
+    const { token, bookingId, bookingRef, phoneOverride } = body || {};
 
     if (!token || typeof token !== "string") {
       return jsonResponse({ ok: false, error: "missing_token" }, 400);
     }
-    if (!bookingRef || typeof bookingRef !== "string") {
+    // v3.14.15: bookingId primær, bookingRef fallback. Bookinger uten Title
+    // (SharePoint Title-feltet) feilet før på klient-side guard.
+    const hasId = bookingId && typeof bookingId === "string";
+    const hasRef = bookingRef && typeof bookingRef === "string";
+    if (!hasId && !hasRef) {
       return jsonResponse({ ok: false, error: "missing_bookingRef" }, 400);
     }
     // v3.10.17: Hvis kunden taster inn nummer manuelt (når gjesten ikke er
@@ -100,7 +105,15 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "token_no_company" }, 400);
     }
 
-    const booking = await findBookingByRefForCompany(env, bookingRef, company);
+    // v3.14.15: foretrekk id-oppslag (alltid satt); fall tilbake til Title hvis
+    // bare bookingRef sendt (legacy klienter).
+    let booking = null;
+    if (hasId) {
+      booking = await findBookingByIdForCompany(env, bookingId, company);
+    }
+    if (!booking && hasRef) {
+      booking = await findBookingByRefForCompany(env, bookingRef, company);
+    }
     if (!booking) {
       return jsonResponse({ ok: false, error: "not_your_booking" }, 404);
     }

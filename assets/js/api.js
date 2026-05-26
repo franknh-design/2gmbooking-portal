@@ -266,15 +266,18 @@
    * sender kun e-post til admin som tar avgjørelsen manuelt.
    * Returnerer { ok: true, mode } eller { ok: false, error }.
    */
-  async function requestExtension({ token, bookingRef, requestedCheckOut }) {
-    if (!token || !bookingRef || !requestedCheckOut) {
+  // v3.14.15: Aksepterer bookingId (SharePoint item.id) som primær identifier
+  // og fall-tilbake til bookingRef (Title). Bookinger uten Title i SharePoint
+  // brakk tidligere på klient-side guard "missing_arguments" siden ref var "".
+  async function requestExtension({ token, bookingId, bookingRef, requestedCheckOut }) {
+    if (!token || (!bookingId && !bookingRef) || !requestedCheckOut) {
       return { ok: false, error: "missing_arguments" };
     }
     try {
       const response = await fetch(`${API_BASE}/extend-booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, bookingRef, requestedCheckOut })
+        body: JSON.stringify({ token, bookingId, bookingRef, requestedCheckOut })
       });
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
       if (!response.ok) {
@@ -318,15 +321,16 @@
   // end-booking — kunden ber admin avslutte / forkorte oppholdet
   // --------------------------------------------------------------------------
 
-  async function requestEnd({ token, bookingRef, requestedCheckOut }) {
-    if (!token || !bookingRef || !requestedCheckOut) {
+  // v3.14.15: bookingId (item.id) primær, bookingRef fallback. Se requestExtension.
+  async function requestEnd({ token, bookingId, bookingRef, requestedCheckOut }) {
+    if (!token || (!bookingId && !bookingRef) || !requestedCheckOut) {
       return { ok: false, error: "missing_arguments" };
     }
     try {
       const response = await fetch(`${API_BASE}/end-booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, bookingRef, requestedCheckOut })
+        body: JSON.stringify({ token, bookingId, bookingRef, requestedCheckOut })
       });
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
       if (!response.ok) {
@@ -346,15 +350,16 @@
   // cancel-booking — kunde kansellerer en ikke-startet booking
   // --------------------------------------------------------------------------
 
-  async function cancelBooking({ token, bookingRef }) {
-    if (!token || !bookingRef) {
+  // v3.14.15: bookingId (item.id) primær, bookingRef fallback. Se requestExtension.
+  async function cancelBooking({ token, bookingId, bookingRef }) {
+    if (!token || (!bookingId && !bookingRef)) {
       return { ok: false, error: "missing_arguments" };
     }
     try {
       const response = await fetch(`${API_BASE}/cancel-booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, bookingRef })
+        body: JSON.stringify({ token, bookingId, bookingRef })
       });
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));
       if (!response.ok) {
@@ -404,10 +409,13 @@
   // finnes der med et registrert nummer.
   // v3.10.25: phoneOverride lar kalleren bypasse Persons-oppslaget og bruke
   // et eksplisitt nummer (f.eks. fra en redigerbar input i banner-modalen).
-  async function sendDoorcodeSms({ token, bookingRef, phoneOverride }) {
-    if (!token || !bookingRef) return { ok: false, error: "missing_arguments" };
+  // v3.14.15: bookingId (item.id) primær, bookingRef fallback. Se requestExtension.
+  async function sendDoorcodeSms({ token, bookingId, bookingRef, phoneOverride }) {
+    if (!token || (!bookingId && !bookingRef)) return { ok: false, error: "missing_arguments" };
     try {
-      const payload = { token, bookingRef };
+      const payload = { token };
+      if (bookingId) payload.bookingId = bookingId;
+      if (bookingRef) payload.bookingRef = bookingRef;
       if (phoneOverride) payload.phoneOverride = phoneOverride;
       const response = await fetch(`${API_BASE}/send-doorcode`, {
         method: "POST",

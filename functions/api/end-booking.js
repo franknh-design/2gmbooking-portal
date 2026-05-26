@@ -24,12 +24,17 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { token, bookingRef, requestedCheckOut } = body || {};
+    const { token, bookingId, bookingRef, requestedCheckOut } = body || {};
 
     if (!token || typeof token !== "string") {
       return jsonResponse({ ok: false, error: "missing_token" }, 400);
     }
-    if (!bookingRef || typeof bookingRef !== "string") {
+    // v3.14.15: bookingId (SharePoint item.id) er primær identifier. bookingRef
+    // (Title) beholdes som fallback for bakoverkompat og for bookinger der
+    // admin-appen ennå ikke har satt Title.
+    const hasId = bookingId && typeof bookingId === "string";
+    const hasRef = bookingRef && typeof bookingRef === "string";
+    if (!hasId && !hasRef) {
       return jsonResponse({ ok: false, error: "missing_ref" }, 400);
     }
     if (!requestedCheckOut || isNaN(new Date(requestedCheckOut).getTime())) {
@@ -55,12 +60,21 @@ export async function onRequestPost(context) {
     }
 
     const items = await getBookingsForCompany(env, company);
-    const match = items.find(it => (it.fields?.Title || "").trim() === bookingRef.trim());
+    const match = items.find(it => {
+      if (hasId && String(it.id) === String(bookingId).trim()) return true;
+      if (hasRef && (it.fields?.Title || "").trim() === bookingRef.trim()) return true;
+      return false;
+    });
     if (!match) {
       return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
     }
 
     const f = match.fields || {};
+    // v3.14.15: Bruk faktisk Title fra match'en til alle utgående meldinger;
+    // hvis Title er tom, bruk gjestens navn + rom som identifier.
+    const refForDisplay = (f.Title || "").trim() ||
+      [f.Person_Name, f.Property_Name].filter(Boolean).join(" – ") ||
+      `id:${match.id}`;
 
     // PATCH: marker som Pending_Confirmation, append notat med ønsket dato.
     const noteLine = `[Avslutning forespurt ${todayISO}: ny utflytting ${reqISO}]`;
@@ -77,7 +91,7 @@ export async function onRequestPost(context) {
     }
 
     const emailResult = await sendEndRequest(env, {
-      bookingRef,
+      bookingRef: refForDisplay,
       tokenRow,
       booking: f,
       requestedCheckOut: reqISO,
