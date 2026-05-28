@@ -116,9 +116,21 @@
     border: 0; border-radius: 8px;
     cursor: pointer;
     transition: background .12s;
+    position: relative;
   }
   button.primary:hover { background: var(--primary-dark); }
   button.primary:disabled { opacity: .5; cursor: wait; }
+  button.primary.is-loading::after {
+    content: "";
+    position: absolute;
+    right: 14px; top: 50%;
+    width: 14px; height: 14px;
+    margin-top: -7px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
   button.secondary {
     width: 100%;
     margin-top: 8px;
@@ -190,9 +202,8 @@
   </header>
 
   <div class="lang-switcher" id="langSwitcher">
-    <button data-lang="nb">Norsk</button>
     <button data-lang="en" class="active">English</button>
-    <button data-lang="lv">Latviešu</button>
+    <button data-lang="nb">Norsk</button>
   </div>
 
   <!-- STAGE 1: Enter room number -->
@@ -320,50 +331,17 @@ const I18N = {
       tuya_failed: "Could not generate a new PIN on the lock. Contact us.",
     },
   },
-  lv: {
-    title: "Pazaudējāt durvju PIN?",
-    subtitle: "Saņemiet jaunu kodu SMS 30 sekundēs",
-    "stage1-title": "Ievadiet sava numura istabu",
-    "room-label": "Istabas numurs",
-    "cost-notice": "Jauns PIN maksā <strong>5 NOK</strong>, kas tiek pievienots istabai. Jūsu tālruņa numurs tiks reģistrēts, lai novērstu ļaunprātīgu izmantošanu.",
-    "btn-request": "Sūtīt kodu SMS",
-    "stage2-title": "Ievadiet kodu no SMS",
-    "stage2-hint": "Mēs nosūtījām 3 burtu kodu uz <strong id=\"phoneMaskedDisplay\"></strong>",
-    "odp-label": "3 burtu kods",
-    "btn-verify": "Saņemt jaunu PIN",
-    "btn-restart": "← Sākt no jauna",
-    success: "✓ Jauns PIN ģenerēts un nosūtīts SMS",
-    "pin-label": "Jūsu jaunais durvju kods",
-    "pin-room": "Istaba <span id=\"roomLabel\">—</span>",
-    "pin-charge-note": "5 NOK ir pievienots jūsu istabas rēķinam.",
-    "btn-done": "Pabeigt",
-    footer: "Vajadzīga palīdzība? Sazinieties ar mums: <strong>+47 99 10 10 41</strong>",
-    errors: {
-      missing_room: "Lūdzu, ievadiet istabas numuru.",
-      no_booking: "Šajā istabā nav atrasta aktīva rezervācija. Pārbaudiet numuru vai sazinieties ar mums.",
-      no_mobile: "Rezervācijā nav reģistrēts tālruņa numurs. Sazinieties ar mums, lai to reģistrētu.",
-      rate_limited: "Pārāk daudz pieprasījumu šai istabai. Mēģiniet vēlreiz pēc {n} minūtēm vai sazinieties ar mums.",
-      sms_failed: "Šobrīd nevarēja nosūtīt SMS. Mēģiniet vēlāk vai sazinieties ar mums.",
-      internal: "Kaut kas nogāja greizi. Mēģiniet vēlreiz vai sazinieties ar mums.",
-      missing_input: "Lūdzu, ievadiet kodu no SMS.",
-      session_expired: "Kods ir beidzies (derīgs 5 minūtes). Lūdzu, sāciet no jauna.",
-      invalid_odp: "Nepareizs kods. Atlikuši {n} mēģinājumi.",
-      no_attempts_left: "Pārāk daudz nepareizu mēģinājumu. Lūdzu, sāciet no jauna.",
-      tuya_failed: "Nevarēja ģenerēt jaunu PIN slēdzenē. Sazinieties ar mums.",
-    },
-  },
 };
 
+// v1.2: Default English uten browser-deteksjon — A4-instruksjonene er
+// engelsk-only og gjest forventer dermed engelsk-startside. Norsk kan
+// velges via språk-knapp; valget huskes i localStorage på samme device.
 let currentLang = (function() {
-  // Try URL param ?lang=, then localStorage, then browser, then 'en'
   const params = new URLSearchParams(location.search);
   const urlLang = params.get("lang");
   if (urlLang && I18N[urlLang]) return urlLang;
   const stored = localStorage.getItem("portal-lang");
   if (stored && I18N[stored]) return stored;
-  const nav = (navigator.language || "en").toLowerCase();
-  if (nav.startsWith("nb") || nav.startsWith("no")) return "nb";
-  if (nav.startsWith("lv")) return "lv";
   return "en";
 })();
 
@@ -447,6 +425,9 @@ async function callApi(path, body) {
   }
 }
 
+// v1.2: Bug-fiks — innerHTML-bytte i handle*-funksjonene fjernet ID-en på
+// span'en så setLang ikke fant elementet etterpå. Bruk separat spinner-div
+// utenfor span'en, behold ID intakt.
 async function handleRequest() {
   const roomNumber = $("roomInput").value.trim();
   clearAlert(1);
@@ -456,8 +437,7 @@ async function handleRequest() {
   }
   const btn = $("btnRequest");
   btn.disabled = true;
-  const spinner = `<span class="loading"></span>`;
-  btn.innerHTML = `<span>${I18N[currentLang]["btn-request"]}</span>${spinner}`;
+  btn.classList.add("is-loading");
   try {
     const data = await callApi("request", { roomNumber });
     if (!data.ok) {
@@ -474,7 +454,7 @@ async function handleRequest() {
     setTimeout(() => $("odpInput").focus(), 100);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<span>${I18N[currentLang]["btn-request"]}</span>`;
+    btn.classList.remove("is-loading");
   }
 }
 
@@ -487,8 +467,7 @@ async function handleVerify() {
   }
   const btn = $("btnVerify");
   btn.disabled = true;
-  const spinner = `<span class="loading"></span>`;
-  btn.innerHTML = `<span>${I18N[currentLang]["btn-verify"]}</span>${spinner}`;
+  btn.classList.add("is-loading");
   try {
     const data = await callApi("verify", { sessionId, odpCode: odp });
     if (!data.ok) {
@@ -506,7 +485,7 @@ async function handleVerify() {
     showStage(3);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<span>${I18N[currentLang]["btn-verify"]}</span>`;
+    btn.classList.remove("is-loading");
   }
 }
 
