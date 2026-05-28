@@ -1380,9 +1380,13 @@ export async function findRoomByNumber(env, roomNumber) {
 export async function findActiveBookingByRoomId(env, roomId) {
   const target = String(roomId || "").trim();
   if (!target) return null;
+  // v1.10: HONOR_NONINDEXED-prefer trengs siden Status-feltet ikke er indeksert
+  // i SharePoint som default. Bookings-lista vår er liten nok til at dette er
+  // trygt — samme mønster brukes andre steder i denne fila for Status-filtre.
   const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
     select: SELECT_BOOKING,
     filter: FILTER_ACTIVE_OR_UPCOMING,
+    prefer: HONOR_NONINDEXED,
   });
   const matches = items.filter(it => {
     const f = it.fields || {};
