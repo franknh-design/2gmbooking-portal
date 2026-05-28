@@ -33,6 +33,9 @@ const LIST_IDS = {
   PIN_ATTEMPTS: "9808abe5-8f13-4305-8840-e84c5721953b",
   // v1.8 (QR-vaskeverifisering): WashOverrides-listen.
   WASH_OVERRIDES: "626a9546-60b2-4203-91fe-ca28a1a77e94",
+  // v1.9 (Reset-PIN-flyt): To nye lister for selvbetjent dørkode-reset.
+  BOOKING_CHARGES: "0687dba1-ff7d-4acc-b8d4-b2abd56eec7e",
+  PIN_RESET_LOG:   "3974007a-ebf8-4073-95f5-fec3ead643da",
 };
 
 // v1.7: PIN-rate-limit-konfigurasjon. 5 mislykkede forsøk per token utløser
@@ -1339,5 +1342,128 @@ export async function createWashOverride(env, { bookingId, action, newDate, sour
   return await graphRequest(env, path, {
     method: 'POST',
     body: JSON.stringify({ fields }),
+  });
+}
+
+// ============================================================================
+// Reset-PIN-flyt — v1.9 (2026-05-28)
+// ============================================================================
+//
+// Anonymt portal-endepunkt /reset-pin lar gjester få ny dørkode på SMS ved å
+// skrive inn romnr — krever at gjestens telefonnr allerede er registrert på
+// bookingen. Flyt: request → ODP via SMS → verify → ny PIN via Tuya + SMS.
+
+const SELECT_ROOM_FOR_RESET = "Title,Door_Code,Tuya_Device_ID,Door_Code_Generated_At,PropertyLookupId,Active";
+
+/**
+ * Finn en Room-rad ved romnummer (Room.Title). Romnumre er unike på tvers av
+ * eiendommer (Frank bekreftet) så ingen property-disambiguering trengs.
+ * Returnerer item-rad ({id, fields}) eller null.
+ */
+export async function findRoomByNumber(env, roomNumber) {
+  const target = String(roomNumber || "").trim();
+  if (!target) return null;
+  const items = await fetchAllItems(env, LIST_IDS.ROOMS, { select: SELECT_ROOM_FOR_RESET });
+  return items.find(it => {
+    const f = it.fields || {};
+    if (f.Active === false) return false;
+    return String(f.Title || "").trim() === target;
+  }) || null;
+}
+
+/**
+ * Finn Active/Upcoming-booking på et gitt rom. Hvis flere finnes velges:
+ *   1. Active (tidligst Check_In)
+ *   2. Ellers Upcoming (tidligst Check_In)
+ * Returnerer item-rad eller null.
+ */
+export async function findActiveBookingByRoomId(env, roomId) {
+  const target = String(roomId || "").trim();
+  if (!target) return null;
+  const items = await fetchAllItems(env, LIST_IDS.BOOKINGS, {
+    select: SELECT_BOOKING,
+    filter: FILTER_ACTIVE_OR_UPCOMING,
+  });
+  const matches = items.filter(it => {
+    const f = it.fields || {};
+    return String(f.RoomLookupId || "") === target;
+  });
+  if (!matches.length) return null;
+  // Active først, så Upcoming. Innenfor hver: tidligst Check_In.
+  matches.sort((a, b) => {
+    const sa = (a.fields.Status === "Active") ? 0 : 1;
+    const sb = (b.fields.Status === "Active") ? 0 : 1;
+    if (sa !== sb) return sa - sb;
+    const ca = String(a.fields.Check_In || "");
+    const cb = String(b.fields.Check_In || "");
+    return ca.localeCompare(cb);
+  });
+  return matches[0];
+}
+
+/**
+ * PATCH-helper for Rooms. Brukes til å oppdatere Door_Code +
+ * Door_Code_Generated_At etter ny Tuya-PIN.
+ */
+export async function updateRoomFields(env, roomId, fields) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.ROOMS}/items/${roomId}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
+  });
+}
+
+/**
+ * Opprett en BookingCharges-rad. Brukes for 5 kr-gebyret ved vellykket reset.
+ * `chargeType` skal være en av Choice-verdiene (PIN_Reset, Cleaning_Extra, etc.).
+ */
+export async function createBookingCharge(env, { bookingId, chargeType, amount, description, title }) {
+  const fields = {
+    Title: title || `${chargeType} — ${new Date().toISOString().slice(0,10)}`,
+    BookingLookupId: bookingId ? String(bookingId) : undefined,
+    Charge_Type: chargeType,
+    Amount: amount,
+  };
+  if (description) fields.Description = description;
+  // Strip undefined (SP gir 400 hvis vi sender det)
+  for (const k of Object.keys(fields)) {
+    if (fields[k] === undefined) delete fields[k];
+  }
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKING_CHARGES}/items`;
+  const result = await graphRequest(env, path, {
+    method: "POST",
+    body: JSON.stringify({ fields }),
+  });
+  return result;
+}
+
+/**
+ * Opprett en PinResetLog-rad. Brukes ved alle reset-forsøk (success + failure)
+ * for audit-trail. Returnerer item-IDen så vi kan oppdatere status senere
+ * (f.eks. ODP_Verified=true ved success).
+ */
+export async function createPinResetLog(env, fields) {
+  const cleanFields = { ...fields };
+  // Strip undefined
+  for (const k of Object.keys(cleanFields)) {
+    if (cleanFields[k] === undefined) delete cleanFields[k];
+  }
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PIN_RESET_LOG}/items`;
+  const result = await graphRequest(env, path, {
+    method: "POST",
+    body: JSON.stringify({ fields: cleanFields }),
+  });
+  return result;
+}
+
+/**
+ * PATCH-helper for PinResetLog. Brukes til å oppdatere Result + ODP_Verified +
+ * Charged_Amount når verify-flyten fullføres.
+ */
+export async function updatePinResetLog(env, itemId, fields) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PIN_RESET_LOG}/items/${itemId}/fields`;
+  await graphRequest(env, path, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
   });
 }

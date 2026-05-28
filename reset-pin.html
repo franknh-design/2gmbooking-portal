@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<!-- 2GM Booking Portal — Reset PIN page v1.0 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Lost door PIN? — 2GM Eiendom</title>
+<style>
+  :root {
+    --primary: #639922;
+    --primary-dark: #557e1d;
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2d2d2a;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+    --error-bg: #fef2f2;
+    --error-border: #fecaca;
+    --error-text: #991b1b;
+    --success-bg: #ecfdf5;
+    --success-border: #bbf7d0;
+    --warn-bg: #fff8e1;
+    --warn-border: #fde68a;
+    --warn-text: #854f0b;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    padding: 16px 0 24px;
+    border-bottom: 2px solid var(--primary);
+    margin-bottom: 24px;
+  }
+  header .brand { font-size: 14px; font-weight: 700; color: var(--primary); letter-spacing: 1.5px; }
+  header h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 700; }
+  header .sub { font-size: 14px; color: var(--text-secondary); }
+  .lang-switcher {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .lang-switcher button {
+    background: transparent; border: 1px solid var(--border);
+    padding: 4px 10px; margin: 0 3px;
+    font-size: 13px; border-radius: 4px; cursor: pointer;
+    color: var(--text-secondary);
+    transition: all .12s;
+  }
+  .lang-switcher button.active {
+    background: var(--primary); color: #fff; border-color: var(--primary);
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .step-num {
+    display: inline-block; width: 28px; height: 28px; line-height: 28px;
+    background: var(--primary); color: #fff;
+    border-radius: 50%; text-align: center;
+    font-weight: 700; margin-right: 8px;
+  }
+  .step-title { font-size: 16px; font-weight: 600; display: inline; }
+  label.field {
+    display: block; margin-top: 14px;
+  }
+  label.field .label-text {
+    display: block; font-size: 14px; font-weight: 500; color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="tel"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 17px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    background: #fafaf8;
+    -webkit-appearance: none;
+  }
+  input[type="text"]:focus, input[type="tel"]:focus {
+    outline: none; border-color: var(--primary);
+    background: #fff;
+  }
+  .odp-input {
+    text-align: center !important;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    font-size: 28px !important;
+    font-weight: 700;
+    font-family: "Courier New", monospace !important;
+  }
+  button.primary {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--primary); color: #fff;
+    border: 0; border-radius: 8px;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  button.primary:hover { background: var(--primary-dark); }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  button.secondary {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    background: transparent; color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer;
+  }
+  .alert {
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-size: 14px;
+  }
+  .alert-error { background: var(--error-bg); border: 1px solid var(--error-border); color: var(--error-text); }
+  .alert-warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); }
+  .alert-success { background: var(--success-bg); border: 1px solid var(--success-border); color: #064e3b; }
+  .info {
+    font-size: 13px; color: var(--text-secondary);
+    background: #fafaf8; padding: 10px 12px;
+    border-radius: 6px; border-left: 3px solid var(--primary);
+    margin-top: 14px;
+  }
+  .info strong { color: var(--text); }
+  .pin-display {
+    text-align: center; margin: 18px 0;
+    padding: 22px 16px;
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+  }
+  .pin-display .label-text { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+  .pin-display .pin-value {
+    font-family: "Courier New", monospace;
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    color: var(--primary);
+    margin: 6px 0;
+  }
+  .pin-display .room-label { font-size: 14px; color: var(--text-secondary); }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 24px;
+  }
+  .hidden { display: none !important; }
+  .loading {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">2GM EIENDOM AS</div>
+    <h1 id="t-title">Lost your door PIN?</h1>
+    <div class="sub" id="t-subtitle">Get a new code on SMS in 30 seconds</div>
+  </header>
+
+  <div class="lang-switcher" id="langSwitcher">
+    <button data-lang="nb">Norsk</button>
+    <button data-lang="en" class="active">English</button>
+    <button data-lang="lv">Latviešu</button>
+  </div>
+
+  <!-- STAGE 1: Enter room number -->
+  <div id="stage1" class="card">
+    <div><span class="step-num">1</span><span class="step-title" id="t-stage1-title">Enter your room number</span></div>
+    <label class="field">
+      <span class="label-text" id="t-room-label">Room number</span>
+      <input type="text" id="roomInput" inputmode="numeric" autocomplete="off" autocapitalize="off" maxlength="10" placeholder="e.g. 102">
+    </label>
+    <div class="info" id="t-cost-notice">
+      A new PIN costs <strong>5 NOK</strong> charged to the room. Your phone number will be logged to prevent misuse.
+    </div>
+    <button class="primary" id="btnRequest" type="button">
+      <span id="t-btn-request">Send code by SMS</span>
+    </button>
+    <div id="stage1Alert"></div>
+  </div>
+
+  <!-- STAGE 2: Enter ODP -->
+  <div id="stage2" class="card hidden">
+    <div><span class="step-num">2</span><span class="step-title" id="t-stage2-title">Enter the code from SMS</span></div>
+    <p style="margin: 12px 0 4px; font-size: 14px; color: var(--text-secondary);" id="t-stage2-hint">
+      We sent a 3-letter code to <strong id="phoneMaskedDisplay"></strong>
+    </p>
+    <label class="field">
+      <span class="label-text" id="t-odp-label">3-letter code</span>
+      <input type="text" id="odpInput" class="odp-input" autocomplete="off" autocapitalize="characters" maxlength="3" placeholder="ABC">
+    </label>
+    <button class="primary" id="btnVerify" type="button">
+      <span id="t-btn-verify">Get new PIN</span>
+    </button>
+    <button class="secondary" id="btnRestart" type="button">
+      <span id="t-btn-restart">← Start over</span>
+    </button>
+    <div id="stage2Alert"></div>
+  </div>
+
+  <!-- STAGE 3: Show new PIN -->
+  <div id="stage3" class="card hidden">
+    <div class="alert alert-success" id="t-success">
+      ✓ New PIN generated and sent by SMS
+    </div>
+    <div class="pin-display">
+      <div class="label-text" id="t-pin-label">Your new door code</div>
+      <div class="pin-value" id="newPinValue">—</div>
+      <div class="room-label" id="t-pin-room">Room <span id="roomLabel">—</span></div>
+    </div>
+    <p style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;" id="t-pin-charge-note">
+      5 NOK has been added to your room bill.
+    </p>
+    <button class="secondary" id="btnDone" type="button">
+      <span id="t-btn-done">Done</span>
+    </button>
+  </div>
+
+  <footer>
+    <span id="t-footer">If you have trouble, contact us: <strong>+47 99 10 10 41</strong></span>
+  </footer>
+</div>
+
+<script>
+// =================== i18n ===================
+const I18N = {
+  nb: {
+    title: "Mistet dørkoden din?",
+    subtitle: "Få ny kode på SMS på 30 sekunder",
+    "stage1-title": "Skriv inn romnummeret ditt",
+    "room-label": "Romnummer",
+    "cost-notice": "Ny dørkode koster <strong>5 kr</strong> som belastes rommet. Telefonnummeret ditt blir logget for å forhindre misbruk.",
+    "btn-request": "Send kode på SMS",
+    "stage2-title": "Skriv inn koden fra SMS",
+    "stage2-hint": "Vi sendte en 3-bokstavers kode til <strong id=\"phoneMaskedDisplay\"></strong>",
+    "odp-label": "3-bokstavers kode",
+    "btn-verify": "Få ny PIN",
+    "btn-restart": "← Start på nytt",
+    success: "✓ Ny PIN generert og sendt på SMS",
+    "pin-label": "Din nye dørkode",
+    "pin-room": "Rom <span id=\"roomLabel\">—</span>",
+    "pin-charge-note": "5 kr er lagt til på rommets regning.",
+    "btn-done": "Ferdig",
+    footer: "Trenger du hjelp? Kontakt oss på <strong>+47 99 10 10 41</strong>",
+    errors: {
+      missing_room: "Skriv inn romnummeret ditt.",
+      no_booking: "Fant ingen aktiv booking på dette rommet. Sjekk at romnummeret er riktig, eller kontakt oss.",
+      no_mobile: "Bookingen har ikke registrert telefonnummer. Kontakt oss for å registrere det.",
+      rate_limited: "For mange forsøk på dette rommet. Prøv igjen om {n} minutter eller kontakt oss.",
+      sms_failed: "Kunne ikke sende SMS akkurat nå. Prøv igjen om litt eller kontakt oss.",
+      internal: "Noe gikk galt. Prøv igjen om litt eller kontakt oss.",
+      missing_input: "Skriv inn koden fra SMS-en.",
+      session_expired: "Koden er utløpt (gjelder 5 min). Start på nytt.",
+      invalid_odp: "Feil kode. {n} forsøk igjen.",
+      no_attempts_left: "For mange feil. Start på nytt.",
+      tuya_failed: "Kunne ikke generere ny PIN på låsen. Kontakt oss.",
+    },
+  },
+  en: {
+    title: "Lost your door PIN?",
+    subtitle: "Get a new code on SMS in 30 seconds",
+    "stage1-title": "Enter your room number",
+    "room-label": "Room number",
+    "cost-notice": "A new PIN costs <strong>5 NOK</strong> charged to the room. Your phone number will be logged to prevent misuse.",
+    "btn-request": "Send code by SMS",
+    "stage2-title": "Enter the code from SMS",
+    "stage2-hint": "We sent a 3-letter code to <strong id=\"phoneMaskedDisplay\"></strong>",
+    "odp-label": "3-letter code",
+    "btn-verify": "Get new PIN",
+    "btn-restart": "← Start over",
+    success: "✓ New PIN generated and sent by SMS",
+    "pin-label": "Your new door code",
+    "pin-room": "Room <span id=\"roomLabel\">—</span>",
+    "pin-charge-note": "5 NOK has been added to your room bill.",
+    "btn-done": "Done",
+    footer: "If you have trouble, contact us: <strong>+47 99 10 10 41</strong>",
+    errors: {
+      missing_room: "Please enter your room number.",
+      no_booking: "No active booking found on this room. Check the room number or contact us.",
+      no_mobile: "No phone number registered on the booking. Contact us to register one.",
+      rate_limited: "Too many requests for this room. Try again in {n} minutes or contact us.",
+      sms_failed: "Could not send SMS right now. Try again shortly or contact us.",
+      internal: "Something went wrong. Try again or contact us.",
+      missing_input: "Please enter the code from the SMS.",
+      session_expired: "The code expired (5 min validity). Please start over.",
+      invalid_odp: "Wrong code. {n} attempts left.",
+      no_attempts_left: "Too many wrong attempts. Please start over.",
+      tuya_failed: "Could not generate a new PIN on the lock. Contact us.",
+    },
+  },
+  lv: {
+    title: "Pazaudējāt durvju PIN?",
+    subtitle: "Saņemiet jaunu kodu SMS 30 sekundēs",
+    "stage1-title": "Ievadiet sava numura istabu",
+    "room-label": "Istabas numurs",
+    "cost-notice": "Jauns PIN maksā <strong>5 NOK</strong>, kas tiek pievienots istabai. Jūsu tālruņa numurs tiks reģistrēts, lai novērstu ļaunprātīgu izmantošanu.",
+    "btn-request": "Sūtīt kodu SMS",
+    "stage2-title": "Ievadiet kodu no SMS",
+    "stage2-hint": "Mēs nosūtījām 3 burtu kodu uz <strong id=\"phoneMaskedDisplay\"></strong>",
+    "odp-label": "3 burtu kods",
+    "btn-verify": "Saņemt jaunu PIN",
+    "btn-restart": "← Sākt no jauna",
+    success: "✓ Jauns PIN ģenerēts un nosūtīts SMS",
+    "pin-label": "Jūsu jaunais durvju kods",
+    "pin-room": "Istaba <span id=\"roomLabel\">—</span>",
+    "pin-charge-note": "5 NOK ir pievienots jūsu istabas rēķinam.",
+    "btn-done": "Pabeigt",
+    footer: "Vajadzīga palīdzība? Sazinieties ar mums: <strong>+47 99 10 10 41</strong>",
+    errors: {
+      missing_room: "Lūdzu, ievadiet istabas numuru.",
+      no_booking: "Šajā istabā nav atrasta aktīva rezervācija. Pārbaudiet numuru vai sazinieties ar mums.",
+      no_mobile: "Rezervācijā nav reģistrēts tālruņa numurs. Sazinieties ar mums, lai to reģistrētu.",
+      rate_limited: "Pārāk daudz pieprasījumu šai istabai. Mēģiniet vēlreiz pēc {n} minūtēm vai sazinieties ar mums.",
+      sms_failed: "Šobrīd nevarēja nosūtīt SMS. Mēģiniet vēlāk vai sazinieties ar mums.",
+      internal: "Kaut kas nogāja greizi. Mēģiniet vēlreiz vai sazinieties ar mums.",
+      missing_input: "Lūdzu, ievadiet kodu no SMS.",
+      session_expired: "Kods ir beidzies (derīgs 5 minūtes). Lūdzu, sāciet no jauna.",
+      invalid_odp: "Nepareizs kods. Atlikuši {n} mēģinājumi.",
+      no_attempts_left: "Pārāk daudz nepareizu mēģinājumu. Lūdzu, sāciet no jauna.",
+      tuya_failed: "Nevarēja ģenerēt jaunu PIN slēdzenē. Sazinieties ar mums.",
+    },
+  },
+};
+
+let currentLang = (function() {
+  // Try URL param ?lang=, then localStorage, then browser, then 'en'
+  const params = new URLSearchParams(location.search);
+  const urlLang = params.get("lang");
+  if (urlLang && I18N[urlLang]) return urlLang;
+  const stored = localStorage.getItem("portal-lang");
+  if (stored && I18N[stored]) return stored;
+  const nav = (navigator.language || "en").toLowerCase();
+  if (nav.startsWith("nb") || nav.startsWith("no")) return "nb";
+  if (nav.startsWith("lv")) return "lv";
+  return "en";
+})();
+
+let sessionId = null;
+let cachedRoom = null;
+let cachedPhone = null;
+
+function $(id) { return document.getElementById(id); }
+
+function setLang(lang) {
+  if (!I18N[lang]) return;
+  currentLang = lang;
+  localStorage.setItem("portal-lang", lang);
+  document.documentElement.lang = lang;
+  const dict = I18N[lang];
+  for (const key of Object.keys(dict)) {
+    if (key === "errors") continue;
+    const el = $("t-" + key);
+    if (el) el.innerHTML = dict[key];
+  }
+  // Update lang-switcher visuals
+  document.querySelectorAll(".lang-switcher button").forEach(b => {
+    b.classList.toggle("active", b.dataset.lang === lang);
+  });
+  // Re-bind phoneMaskedDisplay (gets overwritten by innerHTML)
+  if (cachedPhone) {
+    const ph = $("phoneMaskedDisplay");
+    if (ph) ph.textContent = cachedPhone;
+  }
+  if (cachedRoom) {
+    const r = $("roomLabel");
+    if (r) r.textContent = cachedRoom;
+  }
+  // Re-apply title attr on document
+  document.title = dict.title + " — 2GM Eiendom";
+}
+
+function tError(code, vars) {
+  const dict = I18N[currentLang].errors || I18N.en.errors;
+  let s = dict[code] || dict.internal || code;
+  if (vars) {
+    for (const k of Object.keys(vars)) s = s.replace("{" + k + "}", vars[k]);
+  }
+  return s;
+}
+
+function showAlert(stage, message, level) {
+  const el = $(`stage${stage}Alert`);
+  if (!el) return;
+  const klass = level === "warn" ? "alert-warn" : "alert-error";
+  el.innerHTML = `<div class="alert ${klass}">${message}</div>`;
+}
+
+function clearAlert(stage) {
+  const el = $(`stage${stage}Alert`);
+  if (el) el.innerHTML = "";
+}
+
+function showStage(n) {
+  for (const s of [1, 2, 3]) {
+    $(`stage${s}`).classList.toggle("hidden", s !== n);
+  }
+}
+
+async function callApi(path, body) {
+  try {
+    const res = await fetch("/api/reset-pin/" + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": currentLang,
+      },
+      body: JSON.stringify(body),
+    });
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    return data || { ok: false, error: "internal" };
+  } catch (e) {
+    console.error("API call failed:", e);
+    return { ok: false, error: "internal" };
+  }
+}
+
+async function handleRequest() {
+  const roomNumber = $("roomInput").value.trim();
+  clearAlert(1);
+  if (!roomNumber) {
+    showAlert(1, tError("missing_room"));
+    return;
+  }
+  const btn = $("btnRequest");
+  btn.disabled = true;
+  const spinner = `<span class="loading"></span>`;
+  btn.innerHTML = `<span>${I18N[currentLang]["btn-request"]}</span>${spinner}`;
+  try {
+    const data = await callApi("request", { roomNumber });
+    if (!data.ok) {
+      const code = data.error || "internal";
+      const vars = code === "rate_limited" ? { n: data.retryAfterMinutes || 60 } : {};
+      showAlert(1, tError(code, vars));
+      return;
+    }
+    sessionId = data.sessionId;
+    cachedRoom = roomNumber;
+    cachedPhone = data.phoneMasked || "";
+    $("phoneMaskedDisplay").textContent = cachedPhone;
+    showStage(2);
+    setTimeout(() => $("odpInput").focus(), 100);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>${I18N[currentLang]["btn-request"]}</span>`;
+  }
+}
+
+async function handleVerify() {
+  const odp = $("odpInput").value.trim().toUpperCase();
+  clearAlert(2);
+  if (!odp) {
+    showAlert(2, tError("missing_input"));
+    return;
+  }
+  const btn = $("btnVerify");
+  btn.disabled = true;
+  const spinner = `<span class="loading"></span>`;
+  btn.innerHTML = `<span>${I18N[currentLang]["btn-verify"]}</span>${spinner}`;
+  try {
+    const data = await callApi("verify", { sessionId, odpCode: odp });
+    if (!data.ok) {
+      const code = data.error || "internal";
+      const vars = code === "invalid_odp" ? { n: data.attemptsLeft || 0 } : {};
+      showAlert(2, tError(code, vars));
+      if (code === "session_expired" || code === "no_attempts_left") {
+        sessionId = null;
+        setTimeout(() => { showStage(1); $("odpInput").value = ""; }, 2500);
+      }
+      return;
+    }
+    $("newPinValue").textContent = data.doorPin || "—";
+    $("roomLabel").textContent = data.roomNumber || cachedRoom || "—";
+    showStage(3);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>${I18N[currentLang]["btn-verify"]}</span>`;
+  }
+}
+
+function restart() {
+  sessionId = null;
+  $("odpInput").value = "";
+  clearAlert(2);
+  showStage(1);
+  $("roomInput").focus();
+}
+
+function done() {
+  // Just hide stage 3 to restart the flow
+  $("newPinValue").textContent = "—";
+  $("roomInput").value = "";
+  cachedRoom = null;
+  cachedPhone = null;
+  restart();
+}
+
+// Init
+document.addEventListener("DOMContentLoaded", () => {
+  setLang(currentLang);
+  $("btnRequest").addEventListener("click", handleRequest);
+  $("btnVerify").addEventListener("click", handleVerify);
+  $("btnRestart").addEventListener("click", restart);
+  $("btnDone").addEventListener("click", done);
+  document.querySelectorAll(".lang-switcher button").forEach(b => {
+    b.addEventListener("click", () => setLang(b.dataset.lang));
+  });
+  // Submit on Enter
+  $("roomInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); handleRequest(); }
+  });
+  $("odpInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); handleVerify(); }
+  });
+  // Auto-uppercase ODP input
+  $("odpInput").addEventListener("input", e => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+  });
+  // Numeric-only room input (but allow letters too for non-numeric room labels)
+  $("roomInput").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/[^\w]/g, "");
+  });
+});
+</script>
+</body>
+</html>
