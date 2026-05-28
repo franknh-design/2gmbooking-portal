@@ -125,8 +125,14 @@ export async function onRequestPost(context) {
 
     // Generer ny 6-sifret PIN
     const newPin = generatePin();
-    const now = Math.floor(Date.now() / 1000);
-    const validFrom = now;
+    // v1.3: backdater valid_from til midnatt UTC i dag istedenfor exakt Date.now()
+    // for å unngå klokke-skew-feil mellom Flask-proxy, Tuya-cloud og selve
+    // låsen. Hvis valid_from er nøyaktig nå og låsen er 30 sek foran cloud,
+    // avviser låsen PIN-en helt til 30 sek har passert. Midnatt-buffer gjør
+    // PIN-en gyldig hele dagen uavhengig av klokke-skew.
+    const todayMidnight = new Date();
+    todayMidnight.setUTCHours(0, 0, 0, 0);
+    const validFrom = Math.floor(todayMidnight.getTime() / 1000);
     // valid_to droppes — Flask-proxy bruker 01.01.2030 default
 
     const pinName = `2GM-${session.roomNumber}-RESET`;
