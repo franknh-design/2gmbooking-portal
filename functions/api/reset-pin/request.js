@@ -209,8 +209,15 @@ export async function onRequestPost(context) {
       odpLength: ODP_LENGTH,
     });
   } catch (err) {
+    // v1.1: Returner detalj-melding under debug så vi ser hva som feiler
+    // (fjernes når flyten er stabil).
     console.error("[reset-pin/request] internal error:", err);
-    return jsonResponse({ ok: false, error: "internal" }, 500);
+    return jsonResponse({
+      ok: false,
+      error: "internal",
+      detail: String(err?.message || err).slice(0, 500),
+      stack: String(err?.stack || "").slice(0, 1000),
+    }, 500);
   }
 }
 

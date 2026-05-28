@@ -206,7 +206,12 @@ export async function onRequestPost(context) {
     });
   } catch (err) {
     console.error("[reset-pin/verify] internal error:", err);
-    return jsonResponse({ ok: false, error: "internal" }, 500);
+    return jsonResponse({
+      ok: false,
+      error: "internal",
+      detail: String(err?.message || err).slice(0, 500),
+      stack: String(err?.stack || "").slice(0, 1000),
+    }, 500);
   }
 }
 
