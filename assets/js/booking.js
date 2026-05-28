@@ -865,7 +865,24 @@
       } else {
         // eslint-disable-next-line no-console
         console.error("[BOOKING] Innsending feilet:", res);
-        this._showMsg(tx("booking.errGeneric"), "error");
+        // v3.14.15: spesifikke feil-koder fra server (capacity_exceeded /
+        // capacity_check_failed) gir tydeligere beskjed enn errGeneric.
+        if (res.error === "capacity_exceeded") {
+          const worst = res.worst || (res.conflicts && res.conflicts[0]) || {};
+          const detail = res.message ||
+            (`Bare ${worst.available} ledige, bestilling krever ${worst.needed}.`);
+          this._showMsg(
+            tx("booking.errCapacityExceeded") || ("Ikke nok ledige rom: " + detail),
+            "error"
+          );
+        } else if (res.error === "capacity_check_failed") {
+          this._showMsg(
+            tx("booking.errCapacityCheckFailed") || "Kunne ikke verifisere ledighet akkurat nå. Prøv igjen om et øyeblikk.",
+            "error"
+          );
+        } else {
+          this._showMsg(tx("booking.errGeneric"), "error");
+        }
       }
     },
 
@@ -1112,38 +1129,41 @@
 
   // v3.12.6: Bekreftelse-dialog ved kapasitetskonflikt. Kunden får tydelig
   // beskjed om at det ikke er nok ledig nå, men oppfordres til å sende
-  // bestillingen likevel — vi forsøker å finne en løsning. Returnerer en
-  // Promise<boolean>: true = send likevel, false = avbryt/rediger.
+  // v3.14.15: hard avvisning av overbooking. Tidligere lot vi kunden klikke
+  // "Send likevel" som genererte uleverbare bookinger admin måtte rydde i.
+  // Nå viser vi bare informasjon + Avbryt-knapp så kunden må redusere antall
+  // eller velge en annen periode. Returnerer alltid false så _submit() aborter.
   function _confirmOverbooking(warningText) {
+    const leadMsg = tx("booking.overbookingLead") ||
+      "Reduser antall rom eller velg en annen periode. Trenger du å bestille flere rom enn det er ledig — ta kontakt med 2GM Eiendom direkte på +47 99 10 10 41.";
+    const title = tx("booking.overbookingTitle") || "Ikke nok ledige rom på valgt periode";
+    const closeBtn = tx("booking.overbookingClose") || "OK, jeg endrer";
     return new Promise((resolve) => {
       if (typeof HTMLDialogElement === "undefined") {
-        // Eldre nettlesere uten <dialog>: bruk native confirm som fallback.
-        const fallbackMsg = warningText + "\n\nSend bestillingen likevel? 2GM Eiendom vil forsøke å finne en løsning for deg.";
-        resolve(window.confirm(fallbackMsg));
+        window.alert(title + "\n\n" + warningText + "\n\n" + leadMsg);
+        resolve(false);
         return;
       }
       const dlg = document.createElement("dialog");
       dlg.className = "overbooking-confirm-dlg";
       dlg.innerHTML = `
         <div class="overbooking-dlg-body">
-          <h3 class="overbooking-dlg-title">Ikke nok ledige rom på valgt periode</h3>
+          <h3 class="overbooking-dlg-title">${escapeHtml(title)}</h3>
           <p class="overbooking-dlg-warn">${escapeHtml(warningText)}</p>
-          <p class="overbooking-dlg-lead">Send bestillingen likevel — vi forsøker å finne en løsning for deg så snart vi får sett på den.</p>
+          <p class="overbooking-dlg-lead">${escapeHtml(leadMsg)}</p>
           <div class="overbooking-dlg-actions">
-            <button type="button" class="overbooking-dlg-cancel">Avbryt og endre</button>
-            <button type="button" class="overbooking-dlg-send">Send bestilling likevel</button>
+            <button type="button" class="overbooking-dlg-cancel">${escapeHtml(closeBtn)}</button>
           </div>
         </div>
       `;
       document.body.appendChild(dlg);
-      const cleanup = (answer) => {
+      const cleanup = () => {
         try { dlg.close(); } catch (_) {}
         dlg.remove();
-        resolve(answer);
+        resolve(false);
       };
-      dlg.querySelector(".overbooking-dlg-cancel").addEventListener("click", () => cleanup(false));
-      dlg.querySelector(".overbooking-dlg-send").addEventListener("click", () => cleanup(true));
-      dlg.addEventListener("cancel", (e) => { e.preventDefault(); cleanup(false); });
+      dlg.querySelector(".overbooking-dlg-cancel").addEventListener("click", cleanup);
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); cleanup(); });
       dlg.showModal();
     });
   }

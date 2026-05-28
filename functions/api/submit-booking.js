@@ -111,17 +111,18 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 5. Sjekk kapasitetskonflikt for fellesperioden (alle gjester samme datoer)
-    // Vi bruker tidligste checkIn og seneste checkOut som overordnet periode.
-    // Spesifikke konflikter per dato vises hvis de finnes.
+    // 5. Sjekk kapasitetskonflikt for fellesperioden (alle gjester samme datoer).
+    // v1.2: HARD AVVISNING. Tidligere skrev vi advarsel til Notes og opprettet
+    // bookingen likevel — det ga uleverbare bookinger admin måtte rydde i.
+    // Nå returnerer vi 409 med konflikt-detaljer hvis available < needed på
+    // noen dag i perioden. Frontend skal allerede ha vist dialog, men dette
+    // er defense-in-depth mot race conditions og direkte API-kall.
     let capacityWarning = null;
     try {
       const earliestCheckIn = guests
         .map(g => g.checkIn)
         .sort()[0];
 
-      // Hvis noen gjester er open-ended, kan vi ikke sjekke fremtidig kapasitet
-      // Vi sjekker minst de første 30 dagene
       const allHaveCheckOut = guests.every(g => !!g.checkOut);
       let latestCheckOut;
 
@@ -149,14 +150,30 @@ export async function onRequestPost(context) {
       );
 
       if (conflicts.length > 0) {
-        capacityWarning = `Kapasitetskonflikt på ${conflicts.length} dag(er). ` +
-          `Verste dag: ${conflicts[0].date} har bare ${conflicts[0].available} ledige, ` +
-          `bestilling krever ${conflicts[0].needed}.`;
+        // Sorter på "verst først" (færrest ledige) så klienten kan vise
+        // mest informativ sammendrag.
+        conflicts.sort((a, b) => a.available - b.available);
+        const worst = conflicts[0];
+        return jsonResponse({
+          ok: false,
+          error: "capacity_exceeded",
+          conflicts,
+          worst,
+          message: `Kapasitetskonflikt på ${conflicts.length} dag(er). ` +
+            `Verste dag: ${worst.date} har bare ${worst.available} ledige, ` +
+            `bestilling krever ${worst.needed}.`,
+        }, 409);
       }
     } catch (err) {
-      // Kapasitetssjekk skal ikke blokkere booking - logg og fortsett
+      // Kapasitetssjekk feilet → vi kan ikke verifisere ledighet → avvis.
+      // Bedre å fail closed enn å skape uventede bookinger ved Graph-blink.
       // eslint-disable-next-line no-console
       console.error("Capacity check failed:", err);
+      return jsonResponse({
+        ok: false,
+        error: "capacity_check_failed",
+        message: "Kunne ikke verifisere ledighet. Prøv igjen om et øyeblikk.",
+      }, 503);
     }
 
     // 6. Generer felles booking-referanse
