@@ -176,7 +176,9 @@ export async function onRequestPost(context) {
       // som notis men resultatet er Success.
     }
 
-    // Opprett BookingCharges (5 kr)
+    // Opprett BookingCharges (5 kr) — track om skrivingen faktisk gikk gjennom
+    // så audit-loggen reflekterer virkelig charge-status, ikke "intent".
+    let chargeOk = false;
     try {
       await createBookingCharge(env, {
         bookingId: session.bookingId,
@@ -185,16 +187,18 @@ export async function onRequestPost(context) {
         description: `PIN-reset via portal — rom ${session.roomNumber}`,
         title: `PIN_Reset_${session.roomNumber}_${nowStamp().replace(/[:\s]/g, "")}`,
       });
+      chargeOk = true;
     } catch (e) {
       console.warn("[reset-pin/verify] BookingCharge-opprettelse feilet:", e?.message || e);
     }
 
-    // Oppdater PinResetLog
+    // Oppdater PinResetLog — Charged_Amount=0 hvis SP-skrivingen feilet,
+    // så admin kan korrelere mot manglende BookingCharges-rad
     if (session.logEntryId) {
       await updatePinResetLog(env, session.logEntryId, {
         Result: "Success",
         ODP_Verified: true,
-        Charged_Amount: PIN_RESET_CHARGE_KR,
+        Charged_Amount: chargeOk ? PIN_RESET_CHARGE_KR : 0,
       }).catch(e => console.warn("[reset-pin/verify] log update failed:", e?.message || e));
     }
 
