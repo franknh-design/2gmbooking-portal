@@ -1,10 +1,14 @@
 // functions/api/extend-booking.js
-// v1.1 - Forespørsel om å forlenge oppholdet på en aktiv booking.
+// v1.3 - Forespørsel om å forlenge oppholdet på en aktiv booking.
 //        v1.1: PATCHer bookingen med Pending_Confirmation=true og appender
 //        "[Forlengelse forespurt YYYY-MM-DD: ny utflytting YYYY-MM-DD]" til
 //        Notes-feltet. Da dukker bookingen opp i admin-appens "Awaiting
 //        confirmation"-panel med konteksten i Notes. E-post sendes fortsatt
 //        som backup-varsel.
+//        v1.2: Lagre forespurt dato i strukturert Requested_CheckOut-felt.
+//        v1.3: Skille generisk 'invalid_date' i bad_date_format vs
+//        date_not_after_current — sistnevnte returnerer currentCheckOut så
+//        frontend kan vise en presis hjelpemelding ("allerede DD.MM.YYYY").
 //
 // POST /api/extend-booking
 // Body: {
@@ -17,7 +21,8 @@
 //   { ok: true, mode: "sent" | "logged" }
 //
 // Feilkoder:
-//   missing_token, invalid_token, missing_ref, invalid_date,
+//   missing_token, invalid_token, missing_ref, bad_date_format,
+//   date_not_after_current (har også currentCheckOut: "YYYY-MM-DD"),
 //   booking_not_found, not_your_booking, internal_error
 
 import { findToken, getBookingsForCompany, updateBookingFields } from "../_utils/sharepoint.js";
@@ -42,7 +47,9 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "missing_ref" }, 400);
     }
     if (!requestedCheckOut || isNaN(new Date(requestedCheckOut).getTime())) {
-      return jsonResponse({ ok: false, error: "invalid_date" }, 400);
+      // v1.3: skiller "ugyldig format" fra "ikke senere enn current" så frontend
+      // kan vise en hjelpsom melding i stedet for generisk 'invalid_date'.
+      return jsonResponse({ ok: false, error: "bad_date_format" }, 400);
     }
 
     const tokenRow = await findToken(env, token);
@@ -79,7 +86,13 @@ export async function onRequestPost(context) {
       const cur = new Date(currentCheckOut);
       const req = new Date(requestedCheckOut);
       if (req <= cur) {
-        return jsonResponse({ ok: false, error: "invalid_date" }, 400);
+        // v1.3: returner currentCheckOut så frontend kan vise eksakt hva som
+        // er den gjeldende utsjekkdatoen i hjelpemeldingen.
+        return jsonResponse({
+          ok: false,
+          error: "date_not_after_current",
+          currentCheckOut: currentCheckOut.slice(0, 10),
+        }, 400);
       }
     }
 

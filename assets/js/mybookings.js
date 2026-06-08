@@ -1292,8 +1292,19 @@
 
     if (!res || !res.ok) {
       const err = (res && res.error) || "unknown";
-      if (msgEl) msgEl.textContent = tx("extend.errFail", { err });
-      else window.alert(tx("extend.fallbackFail", { err }));
+      // v3.15.9: spesifikke meldinger for de vanligste server-feilene så Isak
+      // og co. faktisk forstår hvorfor — i stedet for kryptisk 'invalid_date'.
+      let txt;
+      if (err === "date_not_after_current" && res.currentCheckOut) {
+        const dateLbl = formatIso(res.currentCheckOut) || res.currentCheckOut;
+        txt = tx("extend.errAfterCurrent", { date: dateLbl });
+      } else if (err === "bad_date_format") {
+        txt = tx("extend.errBadFormat");
+      } else {
+        txt = tx("extend.errFail", { err });
+      }
+      if (msgEl) msgEl.textContent = txt;
+      else window.alert(txt);
       return;
     }
 
