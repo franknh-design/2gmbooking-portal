@@ -64,12 +64,21 @@ export async function onRequestPost(context) {
 
     // Finn alle bookinger som tilhører kundens firma og let opp den med
     // matching id/ref. Reuser eksisterende helper så vi slipper egen liste-spørring.
+    // v1.4: ID alltid foretrukket FØR ref-fallback. Tidligere brukte find() OR-
+    // logikk → når flere bookinger deler samme Title (gruppe-booking som
+    // 2GM-UGEURM med Bartec+Marcin på samme ref), kunne den feil-matche en
+    // annen rad enn den admin sendte id-en for. Resultat: server svarte med
+    // FEIL bookings currentCheckOut, og kunden ble urettmessig avvist.
     const items = await getBookingsForCompany(env, company);
-    const match = items.find(it => {
-      if (hasId && String(it.id) === String(bookingId).trim()) return true;
-      if (hasRef && (it.fields?.Title || "").trim() === bookingRef.trim()) return true;
-      return false;
-    });
+    let match = null;
+    if (hasId) {
+      const idStr = String(bookingId).trim();
+      match = items.find(it => String(it.id) === idStr) || null;
+    }
+    if (!match && hasRef) {
+      const refStr = bookingRef.trim();
+      match = items.find(it => (it.fields?.Title || "").trim() === refStr) || null;
+    }
 
     if (!match) {
       return jsonResponse({ ok: false, error: "booking_not_found" }, 404);

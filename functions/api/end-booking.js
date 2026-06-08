@@ -59,12 +59,19 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "not_your_booking" }, 403);
     }
 
+    // v1.x: ID-først, ref-fallback. Tidligere OR-find feilmatchet på Title
+    // ved gruppe-bookinger (flere gjester deler samme Ref → 2GM-UGEURM).
+    // Se extend-booking.js v1.4 for full kontekst — samme rot-årsak.
     const items = await getBookingsForCompany(env, company);
-    const match = items.find(it => {
-      if (hasId && String(it.id) === String(bookingId).trim()) return true;
-      if (hasRef && (it.fields?.Title || "").trim() === bookingRef.trim()) return true;
-      return false;
-    });
+    let match = null;
+    if (hasId) {
+      const idStr = String(bookingId).trim();
+      match = items.find(it => String(it.id) === idStr) || null;
+    }
+    if (!match && hasRef) {
+      const refStr = bookingRef.trim();
+      match = items.find(it => (it.fields?.Title || "").trim() === refStr) || null;
+    }
     if (!match) {
       return jsonResponse({ ok: false, error: "booking_not_found" }, 404);
     }
