@@ -5,24 +5,39 @@ Status: Godkjent design, klar for implementeringsplan
 
 ## Mål
 
-En offentlig bookingside der privatpersoner («vanlige folk», ikke bedriftskunder)
-kan booke rom på Rigg Andslimoen (property-ID 4 i 2GM) med betaling via Vipps.
-Siden lever i `2gmbooking-portal` og skriver til samme SharePoint som
-bedriftsbookingen, slik at én sannhetskilde gjelder for alle bookinger.
+En offentlig bookingside der privatpersoner («vanlige folk») kan booke rom på
+Rigg Andslimoen (property-ID 4 i 2GM) med betaling via Vipps. Siden lever i
+`2gmbooking-portal` og skriver til samme SharePoint som bedriftsbookingen, slik
+at én sannhetskilde gjelder for alle bookinger.
+
+## Kjernemodell: ett felles rom-lager, to priser
+
+Alle aktive rom på Andslimoen er **én delt pool**. Både firma og privat booker
+fra samme beholdning — vi ønsker å leie ut rom uansett segment. Eneste forskjell
+er **pris**:
+
+- **Firma** → eksisterende firmapris (uendret)
+- **Privat** → felles `PublicNightlyRate`
+
+Dette er en bevisst forenkling: rommene er IKKE fysisk delt mellom segmentene.
 
 ## Besluttede valg
 
 - **Datakilde:** Eksisterende SharePoint. Offentlige bookinger skrives til samme
   `Booking`-liste som portalen bruker, vises i admin-appen og behandles likt.
   Ingen separat database.
-- **Rom-modell:** Alle offentlige rom er like og utgjør en **pool**. Gjesten velger
-  ikke et spesifikt rom — systemet auto-tildeler et ledig offentlig rom ved
-  bekreftelse. Offentlige rom er strengt adskilt fra bedrifts-rom.
-- **Prising:** Segment-pris, ikke per-rom-pris. Én felles **privatmarked-nattsats**
-  (`PublicNightlyRate`) brukes av den offentlige siden. Firmapris er separat og
-  uendret.
-- **Av/på:** Både en global master-bryter (`PublicBookingEnabled`) for hele den
-  offentlige siden, og et `PublicBookable`-flagg per rom for finkornet styring.
+- **Rom-modell:** Delt pool. Alle rom er like; gjesten velger ikke spesifikt rom
+  — systemet auto-tildeler et ledig rom ved bekreftelse (kreves for å lage
+  Tuya-romkode).
+- **Prising:** Segment-pris. Felles `PublicNightlyRate` for privat; firmapris
+  separat og uendret.
+- **Av/på (to nivåer):**
+  - Global `PublicBookingEnabled` — skrur hele publikum-siden av/på. Formål:
+    kapasitetsstyring — ved høy firmaetterspørsel skrus privat av så firma får
+    rommene.
+  - Per-rom `PublicBookable` — `false` tar rommet ut av **publikum**-poolen
+    (holdes til firma), men firma kan fortsatt booke det. Flagget begrenser
+    KUN privat-siden; bedriftslogikken røres ikke.
 - **Romlåser:** Tuya per-gjest-koder via eksisterende Flask-flyt.
 - **Ytterdør:** Yale Doorman med per-gjest, tidsbegrensede PIN-koder via Yale
   Access / August API. Gir tilgangslogg på ytterdøra.
@@ -33,18 +48,57 @@ bedriftsbookingen, slik at én sannhetskilde gjelder for alle bookinger.
 - **Hosting:** Ny offentlig seksjon i `2gmbooking-portal` (Cloudflare Pages +
   Functions). Offentlige ruter er tydelig adskilt fra interne portal-ruter.
 
+## Påvirkning på eksisterende system (isolasjon)
+
+Designet er bevisst lav-påvirkning på portalen og admin-appen:
+
+- **Bedrifts-ledighet røres ikke.** Firma fortsetter å se og booke alle rom via
+  eksisterende `calculateAvailability` / `checkCapacityConflict`. Ingen endring i
+  det romfilteret.
+- **Nye filer er additive** — offentlige ruter, betalingslag og lås-lag rører
+  ikke `submit-booking.js`, `availability.js` eller admin-appens kode.
+- **Nye SharePoint-kolonner er additive.** Eksisterende spørringer bruker
+  eksplisitt `$select`, så nye felt brekker ingenting.
+- **Admin-appen viser** de offentlige bookingene (den leser hele `Booking`-lista)
+  som ferdig-bekreftede, auto-tildelte rader — de havner IKKE i den manuelle
+  «AVVENTER ROMTILDELING»-køen.
+
+## Ledighet for privat-siden
+
+Den offentlige siden gjenbruker eksisterende ledighetslogikk og legger en
+underpool-grense oppå:
+
+```
+publicAvailable(dato) = min(
+  overallAvailable(dato),                      // eksisterende calculateAvailability
+  publicPoolSize − publicBookingsOccupying(dato)
+)
+```
+
+- `overallAvailable` — total ledighet på riggen (alle rom, alle bookinger), fra
+  eksisterende logikk. Den ytre `min`-en garanterer at privat aldri kan overbooke
+  fysisk, selv om firma har ledige unassigned-bookinger.
+- `publicPoolSize` — antall rom med `PublicBookable=true` og `Active=true`.
+- `publicBookingsOccupying` — antall `Source=public`-bookinger som opptar datoen.
+
+Den indre delen kapper privat til sin egen underpool; den ytre delen respekterer
+fysisk kapasitet. Sammen forhindrer de både overbooking og at privat tar mer enn
+sin tildelte andel.
+
 ## Versjoner
 
 ### v1 (første ekte booking)
 - Datovelger-først bookingside med felles bildegalleri
+- Delt rom-pool, segment-pris (privat `PublicNightlyRate`)
 - Kun Vipps koblet på (abstraksjon klar for Stripe)
 - Per-gjest Yale (ytterdør) + Tuya (rom) koder, tidsbegrenset
-- Felles privatmarked-pris
 - Pending → retry → confirmed / auto-refund tilstandsmaskin
-- Global + per-rom av/på-bryter
+- Global `PublicBookingEnabled` + per-rom `PublicBookable`
 
 ### v2 (senere)
 - Stripe live ved siden av Vipps, gjest velger betalingsmåte
+- **Automatisk buffer** — skru av privat når færre enn N rom er ledige, så Frank
+  slipper å huske den manuelle bryteren ved høy firmaetterspørsel
 - Mulig: dynamisk prising (helg/sesong), rabattkoder, automatiske
   påminnelser/utsjekk, bildedokumentasjon ved utsjekk
 
@@ -65,11 +119,11 @@ Lag med isolerte ansvar:
 
 ## Datamodell (SharePoint)
 
-**Rom-lista (per rom):**
-- `PublicBookable` (ja/nei)
+**Rooms-lista (per rom):**
+- `PublicBookable` (ja/nei) — standard ja; nei holder rommet unna privat-poolen
 
 **Global innstilling:**
-- `PublicBookingEnabled` (master av/på)
+- `PublicBookingEnabled` (master av/på for hele publikum-siden)
 - `PublicNightlyRate` (privatmarked-nattsats)
 
 **Booking-lista (per booking):**
@@ -84,7 +138,7 @@ Lag med isolerte ansvar:
 
 Gjesteflyt:
 1. Galleri + privatmarked-pris vises øverst.
-2. Gjest velger innsjekk/utsjekk → siden sjekker `Booking`-lista og viser
+2. Gjest velger innsjekk/utsjekk → siden beregner `publicAvailable` og viser
    «X av Y rom ledige» + totalpris.
 3. Gjest fyller inn navn/e-post/tlf → starter Vipps-betaling.
 4. Booking opprettes: `BookingStatus=pending`, `PaymentStatus=pending`, et ledig
@@ -101,11 +155,14 @@ betalt → forsøk generer koder (Yale ytterdør + Tuya rom)
   │     └─ aldri   → auto-refund + BookingStatus=cancelled + frigjør rom + varsle drift
 ```
 
-Auto-tildeling velger første ledige offentlige rom ved bekreftelse.
+Auto-tildeling (ved bekreftelse) velger et `PublicBookable`-rom som ikke har en
+overlappende **tildelt** booking i perioden. Siden privat-bookinger alltid får et
+konkret rom, ser admin dem tildelt og dobbelt-tildeler aldri en ventende
+firmabooking til samme rom.
 
 Av/på:
 - `PublicBookingEnabled=false` → hele siden viser «stengt».
-- Rom med `PublicBookable=false` tas ut av poolen.
+- Rom med `PublicBookable=false` tas ut av privat-poolen (men firma kan booke det).
 
 ## Bildegalleri
 
@@ -130,15 +187,18 @@ denne bruker SharePoint, ikke SQLite.
 - Betalingslag og tilstandsmaskin testes isolert med mock Vipps-callbacks
   (betalt / feilet) og mock kode-API (suksess / feil / timeout), slik at retry-
   og auto-refund-stiene verifiseres uten ekte penger eller låser.
-- Ledighetssjekk + auto-tildeling testes mot mock `Booking`-data, inkludert
-  dobbeltbooking-kanttilfelle.
+- Ledighetsformelen testes mot mock `Booking`-data: at `publicAvailable` aldri
+  overstiger `overallAvailable`, at `PublicBookable=false` reduserer poolen, og
+  dobbeltbooking-kanttilfellet (firma + privat mot samme fysiske kapasitet).
+- Auto-tildeling testes mot rom med overlappende tildelte bookinger.
 - Vipps testes i testmiljø før live.
 
 ## Forutsetninger å verifisere før implementering
 
 - **Yale Access API:** Krever at en Yale Connect Wi-Fi-bro er montert og at låsen
   er lagt til i Yale Access-appen. Må bekreftes før lås-laget bygges.
-- **SharePoint-felt:** Nye felt (`PublicBookable`, `PublicBookingEnabled`,
-  `PublicNightlyRate`, `Source`, `PaymentProvider`, `PaymentStatus`,
-  `BookingStatus`, `PaymentRef`, kode-referanser) må opprettes i listene.
+- **SharePoint-felt:** Nye felt (`PublicBookable` på Rooms; `PublicBookingEnabled`,
+  `PublicNightlyRate` som global innstilling; `Source`, `PaymentProvider`,
+  `PaymentStatus`, `BookingStatus`, `PaymentRef`, kode-referanser på Booking) må
+  opprettes i listene.
 - **Vipps-konto/nøkler:** Testmiljø- og produksjonsnøkler for Vipps.
