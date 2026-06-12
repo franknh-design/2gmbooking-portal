@@ -54,7 +54,7 @@ Designet er bevisst lav-påvirkning på portalen og admin-appen:
 
 - **Bedrifts-ledighet røres ikke.** Firma fortsetter å se og booke alle rom via
   eksisterende `calculateAvailability` / `checkCapacityConflict`. Ingen endring i
-  det romfilteret.
+  den funksjonen.
 - **Nye filer er additive** — offentlige ruter, betalingslag og lås-lag rører
   ikke `submit-booking.js`, `availability.js` eller admin-appens kode.
 - **Nye SharePoint-kolonner er additive.** Eksisterende spørringer bruker
@@ -65,25 +65,37 @@ Designet er bevisst lav-påvirkning på portalen og admin-appen:
 
 ## Ledighet for privat-siden
 
-Den offentlige siden gjenbruker eksisterende ledighetslogikk og legger en
-underpool-grense oppå:
+VIKTIG om eksisterende logikk: `calculateAvailability` teller kun bookinger som
+har et tildelt `RoomLookupId` ([sharepoint.js:1006](../../../functions/_utils/sharepoint.js)).
+Nyopprettede bookinger får IKKE romtildeling automatisk — firma tildeles manuelt
+i admin. Derfor reduserer ikke ventende, ikke-tildelte firmabookinger den
+eksisterende `overallAvailable`. Privat-siden kan ikke stole på den.
+
+Privat-siden får derfor sin **egen, konservative** beregning som teller ALLE
+aktive/upcoming bookinger på riggen (tildelt eller ikke), målt som antall
+booking-rader som overlapper datoen. Den gjenbruker datahentingen
+(`getRoomsForProperty`, `getBookingsForProperty`) men ikke firma-tellingen.
 
 ```
 publicAvailable(dato) = min(
-  overallAvailable(dato),                      // eksisterende calculateAvailability
+  physicalRooms − allBookingsOccupying(dato),       // KONSERVATIV: teller også ikke-tildelte
   publicPoolSize − publicBookingsOccupying(dato)
 )
 ```
 
-- `overallAvailable` — total ledighet på riggen (alle rom, alle bookinger), fra
-  eksisterende logikk. Den ytre `min`-en garanterer at privat aldri kan overbooke
-  fysisk, selv om firma har ledige unassigned-bookinger.
+- `physicalRooms` — antall tellbare rom på riggen (Active, ikke på long-term den
+  datoen), samme rom-grunnlag som eksisterende logikk.
+- `allBookingsOccupying` — antall aktive/upcoming booking-rader (uansett
+  romtildeling) som overlapper datoen. Konservativt: en ikke-tildelt firmabooking
+  teller som etterspørsel etter ett rom.
 - `publicPoolSize` — antall rom med `PublicBookable=true` og `Active=true`.
-- `publicBookingsOccupying` — antall `Source=public`-bookinger som opptar datoen.
+- `publicBookingsOccupying` — antall `Source`-er privat-bookinger som opptar
+  datoen.
 
-Den indre delen kapper privat til sin egen underpool; den ytre delen respekterer
-fysisk kapasitet. Sammen forhindrer de både overbooking og at privat tar mer enn
-sin tildelte andel.
+Den ytre `min`-en garanterer at privat aldri kan overbooke fysisk; den indre
+kapper privat til sin egen underpool. Konsekvens: privat kan vise «fullt» når
+firma har ventende ikke-tildelte bookinger — bevisst, trygt valg (privat
+overbooker aldri).
 
 ## Versjoner
 
@@ -187,9 +199,10 @@ denne bruker SharePoint, ikke SQLite.
 - Betalingslag og tilstandsmaskin testes isolert med mock Vipps-callbacks
   (betalt / feilet) og mock kode-API (suksess / feil / timeout), slik at retry-
   og auto-refund-stiene verifiseres uten ekte penger eller låser.
-- Ledighetsformelen testes mot mock `Booking`-data: at `publicAvailable` aldri
-  overstiger `overallAvailable`, at `PublicBookable=false` reduserer poolen, og
-  dobbeltbooking-kanttilfellet (firma + privat mot samme fysiske kapasitet).
+- Ledighetsformelen testes mot mock `Booking`-data: at en ikke-tildelt
+  firmabooking (uten `RoomLookupId`) reduserer `publicAvailable` (konservativ
+  telling), at `PublicBookable=false` reduserer poolen, at `publicAvailable`
+  aldri overstiger fysisk kapasitet, og dobbeltbooking-kanttilfellet.
 - Auto-tildeling testes mot rom med overlappende tildelte bookinger.
 - Vipps testes i testmiljø før live.
 
