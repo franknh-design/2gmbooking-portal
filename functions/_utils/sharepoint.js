@@ -783,6 +783,37 @@ export async function createBookingRows(env, rows) {
   return { succeeded, failed };
 }
 
+// Oppretter en PRIVAT (publikum) hold-rad. Skiller seg fra createBookingRow ved:
+// Source="Public", Pending_Confirmation=false (auto-tildelt, aldri i admins
+// manuelle kø), konkret RoomLookupId, HoldExpiry + PaymentStatus=pending satt.
+// Datoer er ISO 'YYYY-MM-DD'; holdExpiryISO er full ISO-tid. Returnerer Graph-raden.
+export async function createPublicHoldRow(env, fields) {
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items`;
+  const spFields = {
+    Title: fields.bookingRef,
+    Property_Name: fields.propertyName,
+    Person_Name: fields.guestName,
+    Mobile: fields.guestPhone || null,
+    Email: fields.guestEmail || null,
+    Check_In: fields.checkIn,
+    Check_Out: fields.checkOut || null,
+    RoomLookupId: fields.roomId,
+    Status: "Upcoming",
+    Pending_Confirmation: false,
+    Source: "Public",
+    PaymentStatus: "pending",
+    HoldExpiry: fields.holdExpiryISO,
+    PaymentRef: fields.paymentRef || null,
+  };
+  for (const k of Object.keys(spFields)) {
+    if (spFields[k] === null || spFields[k] === undefined) delete spFields[k];
+  }
+  return graphRequest(env, path, {
+    method: "POST",
+    body: JSON.stringify({ fields: spFields }),
+  });
+}
+
 // ============================================================================
 // Persons-upsert (portal → Persons-listen)
 // ============================================================================
