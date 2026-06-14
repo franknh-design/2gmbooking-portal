@@ -69,13 +69,35 @@ async function init() {
   $("nightly-rate").textContent = formatKr(nightlyRate);
   $("booking-state").hidden = false;
 
-  // Datofelt: min = i dag.
-  $("checkin").min = t;
-  $("checkout").min = t;
-  $("checkin").addEventListener("change", onDatesChanged);
-  $("checkout").addEventListener("change", onDatesChanged);
+  // Datofelt: pen flatpickr-kalender (samme oppsett som admin-appen). dateFormat
+  // 'Y-m-d' holder .value som ISO så resten av logikken er uendret; altInput viser
+  // dd.mm.åååå. minDate i dag. disableMobile = pen velger også på mobil.
+  initDatePickers(t);
   ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
   $("guest-form").addEventListener("submit", onSubmit);
+}
+
+function initDatePickers(todayStr) {
+  if (typeof flatpickr === "undefined") {
+    // Fallback til native hvis CDN ikke lastet.
+    $("checkin").min = todayStr;
+    $("checkout").min = todayStr;
+    $("checkin").addEventListener("change", onDatesChanged);
+    $("checkout").addEventListener("change", onDatesChanged);
+    return;
+  }
+  const opts = {
+    dateFormat: "Y-m-d",
+    altInput: true,
+    altFormat: "d.m.Y",
+    weekNumbers: true,
+    locale: flatpickr.l10ns && flatpickr.l10ns.no ? "no" : "default",
+    minDate: "today",
+    disableMobile: true,
+    onChange: onDatesChanged,
+  };
+  flatpickr($("checkin"), opts);
+  flatpickr($("checkout"), opts);
 }
 
 let lastStay = { from: "", to: "", available: 0 };

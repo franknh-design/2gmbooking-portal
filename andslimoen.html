@@ -7,7 +7,10 @@
   <meta name="theme-color" content="#1B4F72" />
   <meta name="color-scheme" content="light" />
   <title>Rigg Andslimoen — book rom</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="assets/css/andslimoen.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/no.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -37,8 +40,8 @@
 
       <div class="card">
         <div class="dates">
-          <label>Innsjekk<input type="date" id="checkin" /></label>
-          <label>Utsjekk<input type="date" id="checkout" /></label>
+          <label>Innsjekk<input type="date" id="checkin" class="dateinput" /></label>
+          <label>Utsjekk<input type="date" id="checkout" class="dateinput" /></label>
         </div>
         <p class="availability" id="availability-result"></p>
         <p class="price-summary" id="price-summary"></p>

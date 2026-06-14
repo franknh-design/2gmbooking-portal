@@ -43,7 +43,7 @@ h1 { font-size: 22px; margin: 0 0 4px; }
 .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
 .dates { display: flex; gap: 10px; }
 .dates label { flex: 1; display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; }
-input[type="date"], .guest input {
+.dateinput, .guest input {
   font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 8px;
   width: 100%; background: #fff; color: var(--ink);
 }
@@ -65,3 +65,19 @@ input[type="date"], .guest input {
   background: var(--ok); color: #fff; font-size: 30px; line-height: 56px;
 }
 .state-closed { text-align: center; padding: 48px 16px; color: var(--muted); }
+
+/* flatpickr-tema — matcher sidens 2GM-blå aksent (#1B4F72) + ukenummer-kolonne */
+.flatpickr-calendar { border-radius: var(--radius); box-shadow: 0 8px 28px rgba(0,0,0,.16); border: 1px solid var(--line); }
+.flatpickr-months .flatpickr-month, .flatpickr-current-month input.cur-year { color: var(--ink); font-weight: 600; }
+.flatpickr-monthDropdown-months { font-weight: 600; }
+span.flatpickr-weekday { color: var(--muted); font-weight: 600; }
+.flatpickr-day { color: var(--ink); border-radius: 8px; }
+.flatpickr-day:hover, .flatpickr-day:focus { background: var(--bg); border-color: var(--bg); }
+.flatpickr-day.today { border-color: var(--brand); }
+.flatpickr-day.today:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: none; }
+.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled { color: var(--muted); opacity: .45; }
+.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--brand); }
+.flatpickr-weekwrapper { border-right: 1px solid var(--line); }
+.flatpickr-weekwrapper .flatpickr-weekday { color: var(--muted); }
+.flatpickr-weekwrapper .flatpickr-weeks span.flatpickr-day { color: var(--muted); font-weight: 600; background: #eef2f6; }
