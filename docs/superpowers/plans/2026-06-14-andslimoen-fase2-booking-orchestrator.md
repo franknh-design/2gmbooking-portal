@@ -1231,8 +1231,8 @@ git commit -m "feat: /api/public-booking create-hold endpoint (mock payment/lock
 
 - [ ] **Step 1: Run the whole test suite**
 
-Run: `node --test tests/`
-Expected: alle test-filer passerer (availability-math, booking-state, booking-allocation, booking-holds, booking-orchestrator) — 0 fail.
+Run: `node --test tests/*.test.mjs`
+Expected: alle test-filer passerer (availability-math, booking-state, booking-allocation, booking-holds, booking-orchestrator) — 0 fail. (MERK: bruk glob-formen — `node --test tests/` prøver å laste mappa som modul og feiler på Node 24. Globben utelater også det frittstående `test-tuya.mjs`-scriptet.)
 
 - [ ] **Step 2: Verify the full import chain**
 
