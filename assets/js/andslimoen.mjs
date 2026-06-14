@@ -7,7 +7,7 @@ import {
   totalPrice,
   formatKr,
   minAvailableForStay,
-  isValidNoPhone,
+  isValidPhone,
   isValidEmail,
 } from "./andslimoen-format.mjs";
 import { STRINGS, fmt, pickLang } from "./andslimoen-i18n.mjs";
@@ -204,7 +204,7 @@ async function onDatesChanged() {
 }
 
 function guestValid() {
-  return $("guest-name").value.trim().length > 0 && isValidNoPhone($("guest-phone").value);
+  return $("guest-name").value.trim().length > 0 && isValidPhone($("guest-phone").value);
 }
 
 function refreshButton() {

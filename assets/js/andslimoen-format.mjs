@@ -49,10 +49,11 @@ export function minAvailableForStay(days, fromISO, toISO) {
   return min === Infinity ? 0 : min;
 }
 
-// Norsk telefon — speiler regelen i submit-booking.js / public-booking.js.
-export function isValidNoPhone(s) {
-  const cleaned = String(s || "").replace(/[\s\-()./]/g, "").replace(/^(\+47|0047|47)/, "");
-  return /^[2-9]\d{7}$/.test(cleaned);
+// Telefon — internasjonalt vennlig (privat-siden kan ha utenlandske gjester).
+// Valgfri ledende +, 6–15 siffer etter at skilletegn er strippet (E.164-aktig).
+export function isValidPhone(s) {
+  const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
+  return /^\+?\d{6,15}$/.test(cleaned);
 }
 
 // E-post — speiler backend-regelen.

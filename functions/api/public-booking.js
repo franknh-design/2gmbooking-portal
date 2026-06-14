@@ -49,7 +49,7 @@ export async function onRequestPost(context) {
       typeof guest.name !== "string" ||
       !guest.name.trim() ||
       guest.name.trim().length > 200 ||
-      !_isValidNoPhone(guest.phone)
+      !_isValidPhone(guest.phone)
     ) {
       return jsonResponse({ ok: false, error: "invalid_guest" }, 400);
     }
@@ -106,10 +106,11 @@ function corsHeaders() {
   };
 }
 
-// Norsk telefon — duplikat av regelen i submit-booking.js (defense-in-depth).
-function _isValidNoPhone(s) {
-  const cleaned = String(s || "").replace(/[\s\-()./]/g, "").replace(/^(\+47|0047|47)/, "");
-  return /^[2-9]\d{7}$/.test(cleaned);
+// Telefon — internasjonalt vennlig (privat-siden kan ha utenlandske gjester).
+// Speiler isValidPhone i andslimoen-format.mjs. Valgfri +, 6–15 siffer.
+function _isValidPhone(s) {
+  const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
+  return /^\+?\d{6,15}$/.test(cleaned);
 }
 
 // E-post — speiler isValidEmail i booking.js / submit-booking.js.

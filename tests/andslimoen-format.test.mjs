@@ -5,7 +5,7 @@ import {
   totalPrice,
   formatKr,
   minAvailableForStay,
-  isValidNoPhone,
+  isValidPhone,
   isValidEmail,
 } from "../assets/js/andslimoen-format.mjs";
 
@@ -55,13 +55,19 @@ test("minAvailableForStay: reversed/empty -> 0", () => {
   assert.equal(minAvailableForStay([], "", ""), 0);
 });
 
-test("isValidNoPhone matches backend rule", () => {
-  assert.equal(isValidNoPhone("99112233"), true);
-  assert.equal(isValidNoPhone("+47 991 12 233"), true);
-  assert.equal(isValidNoPhone("004799112233"), true);
-  assert.equal(isValidNoPhone("12345678"), false);
-  assert.equal(isValidNoPhone("999"), false);
-  assert.equal(isValidNoPhone(""), false);
+test("isValidPhone accepts Norwegian and international numbers", () => {
+  assert.equal(isValidPhone("99112233"), true);          // norsk 8-siffer
+  assert.equal(isValidPhone("+47 991 12 233"), true);    // norsk m/ landkode
+  assert.equal(isValidPhone("+46 70 123 45 67"), true);  // svensk
+  assert.equal(isValidPhone("+1 (415) 555-0172"), true); // amerikansk
+  assert.equal(isValidPhone("+44 20 7946 0958"), true);  // britisk
+});
+
+test("isValidPhone rejects too short / non-numeric / empty", () => {
+  assert.equal(isValidPhone("999"), false);              // for kort
+  assert.equal(isValidPhone("abc"), false);
+  assert.equal(isValidPhone(""), false);
+  assert.equal(isValidPhone("+1234567890123456"), false); // > 15 siffer
 });
 
 test("isValidEmail basic check", () => {
