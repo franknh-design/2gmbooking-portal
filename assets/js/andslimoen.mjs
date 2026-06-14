@@ -1,6 +1,7 @@
-// assets/js/andslimoen.mjs — v1.0. DOM-orkestrering for den offentlige
-// bookingsiden. Laster config, håndterer datovelger + ledighet, sender
-// reservasjon. All ren logikk ligger i andslimoen-format.mjs.
+// assets/js/andslimoen.mjs — v1.1. DOM-orkestrering for den offentlige
+// bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
+// + ledighet, sender reservasjon. Ren logikk i andslimoen-format.mjs, tekster i
+// andslimoen-i18n.mjs.
 import {
   nightsBetween,
   totalPrice,
@@ -9,17 +10,28 @@ import {
   isValidNoPhone,
   isValidEmail,
 } from "./andslimoen-format.mjs";
+import { STRINGS, fmt, pickLang } from "./andslimoen-i18n.mjs";
 
 const $ = (id) => document.getElementById(id);
 const GALLERY = [
-  { src: "assets/img/andslimoen/rom.jpg", alt: "Rom" },
-  { src: "assets/img/andslimoen/bad.jpg", alt: "Bad og dusj" },
-  { src: "assets/img/andslimoen/vaskerom.jpg", alt: "Vaskerom" },
-  { src: "assets/img/andslimoen/kjokken.jpg", alt: "Kjøkken" },
-  { src: "assets/img/andslimoen/rigg.jpg", alt: "Riggen" },
+  { src: "assets/img/andslimoen/rom.jpg", key: "galRom" },
+  { src: "assets/img/andslimoen/bad.jpg", key: "galBad" },
+  { src: "assets/img/andslimoen/vaskerom.jpg", key: "galVaskerom" },
+  { src: "assets/img/andslimoen/kjokken.jpg", key: "galKjokken" },
+  { src: "assets/img/andslimoen/rigg.jpg", key: "galRigg" },
 ];
+const LANG_KEY = "andslimoen_lang";
 
 let nightlyRate = 0;
+let lang = "nb";
+let galleryIndex = 0;
+let lastStay = { from: "", to: "", available: 0 };
+const fpInstances = [];
+const thumbImgs = [];
+
+function t(key) {
+  return (STRINGS[lang] && STRINGS[lang][key]) || key;
+}
 
 async function postJSON(path, body) {
   const res = await fetch(path, {
@@ -39,25 +51,62 @@ function buildGallery() {
   GALLERY.forEach((g, i) => {
     const img = document.createElement("img");
     img.src = g.src;
-    img.alt = g.alt;
+    img.alt = t(g.key);
     if (i === 0) img.classList.add("active");
     img.addEventListener("click", () => {
+      galleryIndex = i;
       $("gallery-main").src = g.src;
-      $("gallery-main").alt = g.alt;
-      thumbs.querySelectorAll("img").forEach((t) => t.classList.remove("active"));
+      $("gallery-main").alt = t(g.key);
+      thumbs.querySelectorAll("img").forEach((x) => x.classList.remove("active"));
       img.classList.add("active");
     });
     thumbs.appendChild(img);
+    thumbImgs.push(img);
   });
 }
 
+function applyLang(newLang) {
+  lang = newLang === "en" ? "en" : "nb";
+  try { localStorage.setItem(LANG_KEY, lang); } catch (_) {}
+  document.documentElement.setAttribute("lang", lang);
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.getAttribute("data-i18n"));
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => {
+    el.placeholder = t(el.getAttribute("data-i18n-ph"));
+  });
+
+  thumbImgs.forEach((img, i) => { img.alt = t(GALLERY[i].key); });
+  if ($("gallery-main")) $("gallery-main").alt = t(GALLERY[galleryIndex].key);
+
+  const fpLoc = lang === "nb" && typeof flatpickr !== "undefined" && flatpickr.l10ns && flatpickr.l10ns.no
+    ? flatpickr.l10ns.no : "default";
+  fpInstances.forEach((fp) => {
+    try { fp.set("locale", fpLoc); } catch (_) {}
+    if (fp.altInput) fp.altInput.placeholder = t("datePlaceholder");
+  });
+
+  document.querySelectorAll("#lang-toggle button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.lang === lang);
+  });
+
+  // Re-lokaliser eventuell allerede-vist ledighet/pris/knapp.
+  renderStay();
+}
+
 async function init() {
+  lang = pickLang((() => { try { return localStorage.getItem(LANG_KEY); } catch (_) { return null; } })(), navigator.language);
   buildGallery();
-  // Hent config (enabled + nightlyRate) med et lite vindu.
-  const t = todayISO();
+  $("lang-toggle").querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => applyLang(b.dataset.lang));
+  });
+  applyLang(lang);
+
+  const today = todayISO();
   let config;
   try {
-    config = await postJSON("/api/public-availability", { fromDate: t, toDate: t });
+    config = await postJSON("/api/public-availability", { fromDate: today, toDate: today });
   } catch {
     config = { enabled: false };
   }
@@ -69,17 +118,14 @@ async function init() {
   $("nightly-rate").textContent = formatKr(nightlyRate);
   $("booking-state").hidden = false;
 
-  // Datofelt: pen flatpickr-kalender (samme oppsett som admin-appen). dateFormat
-  // 'Y-m-d' holder .value som ISO så resten av logikken er uendret; altInput viser
-  // dd.mm.åååå. minDate i dag. disableMobile = pen velger også på mobil.
-  initDatePickers(t);
+  initDatePickers(today);
   ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
   $("guest-form").addEventListener("submit", onSubmit);
+  applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
 }
 
 function initDatePickers(todayStr) {
   if (typeof flatpickr === "undefined") {
-    // Fallback til native hvis CDN ikke lastet.
     $("checkin").min = todayStr;
     $("checkout").min = todayStr;
     $("checkin").addEventListener("change", onDatesChanged);
@@ -91,23 +137,21 @@ function initDatePickers(todayStr) {
     altInput: true,
     altFormat: "d.m.Y",
     weekNumbers: true,
-    locale: flatpickr.l10ns && flatpickr.l10ns.no ? "no" : "default",
     minDate: "today",
     disableMobile: true,
     onChange: onDatesChanged,
   };
-  flatpickr($("checkin"), opts);
-  flatpickr($("checkout"), opts);
+  fpInstances.push(flatpickr($("checkin"), opts));
+  fpInstances.push(flatpickr($("checkout"), opts));
 }
 
-let lastStay = { from: "", to: "", available: 0 };
-
-async function onDatesChanged() {
-  const from = $("checkin").value;
-  const to = $("checkout").value;
+// Render ledighet/pris/knapp ut fra lastStay (ingen fetch) — brukes etter
+// datovalg OG ved språkbytte.
+function renderStay() {
   const av = $("availability-result");
   const ps = $("price-summary");
-  lastStay = { from, to, available: 0 };
+  if (!av || !ps) return;
+  const { from, to, available } = lastStay;
   const nights = nightsBetween(from, to);
   if (!from || !to || nights <= 0) {
     av.textContent = ""; av.className = "availability";
@@ -115,12 +159,36 @@ async function onDatesChanged() {
     refreshButton();
     return;
   }
-  av.textContent = "Sjekker ledighet…"; av.className = "availability";
+  if (available > 0) {
+    av.textContent = fmt(t("roomsAvailable"), { n: available });
+    av.className = "availability ok";
+    const unit = nights === 1 ? t("nightOne") : t("nightMany");
+    ps.textContent = fmt(t("priceFor"), { p: formatKr(totalPrice(nightlyRate, from, to)), n: nights, unit });
+  } else {
+    av.textContent = t("noRooms");
+    av.className = "availability full";
+    ps.textContent = "";
+  }
+  refreshButton();
+}
+
+async function onDatesChanged() {
+  const from = $("checkin").value;
+  const to = $("checkout").value;
+  lastStay = { from, to, available: 0 };
+  const nights = nightsBetween(from, to);
+  if (!from || !to || nights <= 0) {
+    renderStay();
+    return;
+  }
+  const av = $("availability-result");
+  av.textContent = t("checking"); av.className = "availability";
+  $("price-summary").textContent = "";
   let data;
   try {
     data = await postJSON("/api/public-availability", { fromDate: from, toDate: to });
   } catch {
-    av.textContent = "Kunne ikke sjekke ledighet — prøv igjen."; av.className = "availability full";
+    av.textContent = t("availError"); av.className = "availability full";
     refreshButton();
     return;
   }
@@ -128,43 +196,29 @@ async function onDatesChanged() {
     $("booking-state").hidden = true; $("closed-state").hidden = false;
     return;
   }
-  const avail = minAvailableForStay(data.days || [], from, to);
-  lastStay.available = avail;
-  if (avail > 0) {
-    av.textContent = `${avail} rom ledige`; av.className = "availability ok";
-    ps.textContent = `${formatKr(totalPrice(nightlyRate, from, to))} kr for ${nights} ${nights === 1 ? "natt" : "netter"}`;
-  } else {
-    av.textContent = "Ingen ledige rom disse datoene"; av.className = "availability full";
-    ps.textContent = "";
-  }
-  refreshButton();
+  lastStay.available = minAvailableForStay(data.days || [], from, to);
+  renderStay();
 }
 
 function guestValid() {
-  return (
-    $("guest-name").value.trim().length > 0 &&
-    isValidNoPhone($("guest-phone").value)
-  );
+  return $("guest-name").value.trim().length > 0 && isValidNoPhone($("guest-phone").value);
 }
 
 function refreshButton() {
-  const ok = lastStay.available > 0 && nightsBetween(lastStay.from, lastStay.to) > 0 && guestValid();
+  const nights = nightsBetween(lastStay.from, lastStay.to);
+  const haveStay = lastStay.available > 0 && nights > 0;
   const btn = $("reserve-btn");
-  btn.disabled = !ok;
-  btn.textContent =
-    lastStay.available > 0 && nightsBetween(lastStay.from, lastStay.to) > 0
-      ? `Reserver — ${formatKr(totalPrice(nightlyRate, lastStay.from, lastStay.to))} kr`
-      : "Reserver";
+  if (!btn) return;
+  btn.disabled = !(haveStay && guestValid());
+  btn.textContent = haveStay
+    ? fmt(t("reserveWithPrice"), { p: formatKr(totalPrice(nightlyRate, lastStay.from, lastStay.to)) })
+    : t("reserve");
 }
 
-const ERROR_TEXT = {
-  sold_out: "Noen var raskere — prøv andre datoer.",
-  public_booking_disabled: "Booking er midlertidig stengt.",
-  invalid_guest: "Sjekk navn og telefonnummer.",
-  invalid_dates: "Sjekk datoene.",
-  invalid_request: "Noe gikk galt, prøv igjen.",
-  internal_error: "Noe gikk galt, prøv igjen.",
-};
+function errText(error) {
+  const key = "err_" + error;
+  return (STRINGS[lang] && STRINGS[lang][key]) || t("err_generic");
+}
 
 async function onSubmit(e) {
   e.preventDefault();
@@ -172,12 +226,12 @@ async function onSubmit(e) {
   err.hidden = true;
   const email = $("guest-email").value.trim();
   if (email && !isValidEmail(email)) {
-    err.textContent = "Ugyldig e-postadresse."; err.hidden = false;
+    err.textContent = t("errEmail"); err.hidden = false;
     return;
   }
   const btn = $("reserve-btn");
   btn.disabled = true;
-  btn.textContent = "Reserverer…";
+  btn.textContent = t("reserving");
   let data;
   try {
     data = await postJSON("/api/public-booking", {
@@ -194,7 +248,7 @@ async function onSubmit(e) {
     $("confirmation").hidden = false;
     return;
   }
-  err.textContent = ERROR_TEXT[data && data.error] || "Noe gikk galt, prøv igjen.";
+  err.textContent = errText(data && data.error);
   err.hidden = false;
   refreshButton();
 }

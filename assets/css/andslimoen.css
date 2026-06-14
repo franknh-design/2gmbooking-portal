@@ -24,6 +24,12 @@ body {
 }
 .brand { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--brand); }
 .site-title { font-size: 13px; color: var(--muted); }
+.lang { display: flex; gap: 4px; }
+.lang button {
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+}
+.lang button.active { background: var(--brand); color: #fff; border-color: var(--brand); }
 .page { max-width: 480px; margin: 0 auto; padding: 16px; }
 h1 { font-size: 22px; margin: 0 0 4px; }
 .gallery-main {

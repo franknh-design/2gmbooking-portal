@@ -1,0 +1,93 @@
+// assets/js/andslimoen-i18n.mjs
+// v1.0 — Tospråklig ordbok (norsk bokmål + engelsk) for den offentlige
+// bookingsiden. Ingen DOM → node-testbar. Dynamiske verdier settes med {plassholdere}.
+
+export const STRINGS = {
+  nb: {
+    introTitle: "Rom på Rigg Andslimoen",
+    introDesc: "Rene rom med eget bad og toalett. Felles kjøkken og vaskerom.",
+    perNight: "kr / natt",
+    checkin: "Innsjekk",
+    checkout: "Utsjekk",
+    datePlaceholder: "dd.mm.yyyy",
+    namePlaceholder: "Navn",
+    phonePlaceholder: "Telefon (8 siffer)",
+    emailPlaceholder: "E-post (valgfritt)",
+    reserve: "Reserver",
+    reserveWithPrice: "Reserver — {p} kr",
+    reserving: "Reserverer…",
+    hint: "Betaling via Vipps (kommer). Du holder rommet i 15 minutter.",
+    checking: "Sjekker ledighet…",
+    roomsAvailable: "{n} rom ledige",
+    noRooms: "Ingen ledige rom disse datoene",
+    availError: "Kunne ikke sjekke ledighet — prøv igjen.",
+    priceFor: "{p} kr for {n} {unit}",
+    nightOne: "natt",
+    nightMany: "netter",
+    confTitle: "Reservasjon opprettet",
+    confRef: "Referanse",
+    confMsg: "Betaling kommer snart — du holder rommet i 15 minutter.",
+    closedTitle: "Booking er midlertidig stengt",
+    closedMsg: "Ta gjerne kontakt med 2GM Eiendom for forespørsler.",
+    galRom: "Rom",
+    galBad: "Bad / dusj",
+    galVaskerom: "Vaskerom",
+    galKjokken: "Kjøkken",
+    galRigg: "Riggen",
+    errEmail: "Ugyldig e-postadresse.",
+    err_sold_out: "Noen var raskere — prøv andre datoer.",
+    err_public_booking_disabled: "Booking er midlertidig stengt.",
+    err_invalid_guest: "Sjekk navn og telefonnummer.",
+    err_invalid_dates: "Sjekk datoene.",
+    err_generic: "Noe gikk galt, prøv igjen.",
+  },
+  en: {
+    introTitle: "Rooms at Rigg Andslimoen",
+    introDesc: "Clean rooms with a private bathroom and toilet. Shared kitchen and laundry.",
+    perNight: "kr / night",
+    checkin: "Check-in",
+    checkout: "Check-out",
+    datePlaceholder: "dd.mm.yyyy",
+    namePlaceholder: "Name",
+    phonePlaceholder: "Phone (8 digits)",
+    emailPlaceholder: "Email (optional)",
+    reserve: "Reserve",
+    reserveWithPrice: "Reserve — {p} kr",
+    reserving: "Reserving…",
+    hint: "Payment via Vipps (coming). The room is held for 15 minutes.",
+    checking: "Checking availability…",
+    roomsAvailable: "{n} rooms available",
+    noRooms: "No rooms available for these dates",
+    availError: "Couldn't check availability — please try again.",
+    priceFor: "{p} kr for {n} {unit}",
+    nightOne: "night",
+    nightMany: "nights",
+    confTitle: "Reservation created",
+    confRef: "Reference",
+    confMsg: "Payment coming soon — the room is held for 15 minutes.",
+    closedTitle: "Booking is temporarily closed",
+    closedMsg: "Please contact 2GM Eiendom for enquiries.",
+    galRom: "Room",
+    galBad: "Bathroom",
+    galVaskerom: "Laundry",
+    galKjokken: "Kitchen",
+    galRigg: "The rig",
+    errEmail: "Invalid email address.",
+    err_sold_out: "Someone beat you to it — try other dates.",
+    err_public_booking_disabled: "Booking is temporarily closed.",
+    err_invalid_guest: "Check name and phone number.",
+    err_invalid_dates: "Check the dates.",
+    err_generic: "Something went wrong, please try again.",
+  },
+};
+
+// Fyll {plassholdere} i en streng.
+export function fmt(str, vars) {
+  return String(str || "").replace(/\{(\w+)\}/g, (_, k) => (vars && vars[k] != null ? String(vars[k]) : ""));
+}
+
+// Velg språk: lagret valg vinner; ellers engelsk nettleser → en, alt annet → nb.
+export function pickLang(stored, navLang) {
+  if (stored === "nb" || stored === "en") return stored;
+  return String(navLang || "").toLowerCase().startsWith("en") ? "en" : "nb";
+}

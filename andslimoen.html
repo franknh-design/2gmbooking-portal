@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0 -->
+<!-- v1.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -15,14 +15,17 @@
 <body>
   <header class="site-header">
     <span class="brand">2GM EIENDOM</span>
-    <span class="site-title">Rigg Andslimoen</span>
+    <div class="lang" id="lang-toggle">
+      <button type="button" data-lang="nb">NO</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
   </header>
 
   <main class="page" id="page">
     <!-- Stengt-tilstand -->
     <section class="state-closed" id="closed-state" hidden>
-      <h1>Booking er midlertidig stengt</h1>
-      <p>Ta gjerne kontakt med 2GM Eiendom for forespørsler.</p>
+      <h1 data-i18n="closedTitle">Booking er midlertidig stengt</h1>
+      <p data-i18n="closedMsg">Ta gjerne kontakt med 2GM Eiendom for forespørsler.</p>
     </section>
 
     <!-- Booking-tilstand -->
@@ -33,36 +36,36 @@
       </div>
 
       <div class="intro">
-        <h1>Rom på Rigg Andslimoen</h1>
-        <p>Enkle, rene rom med felles kjøkken, bad og vaskerom.</p>
-        <p class="price"><strong id="nightly-rate">–</strong> kr / natt</p>
+        <h1 data-i18n="introTitle">Rom på Rigg Andslimoen</h1>
+        <p data-i18n="introDesc">Rene rom med eget bad og toalett. Felles kjøkken og vaskerom.</p>
+        <p class="price"><strong id="nightly-rate">–</strong> <span data-i18n="perNight">kr / natt</span></p>
       </div>
 
       <div class="card">
         <div class="dates">
-          <label>Innsjekk<input type="date" id="checkin" class="dateinput" /></label>
-          <label>Utsjekk<input type="date" id="checkout" class="dateinput" /></label>
+          <label><span data-i18n="checkin">Innsjekk</span><input type="date" id="checkin" class="dateinput" /></label>
+          <label><span data-i18n="checkout">Utsjekk</span><input type="date" id="checkout" class="dateinput" /></label>
         </div>
         <p class="availability" id="availability-result"></p>
         <p class="price-summary" id="price-summary"></p>
       </div>
 
       <form class="guest" id="guest-form">
-        <input type="text" id="guest-name" placeholder="Navn" autocomplete="name" />
-        <input type="tel" id="guest-phone" placeholder="Telefon (8 siffer)" autocomplete="tel" />
-        <input type="email" id="guest-email" placeholder="E-post (valgfritt)" autocomplete="email" />
+        <input type="text" id="guest-name" data-i18n-ph="namePlaceholder" placeholder="Navn" autocomplete="name" />
+        <input type="tel" id="guest-phone" data-i18n-ph="phonePlaceholder" placeholder="Telefon (8 siffer)" autocomplete="tel" />
+        <input type="email" id="guest-email" data-i18n-ph="emailPlaceholder" placeholder="E-post (valgfritt)" autocomplete="email" />
         <p class="field-error" id="form-error" hidden></p>
-        <button type="submit" id="reserve-btn" disabled>Reserver</button>
-        <p class="hint">Betaling via Vipps (kommer). Du holder rommet i 15 minutter.</p>
+        <button type="submit" id="reserve-btn" data-i18n="reserve" disabled>Reserver</button>
+        <p class="hint" data-i18n="hint">Betaling via Vipps (kommer). Du holder rommet i 15 minutter.</p>
       </form>
     </section>
 
     <!-- Bekreftelse -->
     <section class="confirmation" id="confirmation" hidden>
       <div class="check">✓</div>
-      <h1>Reservasjon opprettet</h1>
-      <p>Referanse <strong id="confirmation-ref"></strong></p>
-      <p>Betaling kommer snart — du holder rommet i 15 minutter.</p>
+      <h1 data-i18n="confTitle">Reservasjon opprettet</h1>
+      <p><span data-i18n="confRef">Referanse</span> <strong id="confirmation-ref"></strong></p>
+      <p data-i18n="confMsg">Betaling kommer snart — du holder rommet i 15 minutter.</p>
     </section>
   </main>
 
