@@ -126,6 +126,12 @@ ubetalte hold ikke teller som opptatt. Den rene `computePublicAvailability` og
   `Pending_Confirmation=false` på ALLE privat-bookinger → de havner ALDRI i admins
   manuelle «AVVENTER ROMTILDELING»-kø (de er auto-tildelt). Privat-spesifikk
   tilstand leses fra `Source=Public` + `PaymentStatus`, ikke fra `Status`.
+  - **«Koder generert»-markør (besluttet, ingen ny kolonne):** for å skille
+    `paid+confirmed` fra `paid+venter-på-koder` brukes tilstedeværelse av det
+    eksisterende `Door_Code`-feltet. I Fase 2 skriver mock-lock-laget en placeholder
+    der; i Fase 5 skriver ekte Tuya-kode samme felt. Det rene laget eksponerer dette
+    som en `codesGenerated`-boolean; store-laget mapper `codesGenerated ⇔ Door_Code`
+    ikke-tom. `confirmed ⇔ PaymentStatus=paid && codesGenerated`.
 - `PaymentRef` (tekst) — NY/planlagt.
 - `Source` = `"Public"` — brukt til å skille privat fra firma (Fase 1 bruker dette).
 - Kode-felt (`EntranceCode`/`RoomCode`) skrives først i Fase 5; Fase 2 lock er mock.
