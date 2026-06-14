@@ -1,0 +1,67 @@
+/* assets/css/andslimoen.css — v1.0. Mobil-først forbruker-uttrykk for den
+   offentlige Andslimoen-bookingsiden. Uavhengig av portalens styles.css. */
+:root {
+  --brand: #1B4F72;
+  --ink: #1c2733;
+  --muted: #5f6b78;
+  --line: #e4e8ec;
+  --bg: #f7f9fb;
+  --ok: #1d7a4d;
+  --err: #b3261e;
+  --radius: 12px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+.site-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--line);
+}
+.brand { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--brand); }
+.site-title { font-size: 13px; color: var(--muted); }
+.page { max-width: 480px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.gallery-main {
+  width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius);
+  background: #dde3e8; display: block;
+}
+.gallery-thumbs { display: flex; gap: 6px; margin-top: 6px; }
+.gallery-thumbs img {
+  flex: 1; height: 48px; object-fit: cover; border-radius: 6px; background: #dde3e8;
+  cursor: pointer; border: 2px solid transparent;
+}
+.gallery-thumbs img.active { border-color: var(--brand); }
+.intro { margin: 16px 0; }
+.intro p { margin: 4px 0; color: var(--muted); }
+.price { color: var(--ink) !important; font-size: 16px; }
+.price strong { font-size: 18px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.dates { display: flex; gap: 10px; }
+.dates label { flex: 1; display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; }
+input[type="date"], .guest input {
+  font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 8px;
+  width: 100%; background: #fff; color: var(--ink);
+}
+.availability { margin: 12px 0 0; font-size: 14px; font-weight: 500; }
+.availability.ok { color: var(--ok); }
+.availability.full { color: var(--err); }
+.price-summary { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.guest { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.field-error { color: var(--err); font-size: 13px; margin: 0; }
+#reserve-btn {
+  background: var(--brand); color: #fff; border: none; border-radius: 8px;
+  padding: 13px; font-size: 16px; font-weight: 500; cursor: pointer;
+}
+#reserve-btn:disabled { background: #9bb0c2; cursor: not-allowed; }
+.hint { font-size: 12px; color: var(--muted); text-align: center; margin: 2px 0 0; }
+.confirmation { text-align: center; padding: 32px 16px; }
+.confirmation .check {
+  width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%;
+  background: var(--ok); color: #fff; font-size: 30px; line-height: 56px;
+}
+.state-closed { text-align: center; padding: 48px 16px; color: var(--muted); }

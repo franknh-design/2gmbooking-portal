@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- v1.0 -->
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1B4F72" />
+  <meta name="color-scheme" content="light" />
+  <title>Rigg Andslimoen — book rom</title>
+  <link rel="stylesheet" href="assets/css/andslimoen.css" />
+</head>
+<body>
+  <header class="site-header">
+    <span class="brand">2GM EIENDOM</span>
+    <span class="site-title">Rigg Andslimoen</span>
+  </header>
+
+  <main class="page" id="page">
+    <!-- Stengt-tilstand -->
+    <section class="state-closed" id="closed-state" hidden>
+      <h1>Booking er midlertidig stengt</h1>
+      <p>Ta gjerne kontakt med 2GM Eiendom for forespørsler.</p>
+    </section>
+
+    <!-- Booking-tilstand -->
+    <section class="booking" id="booking-state" hidden>
+      <div class="gallery">
+        <img class="gallery-main" id="gallery-main" src="assets/img/andslimoen/rom.jpg" alt="Rom på Rigg Andslimoen" />
+        <div class="gallery-thumbs" id="gallery-thumbs"></div>
+      </div>
+
+      <div class="intro">
+        <h1>Rom på Rigg Andslimoen</h1>
+        <p>Enkle, rene rom med felles kjøkken, bad og vaskerom.</p>
+        <p class="price"><strong id="nightly-rate">–</strong> kr / natt</p>
+      </div>
+
+      <div class="card">
+        <div class="dates">
+          <label>Innsjekk<input type="date" id="checkin" /></label>
+          <label>Utsjekk<input type="date" id="checkout" /></label>
+        </div>
+        <p class="availability" id="availability-result"></p>
+        <p class="price-summary" id="price-summary"></p>
+      </div>
+
+      <form class="guest" id="guest-form">
+        <input type="text" id="guest-name" placeholder="Navn" autocomplete="name" />
+        <input type="tel" id="guest-phone" placeholder="Telefon (8 siffer)" autocomplete="tel" />
+        <input type="email" id="guest-email" placeholder="E-post (valgfritt)" autocomplete="email" />
+        <p class="field-error" id="form-error" hidden></p>
+        <button type="submit" id="reserve-btn" disabled>Reserver</button>
+        <p class="hint">Betaling via Vipps (kommer). Du holder rommet i 15 minutter.</p>
+      </form>
+    </section>
+
+    <!-- Bekreftelse -->
+    <section class="confirmation" id="confirmation" hidden>
+      <div class="check">✓</div>
+      <h1>Reservasjon opprettet</h1>
+      <p>Referanse <strong id="confirmation-ref"></strong></p>
+      <p>Betaling kommer snart — du holder rommet i 15 minutter.</p>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/andslimoen.mjs"></script>
+</body>
+</html>
