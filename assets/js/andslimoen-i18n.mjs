@@ -86,8 +86,9 @@ export function fmt(str, vars) {
   return String(str || "").replace(/\{(\w+)\}/g, (_, k) => (vars && vars[k] != null ? String(vars[k]) : ""));
 }
 
-// Velg språk: lagret valg vinner; ellers engelsk nettleser → en, alt annet → nb.
+// Velg språk: lagret valg vinner; ellers norsk nettleser → nb, alt annet → en.
 export function pickLang(stored, navLang) {
   if (stored === "nb" || stored === "en") return stored;
-  return String(navLang || "").toLowerCase().startsWith("en") ? "en" : "nb";
+  const n = String(navLang || "").toLowerCase();
+  return (n.startsWith("nb") || n.startsWith("no") || n.startsWith("nn")) ? "nb" : "en";
 }

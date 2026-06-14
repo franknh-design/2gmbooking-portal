@@ -32,11 +32,12 @@ test("pickLang: stored choice wins", () => {
   assert.equal(pickLang("nb", "en-US"), "nb");
 });
 
-test("pickLang: English browser -> en, otherwise nb", () => {
-  assert.equal(pickLang(null, "en-US"), "en");
-  assert.equal(pickLang(null, "en"), "en");
+test("pickLang: Norwegian browser -> nb, otherwise en (fallback English)", () => {
   assert.equal(pickLang(null, "nb-NO"), "nb");
-  assert.equal(pickLang(null, "de-DE"), "nb");
-  assert.equal(pickLang(null, ""), "nb");
-  assert.equal(pickLang(undefined, undefined), "nb");
+  assert.equal(pickLang(null, "no"), "nb");
+  assert.equal(pickLang(null, "nn-NO"), "nb");
+  assert.equal(pickLang(null, "en-US"), "en");
+  assert.equal(pickLang(null, "de-DE"), "en");
+  assert.equal(pickLang(null, ""), "en");
+  assert.equal(pickLang(undefined, undefined), "en");
 });
