@@ -155,6 +155,7 @@ const SELECT_PROPERTY_FULL = "Title,FullTenant_Company,DailyRate,SMS_Template,Wi
 const SELECT_TOKEN = "Title,Token,Pin,Aktiv,Firma,Kontaktperson,Telefon,Epost,Utlopsdato,TillatteLokasjoner,MaksRomPerBestilling,AntallBestillinger,SistBrukt,LastSeen,Sprak";
 const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon,Email,Company";
 const SELECT_RATE = "Person_Name,Company,Property,DailyRate,FeeType";
+const SELECT_PUBLIC_CONFIG = "Title,PublicBookingEnabled,PublicNightlyRate";
 
 // v3.11.0: Status-klauseler vi gjenbruker. Bookings.Status er Choice-felt —
 // $filter på Choice er pålitelig og indeksert i SharePoint-default.
@@ -190,6 +191,20 @@ export async function getPropertyMetaMap(env) {
     };
   }
   return map;
+}
+
+// Leser privat-bookingens globale config fra Properties-raden for en gitt
+// property. enabled = master av/på for publikum-siden; nightlyRate = felles
+// privatmarked-nattsats. Manglende rad/felt => deaktivert (fail closed).
+export async function getPublicConfig(env, propertyName) {
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: SELECT_PUBLIC_CONFIG });
+  const row = items.find((it) => (it.fields?.Title || "") === propertyName);
+  if (!row) return { enabled: false, nightlyRate: 0 };
+  const f = row.fields || {};
+  return {
+    enabled: f.PublicBookingEnabled === true,
+    nightlyRate: Number(f.PublicNightlyRate) || 0,
+  };
 }
 
 // ============================================================================
