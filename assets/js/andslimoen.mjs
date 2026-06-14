@@ -132,6 +132,9 @@ function initDatePickers(todayStr) {
     $("checkout").addEventListener("change", onDatesChanged);
     return;
   }
+  // Mandag som ukestart også på engelsk (default-lokaliteten starter ellers søndag;
+  // den norske l10n-en har mandag fra før).
+  try { flatpickr.l10ns.default.firstDayOfWeek = 1; } catch (_) {}
   const opts = {
     dateFormat: "Y-m-d",
     altInput: true,
