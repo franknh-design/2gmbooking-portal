@@ -129,3 +129,29 @@ test("rejects reversed date range", () => {
     fromMs: Date.UTC(2026, 5, 14), toMs: Date.UTC(2026, 5, 13),
   }), /toMs before fromMs/);
 });
+
+test("isInRangeInclusive returns false when startMs is null", () => {
+  assert.equal(isInRangeInclusive(Date.UTC(2026, 5, 13), null, null), false);
+  assert.equal(isInRangeInclusive(Date.UTC(2026, 5, 13), null, Date.UTC(2026, 5, 20)), false);
+});
+
+test("multi-day range: a booking occupies only the days it spans", () => {
+  const rooms = [
+    { id: "1", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
+    { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
+  ];
+  // Booking spans day index 1 and 2 of a 4-day window (13.-16. juni).
+  const bookings = [
+    { checkInMs: Date.UTC(2026, 5, 14), checkOutMs: Date.UTC(2026, 5, 15), isPublic: true },
+  ];
+  const { days } = computePublicAvailability({
+    rooms, bookings,
+    fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 16),
+  });
+  assert.equal(days.length, 4);
+  assert.deepEqual(days.map(d => d.date), ["2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16"]);
+  assert.equal(days[0].available, 2); // 13. juni: ledig
+  assert.equal(days[1].available, 1); // 14. juni: booket
+  assert.equal(days[2].available, 1); // 15. juni (checkout-dag, inklusiv): booket
+  assert.equal(days[3].available, 2); // 16. juni: ledig igjen
+});
