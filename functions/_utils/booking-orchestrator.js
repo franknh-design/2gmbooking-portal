@@ -62,21 +62,30 @@ async function findByRef(deps, bookingRef) {
 }
 
 // Markerer betaling som mottatt og forsøker straks å generere koder.
+// Henter bookingen ÉN gang og holder det lokale objektet i sync, så vi unngår
+// en ny getBookings()-rundtur (mot SP er den paginert over alle rader).
 export async function confirmPayment(deps, bookingRef) {
   const b = await findByRef(deps, bookingRef);
   if (!b) return { ok: false, error: "not_found" };
   if (b.status === "Cancelled") return { ok: false, error: "cancelled" };
   if (b.paymentStatus !== "paid") {
-    await deps.store.update(b.id, onPaid(deps.now()));
+    const patch = onPaid(deps.now());
+    await deps.store.update(b.id, patch);
+    Object.assign(b, patch);
   }
-  return tryGenerateCodes(deps, bookingRef);
+  return _generateCodesForBooking(deps, b);
 }
 
-// Forsøker kode-generering for en betalt booking. Ved feil lar den raden stå
-// (paid, uten koder) for senere retry. Idempotent: noop hvis allerede generert.
+// Forsøker kode-generering gitt en booking-REF (henter den). Brukes av retry.
 export async function tryGenerateCodes(deps, bookingRef) {
   const b = await findByRef(deps, bookingRef);
   if (!b) return { ok: false, error: "not_found" };
+  return _generateCodesForBooking(deps, b);
+}
+
+// Kode-generering gitt et booking-OBJEKT. Ved feil lar den raden stå (paid, uten
+// koder) for senere retry. Idempotent: noop hvis allerede generert.
+async function _generateCodesForBooking(deps, b) {
   if (b.status === "Cancelled") return { ok: false, error: "cancelled" };
   if (b.paymentStatus !== "paid") return { ok: false, error: "not_paid" };
   if (b.codesGenerated) return { ok: true, alreadyDone: true };
@@ -84,7 +93,8 @@ export async function tryGenerateCodes(deps, bookingRef) {
     const codes = await deps.lock.generateGuestCodes({ booking: b });
     await deps.store.update(b.id, onCodesOk(codes.roomCode));
     return { ok: true };
-  } catch (_e) {
+  } catch (e) {
+    console.error("lock.generateGuestCodes failed:", e);
     return { ok: false, error: "code_generation_failed" };
   }
 }

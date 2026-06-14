@@ -159,3 +159,46 @@ test("releaseExpiredHolds cancels expired unpaid holds", async () => {
   assert.equal(n, 1);
   assert.equal(store._bookings.find((x) => x.bookingRef === bookingRef).status, "Cancelled");
 });
+
+test("confirmPayment is idempotent on a second (duplicate-webhook) call", async () => {
+  const store = makeStore([room("3")]);
+  const deps = makeDeps(store);
+  const { bookingRef } = await createHold(deps, { fromISO: FROM, toISO: TO, guest: { name: "Ola", phone: "99112233" } });
+  const r1 = await confirmPayment(deps, bookingRef);
+  const r2 = await confirmPayment(deps, bookingRef);
+  assert.equal(r1.ok, true);
+  assert.equal(r2.ok, true);
+  assert.equal(r2.alreadyDone, true);
+  const b = store._bookings.find((x) => x.bookingRef === bookingRef);
+  assert.equal(b.paymentStatus, "paid");
+  assert.equal(b.codesGenerated, true);
+});
+
+test("tryGenerateCodes returns alreadyDone when codes already generated", async () => {
+  const store = makeStore([room("3")]);
+  const deps = makeDeps(store);
+  const { bookingRef } = await createHold(deps, { fromISO: FROM, toISO: TO, guest: { name: "Ola", phone: "99112233" } });
+  await confirmPayment(deps, bookingRef);
+  const r = await tryGenerateCodes(deps, bookingRef);
+  assert.equal(r.ok, true);
+  assert.equal(r.alreadyDone, true);
+});
+
+test("confirmPayment on unknown ref -> not_found", async () => {
+  const store = makeStore([room("3")]);
+  const deps = makeDeps(store);
+  const r = await confirmPayment(deps, "2GM-NOPE");
+  assert.equal(r.ok, false);
+  assert.equal(r.error, "not_found");
+});
+
+test("confirmPayment on a cancelled booking -> cancelled", async () => {
+  const store = makeStore([room("3")]);
+  const deps = makeDeps(store);
+  const { bookingRef } = await createHold(deps, { fromISO: FROM, toISO: TO, guest: { name: "Ola", phone: "99112233" } });
+  const b = store._bookings.find((x) => x.bookingRef === bookingRef);
+  await store.update(b.id, { status: "Cancelled" });
+  const r = await confirmPayment(deps, bookingRef);
+  assert.equal(r.ok, false);
+  assert.equal(r.error, "cancelled");
+});
