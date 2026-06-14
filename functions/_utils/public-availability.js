@@ -9,6 +9,7 @@ import {
   getBookingsForProperty,
 } from "./sharepoint.js";
 import { computePublicAvailability, parseDateUtcMs } from "./availability-math.js";
+import { filterExpiredHolds } from "./booking-holds.js";
 
 export async function calculatePublicAvailability(env, propertyName, fromISO, toISO) {
   // Bygg id->title-map (samme oppskrift som calculateAvailability bruker).
@@ -35,16 +36,26 @@ export async function calculatePublicAvailability(env, propertyName, fromISO, to
     };
   });
 
-  const bookings = bookingItems
+  const now = Date.now();
+  const richBookings = bookingItems
     .map((it) => {
       const f = it.fields || {};
       return {
         checkInMs: parseDateUtcMs(f.Check_In),
         checkOutMs: parseDateUtcMs(f.Check_Out),
-        isPublic: String(f.Source || "") === "Public",
+        source: String(f.Source || ""),
+        status: f.Status || "",
+        paymentStatus: f.PaymentStatus || "pending",
+        holdExpiryMs: parseDateUtcMs(f.HoldExpiry),
       };
     })
     .filter((b) => b.checkInMs !== null);
+
+  const bookings = filterExpiredHolds(richBookings, now).map((b) => ({
+    checkInMs: b.checkInMs,
+    checkOutMs: b.checkOutMs,
+    isPublic: b.source === "Public",
+  }));
 
   const { days } = computePublicAvailability({
     rooms,
