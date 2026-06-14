@@ -17,6 +17,7 @@ import { mockPayment, mockLock } from "../_utils/providers-mock.js";
 import { createHold } from "../_utils/booking-orchestrator.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
+const MAX_NIGHTS = 90; // øvre grense på opphold — hindrer absurde hold (anonymt skrive-endepunkt)
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -35,7 +36,21 @@ export async function onRequestPost(context) {
     if (isNaN(from.getTime()) || isNaN(to.getTime()) || to < from) {
       return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     }
-    if (!guest || typeof guest.name !== "string" || !guest.name.trim() || !_isValidNoPhone(guest.phone)) {
+    // Normaliser til YYYY-MM-DD (UTC) så et tidssone-kvalifisert input ikke gir
+    // en ikke-midnatt Check_In i SharePoint.
+    const fromISO = from.toISOString().slice(0, 10);
+    const toISO = to.toISOString().slice(0, 10);
+    const nights = Math.round((Date.parse(toISO) - Date.parse(fromISO)) / (24 * 60 * 60 * 1000));
+    if (nights > MAX_NIGHTS) {
+      return jsonResponse({ ok: false, error: "invalid_dates", maxNights: MAX_NIGHTS }, 400);
+    }
+    if (
+      !guest ||
+      typeof guest.name !== "string" ||
+      !guest.name.trim() ||
+      guest.name.trim().length > 200 ||
+      !_isValidNoPhone(guest.phone)
+    ) {
       return jsonResponse({ ok: false, error: "invalid_guest" }, 400);
     }
     if (guest.email != null && guest.email !== "" && !_isValidEmail(guest.email)) {
@@ -56,8 +71,8 @@ export async function onRequestPost(context) {
     };
 
     const result = await createHold(deps, {
-      fromISO: fromDate,
-      toISO: toDate,
+      fromISO,
+      toISO,
       guest: { name: guest.name.trim(), phone: guest.phone, email: guest.email || null },
     });
 
