@@ -7,7 +7,7 @@
 // Returnerer:
 //   { enabled: true, nightlyRate: 895, days: [{ date, available, ... }] }
 //   { enabled: false }                                  (global bryter av)
-//   { error: "invalid_dates" | "range_too_large" | "internal_error" }
+//   { error: "invalid_request" | "invalid_dates" | "range_too_large" | "internal_error" }
 //
 // Bundet til Rigg Andslimoen. Ingen token — dette er publikum-siden.
 
@@ -20,7 +20,12 @@ const MAX_DAYS = 92;
 export async function onRequestPost(context) {
   const { request, env } = context;
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse({ error: "invalid_request" }, 400);
+    }
     const { fromDate, toDate } = body || {};
 
     if (!fromDate || !toDate) {
