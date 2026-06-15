@@ -49,11 +49,17 @@ export async function createHold(deps, { fromISO, toISO, guest }) {
     bookingRef, roomId, checkInISO: fromISO, checkOutISO: toISO, guest, holdExpiryMs,
   });
 
-  const amount = nightsBetween(fromMs, toMs) * (deps.nightlyRate || 0);
-  const pay = await deps.payment.initiate({ bookingRef, amount });
+  const nights = nightsBetween(fromMs, toMs);
+  const amount = nights * (deps.nightlyRate || 0);
+  const pay = await deps.payment.initiate({
+    bookingRef,
+    amount,
+    email: guest.email || undefined,
+    productName: `Rigg Andslimoen — ${nights} ${nights === 1 ? "natt" : "netter"}`,
+  });
   await deps.store.update(created.id, { paymentRef: pay.paymentRef });
 
-  return { ok: true, bookingRef, paymentRef: pay.paymentRef };
+  return { ok: true, bookingRef, paymentRef: pay.paymentRef, checkoutUrl: pay.checkoutUrl };
 }
 
 async function findByRef(deps, bookingRef) {
