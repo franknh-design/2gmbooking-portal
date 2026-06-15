@@ -6,6 +6,7 @@ import { createSharePointStore } from "../_utils/booking-store.js";
 import { mockLock } from "../_utils/providers-mock.js";
 import { confirmPayment } from "../_utils/booking-orchestrator.js";
 import { sendEmail } from "../_utils/email.js";
+import { upsertPersonForBooking } from "../_utils/sharepoint.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 
@@ -54,7 +55,18 @@ export async function onRequestPost(context) {
         const text = `Hei,\n\nBetalingen er mottatt og bookingen din på Rigg Andslimoen er bekreftet.\n\nReferanse: ${bookingRef}\n\nTilgangskoder kommer før innsjekk.\n\nVennlig hilsen\n2GM Eiendom`;
         await sendEmail(env, { to: fresh.guestEmail, subject, text });
       }
-    } catch (e) { console.error("[webhook] bekreftelses-e-post feilet (ignorert):", e); }
+      // Legg privat-gjesten i gjestelista (Persons) — bekreftet booking, tom
+      // Company = privat, GuestType=Privat. Best-effort (gjenbruker `fresh`).
+      if (fresh.guestName) {
+        await upsertPersonForBooking(env, {
+          name: fresh.guestName,
+          phone: fresh.guestPhone || null,
+          email: fresh.guestEmail || null,
+          company: "",
+          guestType: "Privat",
+        });
+      }
+    } catch (e) { console.error("[webhook] bekreftelses-e-post / Persons-upsert feilet (ignorert):", e); }
 
     return new Response("ok", { status: 200 });
   } catch (err) {
