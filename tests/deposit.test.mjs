@@ -1,31 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PRICE_LIST, MAX_DEPOSIT, sumMissingItems } from "../functions/_utils/deposit.js";
+import { ITEM_KEYS, sumMissingItems } from "../functions/_utils/deposit.js";
 
-test("price list matches agreed amounts", () => {
-  assert.equal(PRICE_LIST.liten_handduk, 100);
-  assert.equal(PRICE_LIST.stor_handduk, 150);
-  assert.equal(PRICE_LIST.pute, 400);
-  assert.equal(PRICE_LIST.dyne, 700);
-  assert.equal(PRICE_LIST.sengesett, 400);
-  assert.equal(MAX_DEPOSIT, 1750);
+const PM = { liten_handduk: 100, stor_handduk: 150, pute: 400, dyne: 700, sengesett: 400 };
+
+test("ITEM_KEYS lists the five known items", () => {
+  assert.deepEqual([...ITEM_KEYS].sort(), ["dyne", "liten_handduk", "pute", "sengesett", "stor_handduk"]);
 });
 
-test("sumMissingItems sums known items", () => {
-  assert.deepEqual(sumMissingItems(["liten_handduk"]), { ok: true, amount: 100 });
-  assert.deepEqual(sumMissingItems(["dyne", "pute"]), { ok: true, amount: 1100 });
-  assert.deepEqual(sumMissingItems(["liten_handduk", "stor_handduk", "pute", "dyne", "sengesett"]), { ok: true, amount: 1750 });
+test("sumMissingItems sums using the injected price map", () => {
+  assert.deepEqual(sumMissingItems(["liten_handduk"], PM), { ok: true, amount: 100 });
+  assert.deepEqual(sumMissingItems(["dyne", "pute"], PM), { ok: true, amount: 1100 });
 });
 
-test("sumMissingItems rejects empty / unknown / non-array", () => {
-  assert.equal(sumMissingItems([]).ok, false);
-  assert.equal(sumMissingItems(["banan"]).ok, false);
-  assert.equal(sumMissingItems("dyne").ok, false);
-  assert.equal(sumMissingItems(null).ok, false);
+test("sumMissingItems rejects empty / non-array", () => {
+  assert.equal(sumMissingItems([], PM).ok, false);
+  assert.equal(sumMissingItems("dyne", PM).ok, false);
+  assert.equal(sumMissingItems(null, PM).ok, false);
 });
 
-test("sumMissingItems never exceeds MAX_DEPOSIT", () => {
-  const r = sumMissingItems(["dyne", "dyne", "dyne"]);
-  assert.equal(r.ok, true);
-  assert.ok(r.amount <= MAX_DEPOSIT);
+test("sumMissingItems rejects item missing from the price map", () => {
+  assert.equal(sumMissingItems(["banan"], PM).ok, false);
+  assert.equal(sumMissingItems(["dyne"], {}).ok, false);
+});
+
+test("sumMissingItems rejects a zero/negative price (treated as unknown)", () => {
+  assert.equal(sumMissingItems(["dyne"], { dyne: 0 }).ok, false);
+  assert.equal(sumMissingItems(["dyne"], { dyne: -5 }).ok, false);
 });

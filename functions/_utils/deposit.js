@@ -1,29 +1,26 @@
 // functions/_utils/deposit.js
-// v1.0 — Ren prisliste + summering for depositum/manglende utstyr. INGEN I/O.
-// Belastes off-session på det lagrede kortet (se charge-missing-items).
+// v2.0 — Ren summering for depositum/manglende utstyr. INGEN I/O.
+// Prisene er nå redigerbare og leses fra Deposit_Prices (se getDepositPrices i
+// sharepoint.js); de injiseres som priceMap. Beløpet er server-autoritativt.
 
-export const PRICE_LIST = {
-  liten_handduk: 100,
-  stor_handduk: 150,
-  pute: 400,
-  dyne: 700,
-  sengesett: 400,
-};
+// De kjente vare-nøklene (brukes til validering/label-referanse i UI).
+export const ITEM_KEYS = ["liten_handduk", "stor_handduk", "pute", "dyne", "sengesett"];
 
-// Maks som kan belastes (alt borte) — oppgis i vilkårene.
-export const MAX_DEPOSIT = 1750;
-
-// items: string[] av nøkler fra PRICE_LIST. Returnerer { ok, amount } eller { ok:false, error }.
-export function sumMissingItems(items) {
+// items: string[] av vare-nøkler. priceMap: { <nøkkel>: <pris kr> } (fra SharePoint).
+// En vare må ha en POSITIV pris i mappet, ellers avvises den (unknown_item).
+// Returnerer { ok:true, amount } eller { ok:false, error, item? }.
+export function sumMissingItems(items, priceMap) {
   if (!Array.isArray(items) || items.length === 0) {
     return { ok: false, error: "no_items" };
   }
+  const map = priceMap || {};
   let amount = 0;
   for (const it of items) {
-    const price = PRICE_LIST[it];
-    if (price == null) return { ok: false, error: "unknown_item", item: it };
+    const price = map[it];
+    if (!(typeof price === "number" && price > 0)) {
+      return { ok: false, error: "unknown_item", item: it };
+    }
     amount += price;
   }
-  if (amount > MAX_DEPOSIT) amount = MAX_DEPOSIT;
   return { ok: true, amount };
 }
