@@ -14,8 +14,8 @@ Offentlig bookingside: **https://2gmbooking-portal.pages.dev/andslimoen**
 | 1 | Ledighet — konservativ telling + `/api/public-availability` | ✅ live |
 | 2 | Booking-orkestrator — hold/tilstandsmaskin, mock betaling/lås, `/api/public-booking` | ✅ live (inert) |
 | 3 | Frontend — tospråklig (NO/EN), flatpickr-kalender, galleri (placeholder-bilder) | ✅ live |
-| 4 | Stripe-betaling + depositum + vilkår | 📋 spec skrevet, ikke bygget |
-| 4b | Admin-knapp «belast manglende utstyr» (i `2gmbooking`-repoet) | 📋 venter på 4a |
+| 4a | Stripe-betaling + depositum + vilkår (Checkout, webhook, off-session, vilkårsside) | ✅ kode ferdig + deployet, venter på Stripe-secrets + live-test |
+| 4b | Admin-knapp «belast manglende utstyr» + Gjester `Firma\|Privat`-filter (i `2gmbooking`) | 📋 venter på 4a-livetest |
 | 5 | Ekte Yale (ytterdør) + Tuya (rom) per-gjest-koder | ⏳ krever fysiske låser |
 
 ## Dokumenter (i repoet)
@@ -26,11 +26,18 @@ Offentlig bookingside: **https://2gmbooking-portal.pages.dev/andslimoen**
 - Fase 3 spec/plan: `docs/superpowers/specs|plans/2026-06-14-andslimoen-fase3-frontend*`
 - **Fase 4 spec (til din gjennomgang):** `docs/superpowers/specs/2026-06-14-andslimoen-fase4-stripe-design.md`
 
-## NESTE STEG
+## NESTE STEG — Fase 4a er bygget, mangler kun Stripe-oppsett + live-test
 
-1. **Les Fase 4-spec'en** — særlig **vilkårsutkastet** (NO/EN, punkt 1–6). Si fra om ordlyd / inn-/utsjekk-tider skal endres.
-2. **Opprett Stripe-konto** og hent **test-nøkler** (Dashboard → Developers → API keys): `pk_test_…` + `sk_test_…`. (`whsec_…` lages ved webhook-oppsett.) Disse legges som Cloudflare-secrets ved bygging.
-3. Når spec'en er godkjent → vi lager **Fase 4a-planen** og bygger mot Stripe testmodus (ikke blokkert av at riggen er fysisk klar).
+Fase 4a-koden er ferdig og deployet (inert til secrets + toggle). For å teste i Stripe TESTMODUS:
+
+1. **Opprett Stripe-konto** (hvis ikke gjort) og hent **test-nøkler** (Dashboard → Developers → API keys): `sk_test_…`.
+2. **Sett Cloudflare-secrets** (portal-prosjektet → Settings → Environment variables, Production):
+   - `STRIPE_SECRET_KEY` = `sk_test_…`
+   - `ADMIN_CHARGE_SECRET` = lang tilfeldig streng (brukes av admin-appen i Fase 4b)
+   - `PUBLIC_BASE_URL` = `https://2gmbooking-portal.pages.dev`
+3. **Registrer webhook** i Stripe (testmodus → Developers → Webhooks → Add endpoint): URL `https://2gmbooking-portal.pages.dev/api/stripe-webhook`, event `checkout.session.completed`. Kopier signing secret → sett Cloudflare-secret `STRIPE_WEBHOOK_SECRET` = `whsec_…`. Redeploy.
+4. **Live-test:** sett `PublicBookingEnabled=Ja`, åpne `/andslimoen`, book med testkort `4242 4242 4242 4242` → bekreftelse. Verifiser SP-raden (PaymentStatus=paid, StripeCustomerId, kort-id, TermsAcceptedAt). Test `charge-missing-items` via curl med `X-Admin-Secret`. **Rydd opp:** kanseller testrader, `PublicBookingEnabled=Nei`.
+5. Deretter: **Fase 4b** (admin-appen) — brainstorm + bygg «belast manglende utstyr»-knapp + Gjester `Firma|Privat`-filter.
 
 ## Nøkkelbeslutninger (Fase 4)
 
