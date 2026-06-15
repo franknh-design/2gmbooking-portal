@@ -1,4 +1,4 @@
-// assets/js/andslimoen.mjs — v1.1. DOM-orkestrering for den offentlige
+// assets/js/andslimoen.mjs — v1.2. DOM-orkestrering for den offentlige
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i andslimoen-format.mjs, tekster i
 // andslimoen-i18n.mjs.
@@ -50,6 +50,9 @@ function buildGallery() {
   const thumbs = $("gallery-thumbs");
   GALLERY.forEach((g, i) => {
     const img = document.createElement("img");
+    // v1.2: lazy + async dekoding på thumbs — kun hovedbildet trengs umiddelbart.
+    img.loading = "lazy";
+    img.decoding = "async";
     img.src = g.src;
     img.alt = t(g.key);
     if (i === 0) img.classList.add("active");
@@ -104,6 +107,16 @@ async function init() {
   applyLang(lang);
 
   const today = todayISO();
+  // v1.2: Vis booking-shell (galleri/intro/dato/skjema) UMIDDELBART så siden
+  // ikke står blank mens config-kallet går (Functions→Graph→SharePoint kan ta
+  // 1–3s). Pris vises som «–» til API-et svarer; ved «stengt» byttes til
+  // closed-state. Reserver-knappen er uansett disabled til gyldig opphold + pris.
+  $("booking-state").hidden = false;
+  initDatePickers(today);
+  ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
+  $("guest-form").addEventListener("submit", onSubmit);
+  applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
+
   let config;
   try {
     config = await postJSON("/api/public-availability", { fromDate: today, toDate: today });
@@ -111,17 +124,12 @@ async function init() {
     config = { enabled: false };
   }
   if (!config || !config.enabled) {
+    $("booking-state").hidden = true;
     $("closed-state").hidden = false;
     return;
   }
   nightlyRate = Number(config.nightlyRate) || 0;
   $("nightly-rate").textContent = formatKr(nightlyRate);
-  $("booking-state").hidden = false;
-
-  initDatePickers(today);
-  ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
-  $("guest-form").addEventListener("submit", onSubmit);
-  applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
 }
 
 function initDatePickers(todayStr) {

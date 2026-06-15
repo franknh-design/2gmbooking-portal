@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.1 -->
+<!-- v1.2 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -7,10 +7,14 @@
   <meta name="theme-color" content="#1B4F72" />
   <meta name="color-scheme" content="light" />
   <title>Rigg Andslimoen — book rom</title>
+  <!-- v1.2: preconnect til CDN-en så flatpickr-ressursene henter raskere -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="assets/css/andslimoen.css" />
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/no.js"></script>
+  <!-- v1.2: defer → ikke render-blokkerende. Rekkefølge bevares (flatpickr før
+       no.js før andslimoen.mjs), så globalen er klar når modulen kjører. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/no.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -31,7 +35,7 @@
     <!-- Booking-tilstand -->
     <section class="booking" id="booking-state" hidden>
       <div class="gallery">
-        <img class="gallery-main" id="gallery-main" src="assets/img/andslimoen/rom.jpg" alt="Rom på Rigg Andslimoen" />
+        <img class="gallery-main" id="gallery-main" src="assets/img/andslimoen/rom.jpg" alt="Rom på Rigg Andslimoen" decoding="async" fetchpriority="high" />
         <div class="gallery-thumbs" id="gallery-thumbs"></div>
       </div>
 
