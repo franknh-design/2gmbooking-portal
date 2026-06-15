@@ -59,7 +59,7 @@ export async function createHold(deps, { fromISO, toISO, guest }) {
   });
   await deps.store.update(created.id, { paymentRef: pay.paymentRef });
 
-  return { ok: true, bookingRef, paymentRef: pay.paymentRef, checkoutUrl: pay.checkoutUrl };
+  return { ok: true, bookingRef, rowId: created.id, paymentRef: pay.paymentRef, checkoutUrl: pay.checkoutUrl };
 }
 
 async function findByRef(deps, bookingRef) {

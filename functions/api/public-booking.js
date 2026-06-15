@@ -1,15 +1,16 @@
 // functions/api/public-booking.js
-// v1.0 — Anonymt create-hold-endepunkt for den offentlige bookingsiden.
+// v1.1 — Anonymt create-hold-endepunkt for den offentlige bookingsiden (Stripe).
 //
 // POST /api/public-booking
-// Body: { fromDate, toDate, guest: { name, phone, email? } }
+// Body: { fromDate, toDate, termsAccepted: true, guest: { name, phone, email? } }
 // Returnerer:
-//   { ok: true, bookingRef, paymentRef }
+//   { ok: true, bookingRef, checkoutUrl }   (redirect gjesten til checkoutUrl)
 //   { ok: false, error: "public_booking_disabled" | "invalid_request" |
-//                        "invalid_dates" | "invalid_guest" | "sold_out" | "internal_error" }
+//                        "invalid_dates" | "invalid_guest" | "terms_not_accepted" |
+//                        "sold_out" | "internal_error" }
 //
-// Bundet til Rigg Andslimoen. Ingen token. Betaling/lås er mock i Fase 2 — den
-// ekte Vipps-callbacken (som kaller confirmPayment) wires i Fase 4.
+// Bundet til Rigg Andslimoen. Ingen token. Betaling via Stripe Checkout; webhook
+// (stripe-webhook.js) bekrefter. Lås er mock i Fase 4 (ekte Yale/Tuya = Fase 5).
 
 import { getPublicConfig, generateBookingRef } from "../_utils/sharepoint.js";
 import { createSharePointStore } from "../_utils/booking-store.js";
@@ -19,6 +20,7 @@ import { createHold } from "../_utils/booking-orchestrator.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 const MAX_NIGHTS = 90; // øvre grense på opphold — hindrer absurde hold (anonymt skrive-endepunkt)
+const TERMS_VERSION = "2026-06-15";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -42,6 +44,9 @@ export async function onRequestPost(context) {
     const nights = Math.round((Date.parse(toISO) - Date.parse(fromISO)) / (24 * 60 * 60 * 1000));
     if (nights > MAX_NIGHTS) {
       return jsonResponse({ ok: false, error: "invalid_dates", maxNights: MAX_NIGHTS }, 400);
+    }
+    if (nights < 1) {
+      return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     }
     if (
       !guest ||
@@ -86,10 +91,11 @@ export async function onRequestPost(context) {
     }
 
     // Stempel vilkår-aksept på raden (best-effort — bryter aldri svaret).
+    // createHold returnerer rowId, så vi slipper en ny getBookings()-rundtur.
     try {
-      const all = await store.getBookings();
-      const row = all.find((b) => b.bookingRef === result.bookingRef);
-      if (row) await store.update(row.id, { termsAcceptedAtMs: Date.now(), termsVersion: "2026-06-15" });
+      if (result.rowId) {
+        await store.update(result.rowId, { termsAcceptedAtMs: Date.now(), termsVersion: TERMS_VERSION });
+      }
     } catch (e) {
       console.error("[public-booking] terms-stamp feilet (ignorert):", e);
     }
