@@ -13,9 +13,9 @@
 
 import { getPublicConfig, generateBookingRef } from "../_utils/sharepoint.js";
 import { createSharePointStore } from "../_utils/booking-store.js";
-import { mockPayment, mockLock } from "../_utils/providers-mock.js";
+import { mockLock } from "../_utils/providers-mock.js";
+import { createStripePayment } from "../_utils/payment-stripe.js";
 import { createHold } from "../_utils/booking-orchestrator.js";
-import { sendEmail } from "../_utils/email.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 const MAX_NIGHTS = 90; // øvre grense på opphold — hindrer absurde hold (anonymt skrive-endepunkt)
@@ -29,7 +29,7 @@ export async function onRequestPost(context) {
     } catch {
       return jsonResponse({ ok: false, error: "invalid_request" }, 400);
     }
-    const { fromDate, toDate, guest, lang } = body || {};
+    const { fromDate, toDate, guest } = body || {};
 
     if (!fromDate || !toDate) return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     const from = new Date(fromDate);
@@ -37,8 +37,6 @@ export async function onRequestPost(context) {
     if (isNaN(from.getTime()) || isNaN(to.getTime()) || to < from) {
       return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     }
-    // Normaliser til YYYY-MM-DD (UTC) så et tidssone-kvalifisert input ikke gir
-    // en ikke-midnatt Check_In i SharePoint.
     const fromISO = from.toISOString().slice(0, 10);
     const toISO = to.toISOString().slice(0, 10);
     const nights = Math.round((Date.parse(toISO) - Date.parse(fromISO)) / (24 * 60 * 60 * 1000));
@@ -57,13 +55,18 @@ export async function onRequestPost(context) {
     if (guest.email != null && guest.email !== "" && !_isValidEmail(guest.email)) {
       return jsonResponse({ ok: false, error: "invalid_guest" }, 400);
     }
+    if (body.termsAccepted !== true) {
+      return jsonResponse({ ok: false, error: "terms_not_accepted" }, 400);
+    }
 
     const config = await getPublicConfig(env, PROPERTY_NAME);
     if (!config.enabled) return jsonResponse({ ok: false, error: "public_booking_disabled" }, 403);
 
+    const baseUrl = (env.PUBLIC_BASE_URL || new URL(request.url).origin).replace(/\/$/, "");
+    const store = createSharePointStore(env, PROPERTY_NAME);
     const deps = {
-      store: createSharePointStore(env, PROPERTY_NAME),
-      payment: mockPayment,
+      store,
+      payment: createStripePayment(env, baseUrl),
       lock: mockLock,
       now: () => Date.now(),
       generateRef: generateBookingRef,
@@ -82,25 +85,16 @@ export async function onRequestPost(context) {
       return jsonResponse(result, status);
     }
 
-    // Kvittering til gjest med pris + reservasjonssum (fail-soft — kun hvis
-    // e-post er oppgitt; e-post er valgfritt på den offentlige siden). sendEmail
-    // kaster aldri, men vi pakker inn defensivt så en feil aldri bryter svaret.
-    if (guest.email) {
-      try {
-        const sum = nights * (config.nightlyRate || 0);
-        const en = String(lang || "").toLowerCase() === "en";
-        const fd = (iso) => { const [y, m, d] = iso.split("-"); return `${d}.${m}.${y}`; };
-        const subject = `${en ? "Reservation" : "Reservasjon"} ${result.bookingRef} — Rigg Andslimoen`;
-        const text = en
-          ? `Hi ${guest.name.trim()},\n\nYour reservation at Rigg Andslimoen is created.\n\nReference: ${result.bookingRef}\nCheck-in: ${fd(fromISO)}\nCheck-out: ${fd(toISO)}\nPrice: ${config.nightlyRate} kr/night × ${nights} ${nights === 1 ? "night" : "nights"} = ${sum} kr\n\nThe room is held for 15 minutes — payment coming soon.\n\nKind regards,\n2GM Eiendom`
-          : `Hei ${guest.name.trim()},\n\nReservasjonen din på Rigg Andslimoen er opprettet.\n\nReferanse: ${result.bookingRef}\nInnsjekk: ${fd(fromISO)}\nUtsjekk: ${fd(toISO)}\nPris: ${config.nightlyRate} kr/natt × ${nights} ${nights === 1 ? "natt" : "netter"} = ${sum} kr\n\nDu holder rommet i 15 minutter — betaling kommer snart.\n\nVennlig hilsen\n2GM Eiendom`;
-        await sendEmail(env, { to: guest.email, subject, text });
-      } catch (e) {
-        console.error("[public-booking] kvittering feilet (ignorert):", e);
-      }
+    // Stempel vilkår-aksept på raden (best-effort — bryter aldri svaret).
+    try {
+      const all = await store.getBookings();
+      const row = all.find((b) => b.bookingRef === result.bookingRef);
+      if (row) await store.update(row.id, { termsAcceptedAtMs: Date.now(), termsVersion: "2026-06-15" });
+    } catch (e) {
+      console.error("[public-booking] terms-stamp feilet (ignorert):", e);
     }
 
-    return jsonResponse(result, 200);
+    return jsonResponse({ ok: true, bookingRef: result.bookingRef, checkoutUrl: result.checkoutUrl }, 200);
   } catch (err) {
     console.error("public-booking error:", err);
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
