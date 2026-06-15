@@ -153,7 +153,7 @@ const SELECT_BOOKING = "Title,Person_Name,Company,Billing_Company,Property_Name,
 const SELECT_ROOM = "Title,Door_Code,Cleaning_Status,DailyRate,PropertyLookupId,Floor,Active,LongTerm_Company,LongTerm_Price,LongTerm_StartDate,LongTerm_EndDate";
 const SELECT_PROPERTY_FULL = "Title,FullTenant_Company,DailyRate,SMS_Template,WiFi_SSID,WiFi_Password,Welcome_Message,Floor1_Info,Floor2_Info";
 const SELECT_TOKEN = "Title,Token,Pin,Aktiv,Firma,Kontaktperson,Telefon,Epost,Utlopsdato,TillatteLokasjoner,MaksRomPerBestilling,AntallBestillinger,SistBrukt,LastSeen,Sprak";
-const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon,Email,Company";
+const SELECT_PERSON = "Title,Person_Name,Name,Mobile,Phone,Telefon,Email,Company,GuestType";
 const SELECT_RATE = "Person_Name,Company,Property,DailyRate,FeeType";
 const SELECT_PUBLIC_CONFIG = "Title,PublicBookingEnabled,PublicNightlyRate";
 
@@ -830,7 +830,7 @@ export async function createPublicHoldRow(env, fields) {
 //   - Ingen match → opprett ny rad med Title + Mobile + Email + Company.
 // Idempotent og fail-soft — kalleren wrapper i Promise.allSettled så én
 // gjest-feil ikke stopper de andre.
-export async function upsertPersonForBooking(env, { name, phone, email, company }) {
+export async function upsertPersonForBooking(env, { name, phone, email, company, guestType }) {
   const target = String(name || "").trim().toLowerCase();
   if (!target) return { skipped: true, reason: "no_name" };
 
@@ -852,6 +852,8 @@ export async function upsertPersonForBooking(env, { name, phone, email, company 
     // det "riktige" for denne personen.
     if (phone && !curMobile) patch.Mobile = phone;
     if (email && !curEmail)  patch.Email  = email;
+    const curType = String(f.GuestType || "").trim();
+    if (guestType && !curType) patch.GuestType = guestType;
     if (!Object.keys(patch).length) return { matched: existing.id, patched: false };
 
     const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PERSONS}/items/${existing.id}/fields`;
@@ -869,6 +871,7 @@ export async function upsertPersonForBooking(env, { name, phone, email, company 
   if (phone)   fields.Mobile = phone;
   if (email)   fields.Email = email;
   if (company) fields.Company = company;
+  if (guestType) fields.GuestType = guestType;
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.PERSONS}/items`;
   const created = await graphRequest(env, path, {
     method: "POST",
