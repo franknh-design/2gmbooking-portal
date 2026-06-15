@@ -23,6 +23,8 @@ const LIST_IDS = {
   PROPERTIES: "d842d574-f238-442a-be3d-77334727e89f",
   RATES:      "a604493f-e879-48a0-bcab-cdeb9ae2195e",
   PERSONS:    "ebbe517d-83f8-4169-9423-70c63a3f8c07",
+  // v4c: global løsøre-prisliste (redigerbar fra admin Portal-booking-fanen).
+  DEPOSIT_PRICES: "2790650c-bbdb-448b-b1e4-548146a229d8",
   // v1.7: PIN-rate-limit. Sett til SharePoint-list-GUID for 'Pin_Attempts'
   // når listen er opprettet. Tom streng = rate-limiting deaktivert (graceful
   // degradation). Kolonner som forventes:
@@ -209,6 +211,20 @@ export async function getPublicConfig(env, propertyName) {
     enabled: f.PublicBookingEnabled === true && rate > 0,
     nightlyRate: rate,
   };
+}
+
+// Leser den globale løsøre-prislista (Deposit_Prices) → { <vare-nøkkel>: <pris kr> }.
+// Kun rader med positiv pris tas med. Tom/feil => tomt map (fail-closed: charge avvises).
+export async function getDepositPrices(env) {
+  const items = await fetchAllItems(env, LIST_IDS.DEPOSIT_PRICES, { select: "Title,Price" });
+  const map = {};
+  for (const it of items) {
+    const f = it.fields || {};
+    const key = String(f.Title || "").trim();
+    const price = Number(f.Price);
+    if (key && price > 0) map[key] = price;
+  }
+  return map;
 }
 
 // ============================================================================
