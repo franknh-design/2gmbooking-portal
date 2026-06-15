@@ -43,3 +43,13 @@ test("verifyWebhookSignature rejects bad signature / stale timestamp / garbage",
   assert.equal(await verifyWebhookSignature(body, `t=${t},v1=${sig}`, secret, t + 10000), false);
   assert.equal(await verifyWebhookSignature(body, "garbage", secret, t), false);
 });
+
+test("buildSessionForm sets PaymentIntent-level metadata too", () => {
+  const s = buildSessionForm({ bookingRef: "2GM-X", amountKr: 650, productName: "x", successUrl: "a", cancelUrl: "b" }).toString();
+  assert.match(s, /payment_intent_data%5Bmetadata%5D%5BbookingRef%5D=2GM-X/);
+});
+
+test("verifyWebhookSignature rejects empty/missing secret", async () => {
+  assert.equal(await verifyWebhookSignature("{}", "t=1,v1=abc", "", 1), false);
+  assert.equal(await verifyWebhookSignature("{}", "t=1,v1=abc", undefined, 1), false);
+});

@@ -35,9 +35,11 @@ export function buildSessionForm({ bookingRef, amountKr, productName, email, suc
 // Verifiser Stripe-Signature-headeren mot rå body. nowSec injiseres for testbarhet.
 export async function verifyWebhookSignature(rawBody, sigHeader, secret, nowSec) {
   if (!sigHeader || !secret) return false;
-  const parts = Object.fromEntries(
-    String(sigHeader).split(",").map((kv) => kv.split("=")).filter((a) => a.length === 2)
-  );
+  const parts = {};
+  for (const kv of String(sigHeader).split(",")) {
+    const i = kv.indexOf("=");
+    if (i > 0) parts[kv.slice(0, i)] = kv.slice(i + 1);
+  }
   const t = Number(parts.t);
   const v1 = parts.v1;
   if (!t || !v1) return false;
@@ -51,15 +53,13 @@ export async function verifyWebhookSignature(rawBody, sigHeader, secret, nowSec)
 
 // ---- Fetch-wrappere (live) ----------------------------------------------
 
-async function stripePost(env, path, form) {
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form.toString(),
-  });
+async function stripePost(env, path, form, idempotencyKey) {
+  const headers = {
+    Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  const res = await fetch(`${STRIPE_API}${path}`, { method: "POST", headers, body: form.toString() });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`stripe ${path} ${res.status}: ${JSON.stringify(data)}`);
   return data;
@@ -79,9 +79,11 @@ export async function retrievePaymentIntent(env, id) {
   return data;
 }
 
-export async function chargeSavedCard(env, { customerId, paymentMethodId, amountKr, description, bookingRef }) {
+export async function chargeSavedCard(env, { customerId, paymentMethodId, amountKr, description, bookingRef, idempotencyKey }) {
+  const amount = Math.round((Number(amountKr) || 0) * 100);
+  if (!(amount > 0)) throw new Error("chargeSavedCard: amount must be > 0");
   const f = new URLSearchParams();
-  f.set("amount", String(Math.round((Number(amountKr) || 0) * 100)));
+  f.set("amount", String(amount));
   f.set("currency", "nok");
   f.set("customer", customerId);
   f.set("payment_method", paymentMethodId);
@@ -89,7 +91,7 @@ export async function chargeSavedCard(env, { customerId, paymentMethodId, amount
   f.set("confirm", "true");
   if (description) f.set("description", description);
   if (bookingRef) f.set("metadata[bookingRef]", bookingRef);
-  return stripePost(env, "/payment_intents", f);
+  return stripePost(env, "/payment_intents", f, idempotencyKey);
 }
 
 export async function refund(env, { paymentIntentId, amountKr }) {
