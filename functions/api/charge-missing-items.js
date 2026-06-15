@@ -7,6 +7,7 @@
 import { createSharePointStore } from "../_utils/booking-store.js";
 import { createStripePayment } from "../_utils/payment-stripe.js";
 import { sumMissingItems } from "../_utils/deposit.js";
+import { getDepositPrices } from "../_utils/sharepoint.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 
@@ -21,7 +22,8 @@ export async function onRequestPost(context) {
     const { bookingRef, items } = body || {};
     if (!bookingRef) return jsonResponse({ ok: false, error: "invalid_request" }, 400);
 
-    const sum = sumMissingItems(items);
+    const priceMap = await getDepositPrices(env);
+    const sum = sumMissingItems(items, priceMap);
     if (!sum.ok) return jsonResponse({ ok: false, error: sum.error, item: sum.item }, 400);
 
     const store = createSharePointStore(env, PROPERTY_NAME);
