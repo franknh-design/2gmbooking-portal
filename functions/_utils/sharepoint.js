@@ -201,9 +201,13 @@ export async function getPublicConfig(env, propertyName) {
   const row = items.find((it) => (it.fields?.Title || "") === propertyName);
   if (!row) return { enabled: false, nightlyRate: 0 };
   const f = row.fields || {};
+  // «Ingen lokasjon åpen uten pris» — booking er kun aktiv når BÅDE
+  // PublicBookingEnabled er på OG en positiv nattsats er satt. Mangler prisen,
+  // behandles riggen som stengt (fail closed), så ingen kan booke til 0 kr.
+  const rate = Number(f.PublicNightlyRate) || 0;
   return {
-    enabled: f.PublicBookingEnabled === true,
-    nightlyRate: Number(f.PublicNightlyRate) || 0,
+    enabled: f.PublicBookingEnabled === true && rate > 0,
+    nightlyRate: rate,
   };
 }
 

@@ -1,4 +1,4 @@
-// assets/js/andslimoen.mjs — v1.2. DOM-orkestrering for den offentlige
+// assets/js/andslimoen.mjs — v1.3. DOM-orkestrering for den offentlige
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i andslimoen-format.mjs, tekster i
 // andslimoen-i18n.mjs.
@@ -248,6 +248,7 @@ async function onSubmit(e) {
     data = await postJSON("/api/public-booking", {
       fromDate: lastStay.from,
       toDate: lastStay.to,
+      lang,
       guest: { name: $("guest-name").value.trim(), phone: $("guest-phone").value, email: email || undefined },
     });
   } catch {
@@ -256,6 +257,14 @@ async function onSubmit(e) {
   if (data && data.ok) {
     $("booking-state").hidden = true;
     $("confirmation-ref").textContent = data.bookingRef;
+    // v1.3: vis pris + reservasjonssum på bekreftelsen
+    const nights = nightsBetween(lastStay.from, lastStay.to);
+    const sumEl = $("confirmation-sum");
+    if (sumEl) {
+      sumEl.textContent = (nights > 0 && nightlyRate > 0)
+        ? fmt(t("confSum"), { sum: formatKr(totalPrice(nightlyRate, lastStay.from, lastStay.to)), n: nights, unit: (nights === 1 ? t("nightOne") : t("nightMany")), rate: formatKr(nightlyRate) })
+        : "";
+    }
     $("confirmation").hidden = false;
     return;
   }

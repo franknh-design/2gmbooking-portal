@@ -15,6 +15,7 @@ import { getPublicConfig, generateBookingRef } from "../_utils/sharepoint.js";
 import { createSharePointStore } from "../_utils/booking-store.js";
 import { mockPayment, mockLock } from "../_utils/providers-mock.js";
 import { createHold } from "../_utils/booking-orchestrator.js";
+import { sendEmail } from "../_utils/email.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 const MAX_NIGHTS = 90; // øvre grense på opphold — hindrer absurde hold (anonymt skrive-endepunkt)
@@ -28,7 +29,7 @@ export async function onRequestPost(context) {
     } catch {
       return jsonResponse({ ok: false, error: "invalid_request" }, 400);
     }
-    const { fromDate, toDate, guest } = body || {};
+    const { fromDate, toDate, guest, lang } = body || {};
 
     if (!fromDate || !toDate) return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     const from = new Date(fromDate);
@@ -80,6 +81,25 @@ export async function onRequestPost(context) {
       const status = result.error === "sold_out" ? 409 : 400;
       return jsonResponse(result, status);
     }
+
+    // Kvittering til gjest med pris + reservasjonssum (fail-soft — kun hvis
+    // e-post er oppgitt; e-post er valgfritt på den offentlige siden). sendEmail
+    // kaster aldri, men vi pakker inn defensivt så en feil aldri bryter svaret.
+    if (guest.email) {
+      try {
+        const sum = nights * (config.nightlyRate || 0);
+        const en = String(lang || "").toLowerCase() === "en";
+        const fd = (iso) => { const [y, m, d] = iso.split("-"); return `${d}.${m}.${y}`; };
+        const subject = `${en ? "Reservation" : "Reservasjon"} ${result.bookingRef} — Rigg Andslimoen`;
+        const text = en
+          ? `Hi ${guest.name.trim()},\n\nYour reservation at Rigg Andslimoen is created.\n\nReference: ${result.bookingRef}\nCheck-in: ${fd(fromISO)}\nCheck-out: ${fd(toISO)}\nPrice: ${config.nightlyRate} kr/night × ${nights} ${nights === 1 ? "night" : "nights"} = ${sum} kr\n\nThe room is held for 15 minutes — payment coming soon.\n\nKind regards,\n2GM Eiendom`
+          : `Hei ${guest.name.trim()},\n\nReservasjonen din på Rigg Andslimoen er opprettet.\n\nReferanse: ${result.bookingRef}\nInnsjekk: ${fd(fromISO)}\nUtsjekk: ${fd(toISO)}\nPris: ${config.nightlyRate} kr/natt × ${nights} ${nights === 1 ? "natt" : "netter"} = ${sum} kr\n\nDu holder rommet i 15 minutter — betaling kommer snart.\n\nVennlig hilsen\n2GM Eiendom`;
+        await sendEmail(env, { to: guest.email, subject, text });
+      } catch (e) {
+        console.error("[public-booking] kvittering feilet (ignorert):", e);
+      }
+    }
+
     return jsonResponse(result, 200);
   } catch (err) {
     console.error("public-booking error:", err);
