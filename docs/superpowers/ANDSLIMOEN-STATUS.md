@@ -16,6 +16,7 @@ Offentlig bookingside: **https://2gmbooking-portal.pages.dev/andslimoen**
 | 3 | Frontend — tospråklig (NO/EN), flatpickr-kalender, galleri (placeholder-bilder) | ✅ live |
 | 4a | Stripe-betaling + depositum + vilkår (Checkout, webhook, off-session, vilkårsside) | ✅ kode ferdig + deployet, venter på Stripe-secrets + live-test |
 | 4b | Admin-knapp «belast manglende utstyr» + Gjester `Firma\|Privat`-filter (i `2gmbooking`) | ✅ kode ferdig + deployet (begge repo), venter på live-test (Stripe) |
+| 4c | Redigerbare løsøre-priser (admin Portal-booking-fane → `Deposit_Prices`) | ✅ kode ferdig + deployet (begge repo) |
 | 5 | Ekte Yale (ytterdør) + Tuya (rom) per-gjest-koder | ⏳ krever fysiske låser |
 
 ## Dokumenter (i repoet)
