@@ -75,6 +75,8 @@ export function createSharePointStore(env, propertyName) {
           stripeCustomerId: f.StripeCustomerId || null,
           stripePaymentMethodId: f.StripePaymentMethodId || null,
           paymentRef: f.PaymentRef || null,
+          guestName: f.Person_Name || null,
+          guestPhone: f.Mobile || null,
         };
       });
     },
