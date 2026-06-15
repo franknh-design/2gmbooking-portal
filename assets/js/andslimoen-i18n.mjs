@@ -41,6 +41,11 @@ export const STRINGS = {
     err_invalid_guest: "Sjekk navn og telefonnummer.",
     err_invalid_dates: "Sjekk datoene.",
     err_generic: "Noe gikk galt, prøv igjen.",
+    termsLabel: "Jeg godtar ",
+    termsLink: "vilkårene",
+    redirecting: "Sender deg til betaling…",
+    paidConfirmed: "Takk! Betalingen er mottatt og bookingen er bekreftet.",
+    err_terms_not_accepted: "Du må godta vilkårene.",
   },
   en: {
     introTitle: "Rooms at Rigg Andslimoen",
@@ -80,6 +85,11 @@ export const STRINGS = {
     err_invalid_guest: "Check name and phone number.",
     err_invalid_dates: "Check the dates.",
     err_generic: "Something went wrong, please try again.",
+    termsLabel: "I accept the ",
+    termsLink: "terms",
+    redirecting: "Sending you to payment…",
+    paidConfirmed: "Thank you! Payment received and your booking is confirmed.",
+    err_terms_not_accepted: "You must accept the terms.",
   },
 };
 

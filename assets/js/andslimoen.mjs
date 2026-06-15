@@ -106,6 +106,17 @@ async function init() {
   });
   applyLang(lang);
 
+  // Retur fra Stripe Checkout: ?ok=<ref> → vis bekreftelse (ikke last booking-shell).
+  const _params = new URLSearchParams(location.search);
+  if (_params.get("ok")) {
+    $("confirmation-ref").textContent = _params.get("ok");
+    const _sum = $("confirmation-sum"); if (_sum) _sum.textContent = "";
+    const _msg = document.querySelector('#confirmation [data-i18n="confMsg"]');
+    if (_msg) { _msg.removeAttribute("data-i18n"); _msg.textContent = t("paidConfirmed"); }
+    $("confirmation").hidden = false;
+    return;
+  }
+
   const today = todayISO();
   // v1.2: Vis booking-shell (galleri/intro/dato/skjema) UMIDDELBART så siden
   // ikke står blank mens config-kallet går (Functions→Graph→SharePoint kan ta
@@ -114,6 +125,7 @@ async function init() {
   $("booking-state").hidden = false;
   initDatePickers(today);
   ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
+  $("terms-check").addEventListener("change", refreshButton);
   $("guest-form").addEventListener("submit", onSubmit);
   applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
 
@@ -212,7 +224,7 @@ async function onDatesChanged() {
 }
 
 function guestValid() {
-  return $("guest-name").value.trim().length > 0 && isValidPhone($("guest-phone").value);
+  return $("guest-name").value.trim().length > 0 && isValidPhone($("guest-phone").value) && $("terms-check").checked;
 }
 
 function refreshButton() {
@@ -249,23 +261,15 @@ async function onSubmit(e) {
       fromDate: lastStay.from,
       toDate: lastStay.to,
       lang,
+      termsAccepted: $("terms-check").checked,
       guest: { name: $("guest-name").value.trim(), phone: $("guest-phone").value, email: email || undefined },
     });
   } catch {
     data = { ok: false, error: "internal_error" };
   }
-  if (data && data.ok) {
-    $("booking-state").hidden = true;
-    $("confirmation-ref").textContent = data.bookingRef;
-    // v1.3: vis pris + reservasjonssum på bekreftelsen
-    const nights = nightsBetween(lastStay.from, lastStay.to);
-    const sumEl = $("confirmation-sum");
-    if (sumEl) {
-      sumEl.textContent = (nights > 0 && nightlyRate > 0)
-        ? fmt(t("confSum"), { sum: formatKr(totalPrice(nightlyRate, lastStay.from, lastStay.to)), n: nights, unit: (nights === 1 ? t("nightOne") : t("nightMany")), rate: formatKr(nightlyRate) })
-        : "";
-    }
-    $("confirmation").hidden = false;
+  if (data && data.ok && data.checkoutUrl) {
+    btn.textContent = t("redirecting");
+    window.location.href = data.checkoutUrl;
     return;
   }
   err.textContent = errText(data && data.error);
