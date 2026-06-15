@@ -24,6 +24,13 @@ function patchToSpFields(patch) {
   if ("paidAtMs" in patch) sp.PaidAt = msToISODateTime(patch.paidAtMs);
   if ("paymentRef" in patch) sp.PaymentRef = patch.paymentRef;
   if ("roomId" in patch) sp.RoomLookupId = patch.roomId;
+  if ("stripeCustomerId" in patch) sp.StripeCustomerId = patch.stripeCustomerId;
+  if ("stripePaymentMethodId" in patch) sp.StripePaymentMethodId = patch.stripePaymentMethodId;
+  if ("termsAcceptedAtMs" in patch) sp.TermsAcceptedAt = msToISODateTime(patch.termsAcceptedAtMs);
+  if ("termsVersion" in patch) sp.TermsVersion = patch.termsVersion;
+  if ("depositChargedAtMs" in patch) sp.DepositChargedAt = msToISODateTime(patch.depositChargedAtMs);
+  if ("depositChargeAmount" in patch) sp.DepositChargeAmount = patch.depositChargeAmount;
+  if ("depositChargeItems" in patch) sp.DepositChargeItems = patch.depositChargeItems;
   if ("codesGenerated" in patch && patch.codesGenerated) {
     sp.Door_Code = patch.roomCode != null ? String(patch.roomCode) : "GENERATED";
   }
@@ -64,6 +71,10 @@ export function createSharePointStore(env, propertyName) {
           paidAtMs: parseDateUtcMs(f.PaidAt),
           codesGenerated: !!(f.Door_Code && String(f.Door_Code).trim()),
           source: f.Source || "",
+          guestEmail: f.Email || null,
+          stripeCustomerId: f.StripeCustomerId || null,
+          stripePaymentMethodId: f.StripePaymentMethodId || null,
+          paymentRef: f.PaymentRef || null,
         };
       });
     },
