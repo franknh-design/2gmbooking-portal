@@ -4,6 +4,7 @@ import {
   parseDateUtcMs,
   isInRangeInclusive,
   computePrivateAvailability,
+  isPrivateOpen,
 } from "../functions/_utils/availability-math.js";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -154,4 +155,25 @@ test("multi-day range: a booking occupies only the days it spans", () => {
   assert.equal(days[1].available, 1); // 14. juni: booket
   assert.equal(days[2].available, 1); // 15. juni (checkout-dag, inklusiv): booket
   assert.equal(days[3].available, 2); // 16. juni: ledig igjen
+});
+
+test("isPrivateOpen: enabled + positive rate => true", () => {
+  assert.equal(isPrivateOpen({ PublicBookingEnabled: true, PublicNightlyRate: 750 }), true);
+});
+
+test("isPrivateOpen: enabled but no/zero rate => false (fail closed)", () => {
+  assert.equal(isPrivateOpen({ PublicBookingEnabled: true, PublicNightlyRate: 0 }), false);
+  assert.equal(isPrivateOpen({ PublicBookingEnabled: true }), false);
+  assert.equal(isPrivateOpen({ PublicBookingEnabled: true, PublicNightlyRate: null }), false);
+});
+
+test("isPrivateOpen: disabled => false regardless of rate", () => {
+  assert.equal(isPrivateOpen({ PublicBookingEnabled: false, PublicNightlyRate: 750 }), false);
+  assert.equal(isPrivateOpen({ PublicNightlyRate: 750 }), false);
+});
+
+test("isPrivateOpen: missing/empty fields => false", () => {
+  assert.equal(isPrivateOpen(undefined), false);
+  assert.equal(isPrivateOpen(null), false);
+  assert.equal(isPrivateOpen({}), false);
 });

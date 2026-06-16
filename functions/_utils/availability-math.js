@@ -68,3 +68,13 @@ export function computePrivateAvailability({ rooms, bookings, fromMs, toMs }) {
   }
   return { days };
 }
+
+// «Åpen»-regelen for privat booking på én eiendom: PublicBookingEnabled må være
+// på OG en positiv nattsats satt (en prisløs rigg er stengt — fail closed).
+// Én sannhetskilde, brukt av getPrivateConfig (per rigg) og isAnyPrivateEnabled
+// (avleder 2gm.no-inngangssidens Bedrift|Privat-valg). fields = Properties-radens
+// fields-objekt (eller {} ved manglende rad).
+export function isPrivateOpen(fields) {
+  if (!fields) return false;
+  return fields.PublicBookingEnabled === true && (Number(fields.PublicNightlyRate) || 0) > 0;
+}

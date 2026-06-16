@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!-- start v1.0 — 2gm.no inngangsside (Bedrift|Privat / →firma) -->
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1B4F72" />
+  <meta name="color-scheme" content="light" />
+  <title>2GM Eiendom — book rom</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <style>
+    .entry-wrap { max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; }
+    .entry-card { position: relative; background: var(--card-bg, #fff); border-radius: 14px; padding: 30px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
+    .entry-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
+    .entry-title { font-size: 24px; margin: 8px 0 4px; }
+    .entry-sub { color: #667; font-size: 15px; margin: 0 0 22px; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 560px) { .choices { grid-template-columns: 1fr; } }
+    .choice { display: block; text-decoration: none; border: 1px solid #d7dce2; border-radius: 12px;
+      padding: 22px 20px; color: inherit; transition: border-color .15s, box-shadow .15s, transform .05s; }
+    .choice:hover { border-color: #1B4F72; box-shadow: 0 4px 14px rgba(27,79,114,.12); }
+    .choice:active { transform: translateY(1px); }
+    .choice .ic { font-size: 30px; }
+    .choice .ct { font-size: 19px; font-weight: 700; color: #1B4F72; margin: 8px 0 4px; }
+    .choice .cd { font-size: 14px; color: #667; line-height: 1.4; }
+    .entry-loading { text-align: center; padding: 34px 0; color: #889; font-size: 15px; }
+    .spinner { width: 30px; height: 30px; margin: 0 auto 12px; border: 3px solid #e3e8ee;
+      border-top-color: #1B4F72; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .lang-toggle { position: absolute; top: 18px; right: 18px; display: flex; gap: 2px;
+      border: 1px solid #d7dce2; border-radius: 7px; overflow: hidden; }
+    .lang-toggle button { border: 0; background: #fff; color: #667; font-size: 12px; font-weight: 600;
+      padding: 4px 9px; cursor: pointer; font-family: inherit; }
+    .lang-toggle button.active { background: #1B4F72; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="entry-wrap">
+    <div class="entry-card">
+      <div class="lang-toggle" id="lang-toggle">
+        <button type="button" data-lang="nb">NO</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+
+      <div class="entry-logo">2GM EIENDOM</div>
+      <h1 class="entry-title" data-i18n="title">Book rom hos 2GM</h1>
+      <p class="entry-sub" data-i18n="sub">Velg hvordan du vil booke.</p>
+
+      <!-- Vises mens vi sjekker om privat booking er aktiv -->
+      <div class="entry-loading" id="entry-loading">
+        <div class="spinner"></div>
+        <span data-i18n="loading">Laster …</span>
+      </div>
+
+      <!-- Bedrift | Privat — vises kun når privat er aktiv (JS avgjør) -->
+      <div class="choices" id="choices" hidden>
+        <a class="choice" href="/company">
+          <div class="ic">🏢</div>
+          <div class="ct" data-i18n="bedrift_t">Bedrift</div>
+          <div class="cd" data-i18n="bedrift_d">Registrer firma og book som bedriftskunde.</div>
+        </a>
+        <a class="choice" href="/private">
+          <div class="ic">👤</div>
+          <div class="ct" data-i18n="privat_t">Privat</div>
+          <div class="cd" data-i18n="privat_d">Book rom som privatperson.</div>
+        </a>
+      </div>
+
+      <noscript>
+        <div class="choices">
+          <a class="choice" href="/company"><div class="ic">🏢</div><div class="ct">Bedrift / Company</div></a>
+          <a class="choice" href="/private"><div class="ic">👤</div><div class="ct">Privat / Private</div></a>
+        </div>
+      </noscript>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var T = {
+      nb: {
+        title: 'Book rom hos 2GM', sub: 'Velg hvordan du vil booke.', loading: 'Laster …',
+        bedrift_t: 'Bedrift', bedrift_d: 'Registrer firma og book som bedriftskunde.',
+        privat_t: 'Privat', privat_d: 'Book rom som privatperson.',
+      },
+      en: {
+        title: 'Book a room with 2GM', sub: 'Choose how you would like to book.', loading: 'Loading …',
+        bedrift_t: 'Company', bedrift_d: 'Register your company and book as a business customer.',
+        privat_t: 'Private', privat_d: 'Book a room as a private guest.',
+      },
+    };
+    function pickLang() {
+      try { var s = localStorage.getItem('entry_lang'); if (s === 'nb' || s === 'en') return s; } catch (e) {}
+      var n = String(navigator.language || '').toLowerCase();
+      return (n.indexOf('nb') === 0 || n.indexOf('no') === 0 || n.indexOf('nn') === 0) ? 'nb' : 'en';
+    }
+    var lang = pickLang();
+    function applyLang(l) {
+      lang = (l === 'en') ? 'en' : 'nb';
+      var d = T[lang];
+      document.documentElement.lang = lang;
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n'); if (d[k] != null) el.textContent = d[k];
+      });
+      document.querySelectorAll('#lang-toggle button').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+      });
+      try { localStorage.setItem('entry_lang', lang); } catch (e) {}
+    }
+    document.getElementById('lang-toggle').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (b) applyLang(b.getAttribute('data-lang'));
+    });
+    applyLang(lang);
+
+    function showChoices() {
+      document.getElementById('entry-loading').hidden = true;
+      document.getElementById('choices').hidden = false;
+    }
+
+    // Privat aktiv? → vis Bedrift|Privat. Av → rett til firma. Feil → vis valget
+    // (begge målsidene håndterer egen åpen/stengt-tilstand, så ingen blindvei).
+    fetch('/api/private-enabled')
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (data) {
+        if (data && data.privateEnabled) showChoices();
+        else window.location.replace('/company');
+      })
+      .catch(function () { showChoices(); });
+  })();
+  </script>
+</body>
+</html>

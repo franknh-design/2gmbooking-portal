@@ -13,6 +13,7 @@
 //     disse, men payload-en de jobber på er mye mindre nå pga $select.
 
 import { graphRequest } from "./graph.js";
+import { isPrivateOpen } from "./availability-math.js";
 
 const SITE_ID = "2gmeiendom.sharepoint.com,ccff273d-0332-4541-bdaa-7ab2acb35882,b3801ad9-27fc-4b55-8fa4-c1113315c376";
 
@@ -204,13 +205,20 @@ export async function getPrivateConfig(env, propertyName) {
   if (!row) return { enabled: false, nightlyRate: 0 };
   const f = row.fields || {};
   // «Ingen lokasjon åpen uten pris» — booking er kun aktiv når BÅDE
-  // PublicBookingEnabled er på OG en positiv nattsats er satt. Mangler prisen,
-  // behandles riggen som stengt (fail closed), så ingen kan booke til 0 kr.
-  const rate = Number(f.PublicNightlyRate) || 0;
+  // PublicBookingEnabled er på OG en positiv nattsats er satt (isPrivateOpen).
+  // Mangler prisen, behandles riggen som stengt (fail closed).
   return {
-    enabled: f.PublicBookingEnabled === true && rate > 0,
-    nightlyRate: rate,
+    enabled: isPrivateOpen(f),
+    nightlyRate: Number(f.PublicNightlyRate) || 0,
   };
+}
+
+// Avleder 2gm.no-inngangssidens Bedrift|Privat-valg: privat er «på» hvis MINST
+// én eiendom er åpen for privat booking (PublicBookingEnabled + positiv pris).
+// Ingen egen global bryter — speiler per-rigg-innstillingene i admin.
+export async function isAnyPrivateEnabled(env) {
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: SELECT_PUBLIC_CONFIG });
+  return items.some((it) => isPrivateOpen(it.fields || {}));
 }
 
 // Leser den globale løsøre-prislista (Deposit_Prices) → { <vare-nøkkel>: <pris kr> }.
