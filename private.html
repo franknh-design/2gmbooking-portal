@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.3 -->
+<!-- v1.4 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -58,7 +58,8 @@
         <input type="text" id="guest-name" data-i18n-ph="namePlaceholder" placeholder="Navn" autocomplete="name" />
         <input type="tel" id="guest-phone" data-i18n-ph="phonePlaceholder" placeholder="Telefon (8 siffer)" autocomplete="tel" />
         <input type="email" id="guest-email" data-i18n-ph="emailPlaceholder" placeholder="E-post (valgfritt)" autocomplete="email" />
-        <label class="terms"><input type="checkbox" id="terms-check" /> <span data-i18n="termsLabel">Jeg godtar </span><a href="private-vilkar.html" target="_blank" data-i18n="termsLink">vilkårene</a></label>
+        <label class="terms"><input type="checkbox" id="terms-check" /> <span class="terms-text"><span data-i18n="termsLabel">Jeg godtar </span><a href="private-vilkar.html" target="_blank" data-i18n="termsLink">vilkårene</a></span></label>
+        <div id="ts-holder" class="ts-holder"></div>
         <p class="field-error" id="form-error" hidden></p>
         <button type="submit" id="reserve-btn" data-i18n="reserve" disabled>Reserver</button>
         <p class="hint" data-i18n="hint">Betaling via Vipps (kommer). Du holder rommet i 15 minutter.</p>

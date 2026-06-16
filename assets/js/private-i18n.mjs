@@ -1,5 +1,5 @@
-// assets/js/andslimoen-i18n.mjs
-// v1.0 — Tospråklig ordbok (norsk bokmål + engelsk) for den offentlige
+// assets/js/private-i18n.mjs
+// v1.1 — Tospråklig ordbok (norsk bokmål + engelsk) for den offentlige
 // bookingsiden. Ingen DOM → node-testbar. Dynamiske verdier settes med {plassholdere}.
 
 export const STRINGS = {
@@ -46,6 +46,8 @@ export const STRINGS = {
     redirecting: "Sender deg til betaling…",
     paidConfirmed: "Takk! Betalingen er mottatt og bookingen er bekreftet.",
     err_terms_not_accepted: "Du må godta vilkårene.",
+    err_robot: "Bekreft at du ikke er en robot.",
+    err_verification_failed: "Robot-sjekken feilet — last siden på nytt og prøv igjen.",
   },
   en: {
     introTitle: "Rooms at Rigg Andslimoen",
@@ -90,6 +92,8 @@ export const STRINGS = {
     redirecting: "Sending you to payment…",
     paidConfirmed: "Thank you! Payment received and your booking is confirmed.",
     err_terms_not_accepted: "You must accept the terms.",
+    err_robot: "Confirm that you're not a robot.",
+    err_verification_failed: "Verification failed — reload the page and try again.",
   },
 };
 

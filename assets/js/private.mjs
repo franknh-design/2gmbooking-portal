@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.3. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.4. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -22,15 +22,44 @@ const GALLERY = [
 ];
 const LANG_KEY = "andslimoen_lang";
 
+// Turnstile (bot-vern). Samme site key som firma-registreringssiden. Tom = av
+// (skjemaet virker uten). Server-verifisering krever at TURNSTILE_SECRET er satt
+// som Cloudflare-secret — uten secret rendres widgeten, men sjekkes ikke.
+const TURNSTILE_SITEKEY = "0x4AAAAAADl36_i1SsZ20nxm";
+
 let nightlyRate = 0;
 let lang = "nb";
 let galleryIndex = 0;
 let lastStay = { from: "", to: "", available: 0 };
+let tsWidgetId = null;
 const fpInstances = [];
 const thumbImgs = [];
 
 function t(key) {
   return (STRINGS[lang] && STRINGS[lang][key]) || key;
+}
+
+// Render/re-render Turnstile-widgeten med riktig språk. No-op før api.js er
+// lastet (kalles på nytt via window._tsOnload når scriptet er klart).
+function renderTurnstile() {
+  if (!TURNSTILE_SITEKEY || !window.turnstile) return;
+  const holder = $("ts-holder");
+  if (!holder) return;
+  if (tsWidgetId !== null) { try { window.turnstile.remove(tsWidgetId); } catch (_) {} tsWidgetId = null; }
+  holder.innerHTML = "";
+  tsWidgetId = window.turnstile.render(holder, {
+    sitekey: TURNSTILE_SITEKEY,
+    language: lang === "en" ? "en" : "no",
+  });
+}
+
+function loadTurnstile() {
+  if (!TURNSTILE_SITEKEY) return;
+  window._tsOnload = renderTurnstile; // kalles når api.js er ferdiglastet
+  const s = document.createElement("script");
+  s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=_tsOnload";
+  s.async = true; s.defer = true;
+  document.head.appendChild(s);
 }
 
 async function postJSON(path, body) {
@@ -96,6 +125,7 @@ function applyLang(newLang) {
 
   // Re-lokaliser eventuell allerede-vist ledighet/pris/knapp.
   renderStay();
+  renderTurnstile(); // re-render bot-widgeten på nytt språk (no-op før lastet)
 }
 
 async function init() {
@@ -127,6 +157,7 @@ async function init() {
   ["guest-name", "guest-phone"].forEach((id) => $(id).addEventListener("input", refreshButton));
   $("terms-check").addEventListener("change", refreshButton);
   $("guest-form").addEventListener("submit", onSubmit);
+  loadTurnstile(); // injiser Turnstile-script (rendres via _tsOnload når klart)
   applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
 
   let config;
@@ -252,6 +283,18 @@ async function onSubmit(e) {
     err.textContent = t("errEmail"); err.hidden = false;
     return;
   }
+  // Bot-vern: hent Turnstile-token (når aktivert). Mangler det, be gjesten
+  // fullføre sjekken før vi sender.
+  let cfToken = "";
+  if (TURNSTILE_SITEKEY) {
+    try {
+      cfToken = (window.turnstile && tsWidgetId !== null) ? (window.turnstile.getResponse(tsWidgetId) || "") : "";
+    } catch (_) { cfToken = ""; }
+    if (!cfToken) {
+      err.textContent = t("err_robot"); err.hidden = false;
+      return;
+    }
+  }
   const btn = $("reserve-btn");
   btn.disabled = true;
   btn.textContent = t("reserving");
@@ -262,6 +305,7 @@ async function onSubmit(e) {
       toDate: lastStay.to,
       lang,
       termsAccepted: $("terms-check").checked,
+      cfToken,
       guest: { name: $("guest-name").value.trim(), phone: $("guest-phone").value, email: email || undefined },
     });
   } catch {
@@ -272,6 +316,8 @@ async function onSubmit(e) {
     window.location.href = data.checkoutUrl;
     return;
   }
+  // Token er engangsbruk — nullstill widgeten så gjesten kan prøve på nytt.
+  try { if (window.turnstile && tsWidgetId !== null) window.turnstile.reset(tsWidgetId); } catch (_) {}
   err.textContent = errText(data && data.error);
   err.hidden = false;
   refreshButton();

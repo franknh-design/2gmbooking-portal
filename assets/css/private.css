@@ -58,6 +58,10 @@ h1 { font-size: 22px; margin: 0 0 4px; }
 .availability.full { color: var(--err); }
 .price-summary { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
 .guest { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.terms { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); text-align: left; cursor: pointer; }
+.terms input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; margin: 0; }
+.terms a { color: var(--brand); }
+.ts-holder:empty { display: none; }
 .field-error { color: var(--err); font-size: 13px; margin: 0; }
 #reserve-btn {
   background: var(--brand); color: #fff; border: none; border-radius: 8px;

@@ -1,13 +1,13 @@
 // functions/api/private-booking.js
-// v1.1 — Anonymt create-hold-endepunkt for den offentlige bookingsiden (Stripe).
+// v1.2 — Anonymt create-hold-endepunkt for den offentlige bookingsiden (Stripe).
 //
 // POST /api/private-booking
-// Body: { fromDate, toDate, termsAccepted: true, guest: { name, phone, email? } }
+// Body: { fromDate, toDate, termsAccepted: true, cfToken?, guest: { name, phone, email? } }
 // Returnerer:
 //   { ok: true, bookingRef, checkoutUrl }   (redirect gjesten til checkoutUrl)
 //   { ok: false, error: "public_booking_disabled" | "invalid_request" |
 //                        "invalid_dates" | "invalid_guest" | "terms_not_accepted" |
-//                        "sold_out" | "internal_error" }
+//                        "verification_failed" | "sold_out" | "internal_error" }
 //
 // Bundet til Rigg Andslimoen. Ingen token. Betaling via Stripe Checkout; webhook
 // (stripe-webhook.js) bekrefter. Lås er mock i Fase 4 (ekte Yale/Tuya = Fase 5).
@@ -62,6 +62,14 @@ export async function onRequestPost(context) {
     }
     if (body.termsAccepted !== true) {
       return jsonResponse({ ok: false, error: "terms_not_accepted" }, 400);
+    }
+
+    // Bot-vern (Turnstile) — aktiveres når TURNSTILE_SECRET er satt som
+    // Cloudflare-secret. Fail-closed. Sjekkes etter billig validering, men før
+    // SharePoint-kallet, så bot-trafikk ikke treffer Graph. Speiler company-register.js.
+    if (env.TURNSTILE_SECRET) {
+      const human = await _verifyTurnstile(env, body.cfToken || "", request.headers.get("CF-Connecting-IP"));
+      if (!human) return jsonResponse({ ok: false, error: "verification_failed" }, 403);
     }
 
     const config = await getPrivateConfig(env, PROPERTY_NAME);
@@ -126,8 +134,30 @@ function corsHeaders() {
   };
 }
 
+// Bot-vern: verifiser Turnstile-token mot Cloudflare. Fail-closed — returnerer
+// false ved manglende token eller nettverksfeil (kalles kun når TURNSTILE_SECRET
+// er satt). Speiler _verifyTurnstile i company-register.js.
+async function _verifyTurnstile(env, token, ip) {
+  if (!token) return false;
+  try {
+    const form = new URLSearchParams();
+    form.append("secret", env.TURNSTILE_SECRET);
+    form.append("response", token);
+    if (ip) form.append("remoteip", ip);
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    return data && data.success === true;
+  } catch (e) {
+    console.error("[private-booking] Turnstile-verifisering feilet:", e);
+    return false;
+  }
+}
+
 // Telefon — internasjonalt vennlig (privat-siden kan ha utenlandske gjester).
-// Speiler isValidPhone i andslimoen-format.mjs. Valgfri +, 6–15 siffer.
+// Speiler isValidPhone i private-format.mjs. Valgfri +, 6–15 siffer.
 function _isValidPhone(s) {
   const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
   return /^\+?\d{6,15}$/.test(cleaned);
