@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.3 -->
+<!-- registrer v1.4 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/css/styles.css" />
   <style>
     .reg-wrap { max-width: 460px; margin: 0 auto; padding: 24px 16px 48px; }
-    .reg-card { background: var(--card-bg, #fff); border-radius: 14px; padding: 26px 24px;
+    .reg-card { position: relative; background: var(--card-bg, #fff); border-radius: 14px; padding: 26px 24px;
       box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
     .reg-title { font-size: 22px; margin: 6px 0 4px; }
@@ -30,47 +30,58 @@
     /* Honningfelle — skjult for mennesker, synlig for bots. */
     .hp-field { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
     #ts-holder { margin: 4px 0 12px; }
+    /* Språkbryter */
+    .lang-toggle { position: absolute; top: 18px; right: 18px; display: flex; gap: 2px;
+      border: 1px solid #d7dce2; border-radius: 7px; overflow: hidden; }
+    .lang-toggle button { border: 0; background: #fff; color: #667; font-size: 12px; font-weight: 600;
+      padding: 4px 9px; cursor: pointer; font-family: inherit; }
+    .lang-toggle button.active { background: #1B4F72; color: #fff; }
   </style>
 </head>
 <body>
   <div class="reg-wrap">
     <div class="reg-card">
 
+      <div class="lang-toggle" id="lang-toggle">
+        <button type="button" data-lang="nb">NO</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+
       <!-- Skjema -->
       <div id="reg-form-view">
         <div class="reg-logo">2GM EIENDOM</div>
-        <h1 class="reg-title">Registrer firma</h1>
-        <p class="reg-sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
+        <h1 class="reg-title" data-i18n="title">Registrer firma</h1>
+        <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
 
         <form id="reg-form" novalidate>
           <div class="field">
-            <label class="field-label" for="f-firma">Firmanavn <span class="req">*</span></label>
+            <label class="field-label" for="f-firma"><span data-i18n="l_firma">Firmanavn</span> <span class="req">*</span></label>
             <input type="text" id="f-firma" autocomplete="organization" required />
           </div>
           <div class="field">
-            <label class="field-label" for="f-orgnr">Org.nr <span class="req">*</span></label>
-            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre" required />
+            <label class="field-label" for="f-orgnr"><span data-i18n="l_orgnr">Org.nr</span> <span class="req">*</span></label>
+            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre" data-i18n-ph="ph_orgnr" required />
           </div>
           <div class="field">
-            <label class="field-label" for="f-kontakt">Kontaktperson <span class="req">*</span></label>
+            <label class="field-label" for="f-kontakt"><span data-i18n="l_kontakt">Kontaktperson</span> <span class="req">*</span></label>
             <input type="text" id="f-kontakt" autocomplete="name" required />
           </div>
           <div class="field">
-            <label class="field-label" for="f-epost">E-post <span class="req">*</span></label>
+            <label class="field-label" for="f-epost"><span data-i18n="l_epost">E-post</span> <span class="req">*</span></label>
             <input type="email" id="f-epost" autocomplete="email" required />
           </div>
           <div class="field">
-            <label class="field-label" for="f-telefon">Telefon <span class="req">*</span></label>
-            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="Med landskode hvis utenlandsk, f.eks. +47 …" required />
+            <label class="field-label" for="f-telefon"><span data-i18n="l_telefon">Telefon</span> <span class="req">*</span></label>
+            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="Med landskode hvis utenlandsk, f.eks. +47 …" data-i18n-ph="ph_telefon" required />
           </div>
           <div class="field" id="f-locs-field" hidden>
-            <span class="field-label">Ønskede lokasjoner</span>
+            <span class="field-label" data-i18n="l_locs">Ønskede lokasjoner</span>
             <div class="locs" id="f-locs"></div>
           </div>
           <div class="field">
-            <label class="field-label" for="f-melding">Melding (valgfritt)</label>
-            <textarea id="f-melding" maxlength="1000" placeholder="Antall ansatte, perioder, behov …"></textarea>
+            <label class="field-label" for="f-melding" data-i18n="l_melding">Melding (valgfritt)</label>
+            <textarea id="f-melding" maxlength="1000" placeholder="Antall ansatte, perioder, behov …" data-i18n-ph="ph_melding"></textarea>
           </div>
           <!-- Honningfelle: ikke fyll ut. Skjult for mennesker. -->
           <div class="hp-field" aria-hidden="true">
@@ -80,17 +91,17 @@
           <!-- Turnstile-widget (vises kun når site key er satt) -->
           <div id="ts-holder"></div>
           <p id="reg-error" class="reg-error" hidden></p>
-          <button type="submit" id="reg-submit" class="btn btn-primary" style="width:100%;margin-top:6px">Send registrering</button>
+          <button type="submit" id="reg-submit" class="btn btn-primary" style="width:100%;margin-top:6px" data-i18n="submit">Send registrering</button>
         </form>
       </div>
 
       <!-- Kvittering -->
       <div id="reg-ok-view" class="reg-ok" hidden>
         <div class="big">✅</div>
-        <h2>Takk for registreringen!</h2>
-        <p>Vi har mottatt forespørselen fra <strong id="ok-firma"></strong>.<br>
-          Du får tilgang til portalen på e-post og SMS så snart vi har godkjent kontoen.</p>
-        <a class="reg-back" href="/">← Til innlogging</a>
+        <h2 data-i18n="ok_title">Takk for registreringen!</h2>
+        <p><span data-i18n="ok_body1">Vi har mottatt forespørselen fra</span> <strong id="ok-firma"></strong>.<br>
+          <span data-i18n="ok_body2">Du får tilgang til portalen på e-post og SMS så snart vi har godkjent kontoen.</span></p>
+        <a class="reg-back" href="/" data-i18n="back">← Til innlogging</a>
       </div>
 
     </div>
@@ -99,6 +110,74 @@
   <script>
   (function () {
     'use strict';
+
+    // === Språk (NO/EN) ===
+    var T = {
+      nb: {
+        title: 'Registrer firma',
+        sub: 'Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen. Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.',
+        l_firma: 'Firmanavn', l_orgnr: 'Org.nr', ph_orgnr: '9 sifre',
+        l_kontakt: 'Kontaktperson', l_epost: 'E-post', l_telefon: 'Telefon',
+        ph_telefon: 'Med landskode hvis utenlandsk, f.eks. +47 …',
+        l_locs: 'Ønskede lokasjoner', l_melding: 'Melding (valgfritt)',
+        ph_melding: 'Antall ansatte, perioder, behov …',
+        submit: 'Send registrering', sending: 'Sender …',
+        ok_title: 'Takk for registreringen!',
+        ok_body1: 'Vi har mottatt forespørselen fra',
+        ok_body2: 'Du får tilgang til portalen på e-post og SMS så snart vi har godkjent kontoen.',
+        back: '← Til innlogging',
+        err_firma: 'Fyll inn firmanavn.', err_orgnr: 'Org.nr må være 9 sifre.',
+        err_kontakt: 'Fyll inn kontaktperson.', err_epost: 'Ugyldig e-postadresse.',
+        err_telefon: 'Ugyldig telefonnummer.', err_robot: 'Bekreft at du ikke er en robot.',
+        err_verify: 'Robot-sjekken feilet — last siden på nytt og prøv igjen.',
+        err_generic: 'Noe gikk galt. Prøv igjen om litt.', err_network: 'Nettverksfeil — prøv igjen.',
+      },
+      en: {
+        title: 'Register company',
+        sub: "Fill in the form and we'll create a business account in the booking portal. You'll get access by email/SMS once we've approved your company.",
+        l_firma: 'Company name', l_orgnr: 'Org. no.', ph_orgnr: '9 digits',
+        l_kontakt: 'Contact person', l_epost: 'Email', l_telefon: 'Phone',
+        ph_telefon: 'Incl. country code if abroad, e.g. +47 …',
+        l_locs: 'Desired locations', l_melding: 'Message (optional)',
+        ph_melding: 'Number of staff, periods, needs …',
+        submit: 'Send registration', sending: 'Sending …',
+        ok_title: 'Thank you for registering!',
+        ok_body1: "We've received the request from",
+        ok_body2: "You'll get access to the portal by email and SMS once we've approved the account.",
+        back: '← To login',
+        err_firma: 'Enter a company name.', err_orgnr: 'Org. no. must be 9 digits.',
+        err_kontakt: 'Enter a contact person.', err_epost: 'Invalid email address.',
+        err_telefon: 'Invalid phone number.', err_robot: "Confirm that you're not a robot.",
+        err_verify: 'Verification failed — reload the page and try again.',
+        err_generic: 'Something went wrong. Please try again shortly.', err_network: 'Network error — please try again.',
+      },
+    };
+
+    var CURRENT_LANG = 'nb';
+    try { var stored = localStorage.getItem('reg_lang'); if (stored === 'nb' || stored === 'en') CURRENT_LANG = stored; } catch (e) {}
+
+    function t(k) { return (T[CURRENT_LANG] && T[CURRENT_LANG][k]) || T.nb[k] || k; }
+
+    function applyLang(lang) {
+      CURRENT_LANG = (lang === 'en') ? 'en' : 'nb';
+      var dict = T[CURRENT_LANG];
+      document.documentElement.lang = CURRENT_LANG;
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n'); if (dict[k] != null) el.textContent = dict[k];
+      });
+      document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n-ph'); if (dict[k] != null) el.setAttribute('placeholder', dict[k]);
+      });
+      Array.prototype.slice.call(document.querySelectorAll('#lang-toggle button')).forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-lang') === CURRENT_LANG);
+      });
+      try { localStorage.setItem('reg_lang', CURRENT_LANG); } catch (e) {}
+    }
+
+    document.getElementById('lang-toggle').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (b) applyLang(b.getAttribute('data-lang'));
+    });
+    applyLang(CURRENT_LANG);
 
     // === Turnstile (bot-vern) ===
     // Lim inn site key fra Cloudflare → Turnstile aktiveres (krever også at
@@ -174,22 +253,22 @@
         .call(locsEl.querySelectorAll('input:checked'))
         .map(function (c) { return c.value; });
 
-      if (!firma) return showErr('Fyll inn firmanavn.');
-      if (!/^\d{9}$/.test(orgnr)) return showErr('Org.nr må være 9 sifre.');
-      if (!kontakt) return showErr('Fyll inn kontaktperson.');
-      if (!isValidEmail(epost)) return showErr('Ugyldig e-postadresse.');
-      if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer.');
+      if (!firma) return showErr(t('err_firma'));
+      if (!/^\d{9}$/.test(orgnr)) return showErr(t('err_orgnr'));
+      if (!kontakt) return showErr(t('err_kontakt'));
+      if (!isValidEmail(epost)) return showErr(t('err_epost'));
+      if (!isValidPhone(telefon)) return showErr(t('err_telefon'));
 
       var cfToken = '';
       if (TURNSTILE_SITEKEY) {
         var tsInput = form.querySelector('[name="cf-turnstile-response"]');
         cfToken = tsInput ? tsInput.value : '';
-        if (!cfToken) return showErr('Bekreft at du ikke er en robot.');
+        if (!cfToken) return showErr(t('err_robot'));
       }
       var website = document.getElementById('f-website').value; // honningfelle
 
       btn.disabled = true;
-      btn.textContent = 'Sender …';
+      btn.textContent = t('sending');
 
       fetch('/api/register-company', {
         method: 'POST',
@@ -197,7 +276,7 @@
         body: JSON.stringify({
           firma: firma, orgnr: orgnr, kontaktperson: kontakt,
           epost: epost, telefon: telefon, lokasjoner: lokasjoner,
-          melding: melding, lang: 'nb', cfToken: cfToken, website: website,
+          melding: melding, lang: CURRENT_LANG, cfToken: cfToken, website: website,
         }),
       })
         .then(function (r) { return r.json().catch(function () { return {}; }); })
@@ -209,22 +288,22 @@
             window.scrollTo(0, 0);
           } else {
             var map = {
-              missing_firma: 'Fyll inn firmanavn.',
-              invalid_orgnr: 'Org.nr må være 9 sifre.',
-              missing_contact: 'Fyll inn kontaktperson.',
-              invalid_email: 'Ugyldig e-postadresse.',
-              invalid_phone: 'Ugyldig telefonnummer.',
-              verification_failed: 'Robot-sjekken feilet — last siden på nytt og prøv igjen.',
+              missing_firma: t('err_firma'),
+              invalid_orgnr: t('err_orgnr'),
+              missing_contact: t('err_kontakt'),
+              invalid_email: t('err_epost'),
+              invalid_phone: t('err_telefon'),
+              verification_failed: t('err_verify'),
             };
-            showErr((data && map[data.error]) || 'Noe gikk galt. Prøv igjen om litt.');
+            showErr((data && map[data.error]) || t('err_generic'));
             btn.disabled = false;
-            btn.textContent = 'Send registrering';
+            btn.textContent = t('submit');
           }
         })
         .catch(function () {
-          showErr('Nettverksfeil — prøv igjen.');
+          showErr(t('err_network'));
           btn.disabled = false;
-          btn.textContent = 'Send registrering';
+          btn.textContent = t('submit');
         });
     });
   })();
