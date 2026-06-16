@@ -309,9 +309,11 @@
     _showAuthScreen() {
       const sub = document.getElementById("auth-customer-sub");
       const t = window.I18n ? window.I18n.t : ((k) => k);
-      sub.textContent = this.customer
+      // Vis kundenavn KUN ved ekte token. Uten token (demo/registrerings-
+      // inngang) skal vi ikke vise «Innlogging for Demo-kunde» — la den stå tom.
+      sub.textContent = (this.token && this.customer)
         ? t("auth.loginAs", { name: this.customer.name })
-        : t("auth.loginGeneric");
+        : "";
 
       const errEl = document.getElementById("auth-error");
       if (errEl) { errEl.hidden = true; errEl.textContent = ""; }
