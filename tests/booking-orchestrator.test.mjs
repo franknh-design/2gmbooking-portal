@@ -26,7 +26,7 @@ function makeStore(rooms) {
         id, bookingRef, roomId,
         checkInMs: Date.UTC(2026, 5, 20), checkOutMs: Date.UTC(2026, 5, 22),
         status: "Upcoming", paymentStatus: "pending",
-        holdExpiryMs, paidAtMs: null, codesGenerated: false, source: "Public",
+        holdExpiryMs, paidAtMs: null, codesGenerated: false, source: "Private",
         paymentRef: paymentRef || null, guest,
       });
       return { id, bookingRef };
@@ -84,7 +84,7 @@ test("createHold: sold_out when no room free", async () => {
     id: "x", bookingRef: "2GM-OLD", roomId: "3",
     checkInMs: Date.UTC(2026, 5, 21), checkOutMs: Date.UTC(2026, 5, 23),
     status: "Upcoming", paymentStatus: "paid", holdExpiryMs: null, paidAtMs: T0,
-    codesGenerated: true, source: "Public",
+    codesGenerated: true, source: "Private",
   });
   const deps = makeDeps(store);
   const res = await createHold(deps, { fromISO: FROM, toISO: TO, guest: { name: "Kari", phone: "99112233" } });
@@ -99,7 +99,7 @@ test("createHold: an expired unpaid hold frees the room", async () => {
     id: "x", bookingRef: "2GM-OLD", roomId: "3",
     checkInMs: Date.UTC(2026, 5, 21), checkOutMs: Date.UTC(2026, 5, 23),
     status: "Upcoming", paymentStatus: "pending", holdExpiryMs: T0 - 1, paidAtMs: null,
-    codesGenerated: false, source: "Public",
+    codesGenerated: false, source: "Private",
   });
   const deps = makeDeps(store);
   const res = await createHold(deps, { fromISO: FROM, toISO: TO, guest: { name: "Per", phone: "99112233" } });

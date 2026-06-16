@@ -7,7 +7,7 @@ const T = Date.UTC(2026, 5, 14, 12, 0, 0);
 
 function b(over) {
   return {
-    id: "1", source: "Public", status: "Upcoming", paymentStatus: "pending",
+    id: "1", source: "Private", status: "Upcoming", paymentStatus: "pending",
     holdExpiryMs: T + HOLD_WINDOW_MS, paidAtMs: null, codesGenerated: false,
     ...over,
   };

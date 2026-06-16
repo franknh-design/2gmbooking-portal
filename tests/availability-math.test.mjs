@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseDateUtcMs,
   isInRangeInclusive,
-  computePublicAvailability,
+  computePrivateAvailability,
 } from "../functions/_utils/availability-math.js";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -35,14 +35,14 @@ test("all rooms public, no bookings -> full availability", () => {
     { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
     { id: "3", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings: [],
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
   assert.equal(days.length, 1);
   assert.equal(days[0].available, 3);
   assert.equal(days[0].physicalRooms, 3);
-  assert.equal(days[0].publicPoolSize, 3);
+  assert.equal(days[0].privatePoolSize, 3);
 });
 
 test("unassigned corporate booking reduces public availability (conservative)", () => {
@@ -51,9 +51,9 @@ test("unassigned corporate booking reduces public availability (conservative)", 
     { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
   ];
   const bookings = [
-    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPublic: false },
+    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPrivate: false },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings,
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
@@ -67,12 +67,12 @@ test("PublicBookable=false shrinks the public pool but not physical capacity", (
     { id: "2", publicBookable: false, longTermStartMs: null, longTermEndMs: null },
     { id: "3", publicBookable: false, longTermStartMs: null, longTermEndMs: null },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings: [],
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
   assert.equal(days[0].physicalRooms, 3);
-  assert.equal(days[0].publicPoolSize, 1);
+  assert.equal(days[0].privatePoolSize, 1);
   assert.equal(days[0].available, 1);
 });
 
@@ -82,14 +82,14 @@ test("public booking consumes both physical and public pool", () => {
     { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
   ];
   const bookings = [
-    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 14), isPublic: true },
+    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 14), isPrivate: true },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings,
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
   assert.equal(days[0].occupied, 1);
-  assert.equal(days[0].publicOccupied, 1);
+  assert.equal(days[0].privateOccupied, 1);
   assert.equal(days[0].available, 1);
 });
 
@@ -99,10 +99,10 @@ test("physical capacity is the binding constraint via min()", () => {
     { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
   ];
   const bookings = [
-    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPublic: false },
-    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPublic: false },
+    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPrivate: false },
+    { checkInMs: Date.UTC(2026, 5, 13), checkOutMs: Date.UTC(2026, 5, 13), isPrivate: false },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings,
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
@@ -114,17 +114,17 @@ test("long-term room is excluded from countable rooms on covered days", () => {
     { id: "1", publicBookable: true, longTermStartMs: Date.UTC(2026, 0, 1), longTermEndMs: null },
     { id: "2", publicBookable: true, longTermStartMs: null, longTermEndMs: null },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings: [],
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 13),
   });
   assert.equal(days[0].physicalRooms, 1);
-  assert.equal(days[0].publicPoolSize, 1);
+  assert.equal(days[0].privatePoolSize, 1);
   assert.equal(days[0].available, 1);
 });
 
 test("rejects reversed date range", () => {
-  assert.throws(() => computePublicAvailability({
+  assert.throws(() => computePrivateAvailability({
     rooms: [], bookings: [],
     fromMs: Date.UTC(2026, 5, 14), toMs: Date.UTC(2026, 5, 13),
   }), /toMs before fromMs/);
@@ -142,9 +142,9 @@ test("multi-day range: a booking occupies only the days it spans", () => {
   ];
   // Booking spans day index 1 and 2 of a 4-day window (13.-16. juni).
   const bookings = [
-    { checkInMs: Date.UTC(2026, 5, 14), checkOutMs: Date.UTC(2026, 5, 15), isPublic: true },
+    { checkInMs: Date.UTC(2026, 5, 14), checkOutMs: Date.UTC(2026, 5, 15), isPrivate: true },
   ];
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms, bookings,
     fromMs: Date.UTC(2026, 5, 13), toMs: Date.UTC(2026, 5, 16),
   });

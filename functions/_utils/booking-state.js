@@ -9,7 +9,7 @@ export const CODE_WINDOW_MS = 30 * 60 * 1000;
 // Et ubetalt offentlig hold som har passert holdvinduet.
 export function isHoldExpired(b, nowMs) {
   return (
-    b.source === "Public" &&
+    b.source === "Private" &&
     b.status !== "Cancelled" &&
     b.paymentStatus === "pending" &&
     b.holdExpiryMs != null &&
@@ -20,7 +20,7 @@ export function isHoldExpired(b, nowMs) {
 // En betalt booking som mangler koder og har passert kodevinduet (-> auto-refund).
 export function isCodeWindowExpired(b, nowMs) {
   return (
-    b.source === "Public" &&
+    b.source === "Private" &&
     b.status !== "Cancelled" &&
     b.paymentStatus === "paid" &&
     !b.codesGenerated &&

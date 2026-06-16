@@ -26,35 +26,35 @@ export function isInRangeInclusive(dMs, startMs, endMs) {
 
 // rooms:    [{ id, publicBookable:bool, longTermStartMs:number|null, longTermEndMs:number|null }]
 //           (kalleren har allerede filtrert til Active, ikke-kjøkken, riktig property)
-// bookings: [{ checkInMs:number, checkOutMs:number|null, isPublic:bool }]
+// bookings: [{ checkInMs:number, checkOutMs:number|null, isPrivate:bool }]
 //           (kalleren har allerede filtrert til Active/Upcoming på property-en,
 //            og droppet rader uten checkIn)
 // fromMs/toMs: UTC-midnatt i ms, inklusivt.
-// Returnerer { days: [{ date, available, physicalRooms, occupied, publicPoolSize, publicOccupied }] }
-export function computePublicAvailability({ rooms, bookings, fromMs, toMs }) {
+// Returnerer { days: [{ date, available, physicalRooms, occupied, privatePoolSize, privateOccupied }] }
+export function computePrivateAvailability({ rooms, bookings, fromMs, toMs }) {
   if (fromMs == null || toMs == null) throw new Error("Invalid date range");
   if (toMs < fromMs) throw new Error("toMs before fromMs");
 
   const days = [];
   for (let t = fromMs; t <= toMs; t += ONE_DAY_MS) {
     let physicalRooms = 0;
-    let publicPoolSize = 0;
+    let privatePoolSize = 0;
     for (const r of rooms) {
       if (isInRangeInclusive(t, r.longTermStartMs, r.longTermEndMs)) continue;
       physicalRooms++;
-      if (r.publicBookable) publicPoolSize++;
+      if (r.publicBookable) privatePoolSize++;
     }
 
     let occupied = 0;
-    let publicOccupied = 0;
+    let privateOccupied = 0;
     for (const b of bookings) {
       if (!isInRangeInclusive(t, b.checkInMs, b.checkOutMs)) continue;
       occupied++;
-      if (b.isPublic) publicOccupied++;
+      if (b.isPrivate) privateOccupied++;
     }
 
     const physicalAvailable = Math.max(0, physicalRooms - occupied);
-    const publicPoolAvailable = Math.max(0, publicPoolSize - publicOccupied);
+    const publicPoolAvailable = Math.max(0, privatePoolSize - privateOccupied);
     const available = Math.min(physicalAvailable, publicPoolAvailable);
 
     days.push({
@@ -62,8 +62,8 @@ export function computePublicAvailability({ rooms, bookings, fromMs, toMs }) {
       available,
       physicalRooms,
       occupied,
-      publicPoolSize,
-      publicOccupied,
+      privatePoolSize,
+      privateOccupied,
     });
   }
   return { days };

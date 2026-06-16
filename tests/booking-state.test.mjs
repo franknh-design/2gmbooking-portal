@@ -19,7 +19,7 @@ function holdBooking(over = {}) {
     checkInMs: Date.UTC(2026, 5, 20), checkOutMs: Date.UTC(2026, 5, 22),
     status: "Upcoming", paymentStatus: "pending",
     holdExpiryMs: T + HOLD_WINDOW_MS, paidAtMs: null,
-    codesGenerated: false, source: "Public",
+    codesGenerated: false, source: "Private",
     ...over,
   };
 }
