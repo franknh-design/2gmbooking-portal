@@ -506,7 +506,9 @@ export async function getRegistrationLocations(env) {
     if (f.ShowOnRegistration !== true) continue;
     const title = String(f.Title || "").trim();
     const slug = nameToSlug[title.toLowerCase()];
-    if (slug && title) out.push({ slug, title });
+    // Vis adressen til kunden (de kjenner ikke interne rigg-navn). Faller
+    // tilbake til Title hvis adressen mangler i PROPERTY_ADDRESSES.
+    if (slug && title) out.push({ slug, title, address: PROPERTY_ADDRESSES[title] || "" });
   }
   return out;
 }

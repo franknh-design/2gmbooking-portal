@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.5 -->
+<!-- registrer v1.6 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -198,11 +198,11 @@
     // Fallback hvis endepunktet feiler — må matche PROPERTY_MAP i
     // functions/_utils/sharepoint.js.
     var FALLBACK_LOCATIONS = [
-      { slug: 'rigg24',         title: 'Rigg 24' },
-      { slug: 'rigg44',         title: 'Rigg 44' },
-      { slug: 'riggbotnhagen',  title: 'Rigg Botnhågen' },
-      { slug: 'andslimoen',     title: 'Rigg Andslimoen' },
-      { slug: 'strandveien112', title: 'Strandveien 112' },
+      { slug: 'rigg24',         title: 'Rigg 24',        address: 'Aspeveien 2' },
+      { slug: 'rigg44',         title: 'Rigg 44',        address: 'Strandveien 108' },
+      { slug: 'riggbotnhagen',  title: 'Rigg Botnhågen', address: 'Industriveien 4' },
+      { slug: 'andslimoen',     title: 'Rigg Andslimoen', address: '' },
+      { slug: 'strandveien112', title: 'Strandveien 112', address: '' },
     ];
 
     var locsEl = document.getElementById('f-locs');
@@ -212,7 +212,8 @@
       if (!list || !list.length) { locsField.hidden = true; return; }
       locsField.hidden = false;
       locsEl.innerHTML = list.map(function (l) {
-        return '<label><input type="checkbox" value="' + l.slug + '"> ' + l.title + '</label>';
+        var label = l.address || l.title; // vis adresse, fallback til navn
+        return '<label><input type="checkbox" value="' + l.slug + '"> ' + label + '</label>';
       }).join('');
     }
 
