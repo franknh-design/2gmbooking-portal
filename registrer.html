@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.6 -->
+<!-- registrer v1.7 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,10 @@
   <title>2GM Eiendom – Registrer firma</title>
   <link rel="stylesheet" href="assets/css/styles.css" />
   <style>
-    .reg-wrap { max-width: 460px; margin: 0 auto; padding: 24px 16px 48px; }
+    .reg-wrap { max-width: 600px; margin: 0 auto; padding: 24px 16px 48px; }
+    /* To felt ved siden av hverandre på PC; stables på mobil. */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
+    @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; column-gap: 0; } }
     .reg-card { position: relative; background: var(--card-bg, #fff); border-radius: 14px; padding: 26px 24px;
       box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
@@ -55,25 +58,29 @@
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
 
         <form id="reg-form" novalidate>
-          <div class="field">
-            <label class="field-label" for="f-firma"><span data-i18n="l_firma">Firmanavn</span> <span class="req">*</span></label>
-            <input type="text" id="f-firma" autocomplete="organization" required />
+          <div class="row2">
+            <div class="field">
+              <label class="field-label" for="f-firma"><span data-i18n="l_firma">Firmanavn</span> <span class="req">*</span></label>
+              <input type="text" id="f-firma" autocomplete="organization" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-orgnr"><span data-i18n="l_orgnr">Org.nr</span> <span class="req">*</span></label>
+              <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre" data-i18n-ph="ph_orgnr" required />
+            </div>
           </div>
-          <div class="field">
-            <label class="field-label" for="f-orgnr"><span data-i18n="l_orgnr">Org.nr</span> <span class="req">*</span></label>
-            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre" data-i18n-ph="ph_orgnr" required />
-          </div>
-          <div class="field">
-            <label class="field-label" for="f-kontakt"><span data-i18n="l_kontakt">Kontaktperson</span> <span class="req">*</span></label>
-            <input type="text" id="f-kontakt" autocomplete="name" required />
+          <div class="row2">
+            <div class="field">
+              <label class="field-label" for="f-kontakt"><span data-i18n="l_kontakt">Kontaktperson</span> <span class="req">*</span></label>
+              <input type="text" id="f-kontakt" autocomplete="name" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-telefon"><span data-i18n="l_telefon">Telefon</span> <span class="req">*</span></label>
+              <input type="tel" id="f-telefon" autocomplete="tel" placeholder="Med landskode hvis utenlandsk, f.eks. +47 …" data-i18n-ph="ph_telefon" required />
+            </div>
           </div>
           <div class="field">
             <label class="field-label" for="f-epost"><span data-i18n="l_epost">E-post</span> <span class="req">*</span></label>
             <input type="email" id="f-epost" autocomplete="email" required />
-          </div>
-          <div class="field">
-            <label class="field-label" for="f-telefon"><span data-i18n="l_telefon">Telefon</span> <span class="req">*</span></label>
-            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="Med landskode hvis utenlandsk, f.eks. +47 …" data-i18n-ph="ph_telefon" required />
           </div>
           <div class="field" id="f-locs-field" hidden>
             <span class="field-label" data-i18n="l_locs">Ønskede lokasjoner</span>
