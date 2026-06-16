@@ -11,8 +11,8 @@
 //
 // Bundet til Rigg Andslimoen. Ingen token — dette er publikum-siden.
 
-import { getPublicConfig } from "../_utils/sharepoint.js";
-import { calculatePublicAvailability } from "../_utils/public-availability.js";
+import { getPrivateConfig } from "../_utils/sharepoint.js";
+import { calculatePrivateAvailability } from "../_utils/private-availability.js";
 
 const PROPERTY_NAME = "Rigg Andslimoen";
 const MAX_DAYS = 92;
@@ -41,12 +41,12 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: "range_too_large", maxDays: MAX_DAYS }, 400);
     }
 
-    const config = await getPublicConfig(env, PROPERTY_NAME);
+    const config = await getPrivateConfig(env, PROPERTY_NAME);
     if (!config.enabled) {
       return jsonResponse({ enabled: false });
     }
 
-    const result = await calculatePublicAvailability(env, PROPERTY_NAME, fromDate, toDate);
+    const result = await calculatePrivateAvailability(env, PROPERTY_NAME, fromDate, toDate);
     return jsonResponse({
       enabled: true,
       nightlyRate: config.nightlyRate,

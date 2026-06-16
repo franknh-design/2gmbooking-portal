@@ -12,7 +12,7 @@
 // Bundet til Rigg Andslimoen. Ingen token. Betaling via Stripe Checkout; webhook
 // (stripe-webhook.js) bekrefter. Lås er mock i Fase 4 (ekte Yale/Tuya = Fase 5).
 
-import { getPublicConfig, generateBookingRef } from "../_utils/sharepoint.js";
+import { getPrivateConfig, generateBookingRef } from "../_utils/sharepoint.js";
 import { createSharePointStore } from "../_utils/booking-store.js";
 import { mockLock } from "../_utils/providers-mock.js";
 import { createStripePayment } from "../_utils/payment-stripe.js";
@@ -64,7 +64,7 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "terms_not_accepted" }, 400);
     }
 
-    const config = await getPublicConfig(env, PROPERTY_NAME);
+    const config = await getPrivateConfig(env, PROPERTY_NAME);
     if (!config.enabled) return jsonResponse({ ok: false, error: "public_booking_disabled" }, 403);
 
     const baseUrl = (env.PUBLIC_BASE_URL || new URL(request.url).origin).replace(/\/$/, "");
