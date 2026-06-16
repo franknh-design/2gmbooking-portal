@@ -499,16 +499,18 @@ export async function getRegistrationLocations(env) {
   for (const slug of Object.keys(PROPERTY_MAP)) {
     nameToSlug[String(PROPERTY_MAP[slug]).toLowerCase()] = slug;
   }
-  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,ShowOnRegistration" });
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,ShowOnRegistration,Adress" });
   const out = [];
   for (const it of items) {
     const f = it.fields || {};
     if (f.ShowOnRegistration !== true) continue;
     const title = String(f.Title || "").trim();
     const slug = nameToSlug[title.toLowerCase()];
-    // Vis adressen til kunden (de kjenner ikke interne rigg-navn). Faller
-    // tilbake til Title hvis adressen mangler i PROPERTY_ADDRESSES.
-    if (slug && title) out.push({ slug, title, address: PROPERTY_ADDRESSES[title] || "" });
+    // Vis adressen til kunden (de kjenner ikke interne rigg-navn). SharePoint-
+    // kolonnen «Adress» (full adresse m/ postnr) er fasit; fallback til hardkodet
+    // tabell, så til Title. (NB: kolonnen heter Adress med én s.)
+    const address = String(f.Adress || "").trim() || PROPERTY_ADDRESSES[title] || "";
+    if (slug && title) out.push({ slug, title, address });
   }
   return out;
 }
