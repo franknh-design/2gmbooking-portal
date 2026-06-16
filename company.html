@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v2.1 -->
+<!-- company v2.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -238,7 +238,7 @@
 
     // Hent lokasjonene som admin har slått på for registrering. Tom liste =
     // skjul feltet (ingen valgt i admin). Feil/nettverk = bruk fallback.
-    fetch('/api/registration-locations')
+    fetch('/api/company-locations')
       .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
       .then(function (data) {
         renderLocations((data && data.ok && Array.isArray(data.locations)) ? data.locations : FALLBACK_LOCATIONS);
@@ -295,7 +295,7 @@
       btn.disabled = true;
       btn.textContent = t('sending');
 
-      fetch('/api/register-company', {
+      fetch('/api/company-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

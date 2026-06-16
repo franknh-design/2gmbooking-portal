@@ -1,17 +1,17 @@
-// functions/api/registration-locations.js — v1.0
-// GET /api/registration-locations
-// Returnerer lokasjonene som skal vises på /registrer (Properties med
+// functions/api/company-locations.js — v1.0
+// GET /api/company-locations
+// Returnerer lokasjonene som skal vises på /company (Properties med
 // ShowOnRegistration=true, satt i admin). { ok:true, locations:[{slug,title}] }
-// Ved feil: 500 → registreringssiden faller tilbake til hardkodet liste.
+// Ved feil: 500 → firma-siden faller tilbake til hardkodet liste.
 
-import { getRegistrationLocations } from "../_utils/sharepoint.js";
+import { getCompanyLocations } from "../_utils/sharepoint.js";
 
 export async function onRequestGet(context) {
   try {
-    const locations = await getRegistrationLocations(context.env);
+    const locations = await getCompanyLocations(context.env);
     return json({ ok: true, locations }, 200);
   } catch (err) {
-    console.error("registration-locations error:", err);
+    console.error("company-locations error:", err);
     return json({ ok: false, error: "internal_error" }, 500);
   }
 }

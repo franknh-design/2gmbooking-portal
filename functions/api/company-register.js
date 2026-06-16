@@ -1,7 +1,7 @@
-// functions/api/register-company.js — v1.0
+// functions/api/company-register.js — v1.0
 // Selvregistrering av nye firmakunder til token-portalen.
 //
-// POST /api/register-company
+// POST /api/company-register
 // Body: {
 //   firma:        "Eksempel AS",            (påkrevd)
 //   orgnr:        "123456789",              (valgfritt)
@@ -80,7 +80,7 @@ export async function onRequestPost(context) {
     try {
       existing = await findCustomerTokenByEmail(env, epost);
     } catch (e) {
-      console.error("[register-company] dedupe-oppslag feilet:", e);
+      console.error("[company-register] dedupe-oppslag feilet:", e);
     }
 
     if (existing) {
@@ -118,7 +118,7 @@ export async function onRequestPost(context) {
 
     return jsonResponse({ ok: true });
   } catch (err) {
-    console.error("register-company error:", err);
+    console.error("company-register error:", err);
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
 }
@@ -130,7 +130,7 @@ export async function onRequestOptions() {
 // ----------------------------------------------------------------------------
 
 function _fireEmail(context, promise) {
-  const p = Promise.resolve(promise).catch(e => console.error("[register-company] e-post feilet:", e));
+  const p = Promise.resolve(promise).catch(e => console.error("[company-register] e-post feilet:", e));
   if (context.waitUntil) context.waitUntil(p);
 }
 
@@ -180,7 +180,7 @@ async function _verifyTurnstile(env, token, ip) {
     const data = await res.json().catch(() => ({}));
     return data && data.success === true;
   } catch (e) {
-    console.error("[register-company] Turnstile-verifisering feilet:", e);
+    console.error("[company-register] Turnstile-verifisering feilet:", e);
     return false;
   }
 }
@@ -195,7 +195,7 @@ function _isValidEmail(s) {
 
 // Internasjonalt vennlig telefonvalidering — firmakunder kan være utenlandske.
 // Valgfri ledende +, 6–15 siffer etter at skilletegn er strippet (E.164-aktig).
-// Speiler isValidPhone i andslimoen-format.mjs.
+// Speiler isValidPhone i private-format.mjs.
 function _isValidPhone(s) {
   const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
   return /^\+?\d{6,15}$/.test(cleaned);

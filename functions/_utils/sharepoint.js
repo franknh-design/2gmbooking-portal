@@ -491,10 +491,10 @@ export async function getPropertiesByIdMap(env) {
   return map;
 }
 
-// Lokasjoner som skal vises på den offentlige registreringssiden (/registrer).
+// Lokasjoner som skal vises på den offentlige firma-siden (/company).
 // Styres per eiendom av Properties.ShowOnRegistration (Yes/No), satt i admin
 // (Priser → Portal-booking). Returnerer [{ slug, title }] kun for påslåtte.
-export async function getRegistrationLocations(env) {
+export async function getCompanyLocations(env) {
   const nameToSlug = {};
   for (const slug of Object.keys(PROPERTY_MAP)) {
     nameToSlug[String(PROPERTY_MAP[slug]).toLowerCase()] = slug;
@@ -1570,7 +1570,7 @@ export async function updatePinResetLog(env, itemId, fields) {
 }
 
 // ============================================================================
-// Selvregistrering av firmakunder (register-company.js)
+// Selvregistrering av firmakunder (company-register.js)
 // ============================================================================
 
 // Oppretter en INAKTIV Customer_Tokens-rad. Selvregistrerte kunder har
