@@ -1,4 +1,4 @@
-// assets/js/andslimoen.mjs — v1.3. DOM-orkestrering for den offentlige
+// assets/js/private.mjs — v1.3. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.

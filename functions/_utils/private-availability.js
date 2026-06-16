@@ -1,4 +1,4 @@
-// functions/_utils/public-availability.js
+// functions/_utils/private-availability.js
 // v1.0 — Env-bundet wrapper rundt computePrivateAvailability. Henter rom og
 // bookinger via eksisterende SharePoint-helpere og mapper til den rene
 // funksjonens input. Rør IKKE calculateAvailability (bedriftslogikk).

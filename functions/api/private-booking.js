@@ -1,7 +1,7 @@
-// functions/api/public-booking.js
+// functions/api/private-booking.js
 // v1.1 — Anonymt create-hold-endepunkt for den offentlige bookingsiden (Stripe).
 //
-// POST /api/public-booking
+// POST /api/private-booking
 // Body: { fromDate, toDate, termsAccepted: true, guest: { name, phone, email? } }
 // Returnerer:
 //   { ok: true, bookingRef, checkoutUrl }   (redirect gjesten til checkoutUrl)
@@ -97,12 +97,12 @@ export async function onRequestPost(context) {
         await store.update(result.rowId, { termsAcceptedAtMs: Date.now(), termsVersion: TERMS_VERSION });
       }
     } catch (e) {
-      console.error("[public-booking] terms-stamp feilet (ignorert):", e);
+      console.error("[private-booking] terms-stamp feilet (ignorert):", e);
     }
 
     return jsonResponse({ ok: true, bookingRef: result.bookingRef, checkoutUrl: result.checkoutUrl }, 200);
   } catch (err) {
-    console.error("public-booking error:", err);
+    console.error("private-booking error:", err);
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
 }

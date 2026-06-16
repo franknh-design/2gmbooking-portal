@@ -1,7 +1,7 @@
-// functions/api/public-availability.js
+// functions/api/private-availability.js
 // v1.0 — Anonymt ledighets-endepunkt for den offentlige bookingsiden.
 //
-// POST /api/public-availability
+// POST /api/private-availability
 // Body: { fromDate: "2026-06-13", toDate: "2026-07-13" }
 //
 // Returnerer:
@@ -53,7 +53,7 @@ export async function onRequestPost(context) {
       days: result.days,
     });
   } catch (err) {
-    console.error("public-availability error:", err);
+    console.error("private-availability error:", err);
     return jsonResponse({ error: "internal_error" }, 500);
   }
 }

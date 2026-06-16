@@ -828,7 +828,7 @@ export async function createBookingRows(env, rows) {
 }
 
 // Oppretter en PRIVAT (publikum) hold-rad. Skiller seg fra createBookingRow ved:
-// Source="Public", Pending_Confirmation=false (auto-tildelt, aldri i admins
+// Source="Private", Pending_Confirmation=false (auto-tildelt, aldri i admins
 // manuelle kø), konkret RoomLookupId, HoldExpiry + PaymentStatus=pending satt.
 // Datoer er ISO 'YYYY-MM-DD'; holdExpiryISO er full ISO-tid. Returnerer Graph-raden.
 export async function createPrivateHoldRow(env, fields) {
