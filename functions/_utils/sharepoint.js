@@ -1544,3 +1544,33 @@ export async function updatePinResetLog(env, itemId, fields) {
     body: JSON.stringify(fields),
   });
 }
+
+// ============================================================================
+// Selvregistrering av firmakunder (register-company.js)
+// ============================================================================
+
+// Oppretter en INAKTIV Customer_Tokens-rad. Selvregistrerte kunder har
+// Aktiv=false og INGEN Token/Pin før admin godkjenner — admin-appen oppdager
+// «ventende» rader nettopp som Aktiv≠true + tom Token. Token/PIN genereres
+// først ved godkjenning i admin.
+export async function createPendingCustomerToken(env, fields) {
+  const cleanFields = { ...fields };
+  for (const k of Object.keys(cleanFields)) {
+    if (cleanFields[k] === undefined) delete cleanFields[k];
+  }
+  const path = `/sites/${SITE_ID}/lists/${LIST_IDS.TOKENS}/items`;
+  return graphRequest(env, path, {
+    method: "POST",
+    body: JSON.stringify({ fields: cleanFields }),
+  });
+}
+
+// Finner evt. eksisterende Customer_Tokens-rad på e-post (case-insensitivt).
+// Brukes til å unngå duplikate registreringer og til å oppdage at en
+// eksisterende kunde forsøker å registrere seg på nytt.
+export async function findCustomerTokenByEmail(env, email) {
+  const needle = String(email || "").trim().toLowerCase();
+  if (!needle) return null;
+  const items = await fetchAllItems(env, LIST_IDS.TOKENS, { select: SELECT_TOKEN });
+  return items.find(it => String((it.fields || {}).Epost || "").trim().toLowerCase() === needle) || null;
+}

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<!-- registrer v1.0 -->
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1B4F72" />
+  <meta name="color-scheme" content="light" />
+  <title>2GM Eiendom – Registrer firma</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <style>
+    .reg-wrap { max-width: 460px; margin: 0 auto; padding: 24px 16px 48px; }
+    .reg-card { background: var(--card-bg, #fff); border-radius: 14px; padding: 26px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
+    .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
+    .reg-title { font-size: 22px; margin: 6px 0 4px; }
+    .reg-sub { color: #667; font-size: 14px; margin: 0 0 18px; line-height: 1.45; }
+    .reg-wrap .field { margin-bottom: 13px; }
+    .req { color: #c0392b; }
+    .locs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 4px; }
+    .locs label { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 14px; }
+    textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cdd3da;
+      border-radius: 8px; font: inherit; resize: vertical; min-height: 70px; }
+    .reg-error { color: #c0392b; font-size: 14px; margin-top: 10px; }
+    .reg-ok { text-align: center; padding: 10px 0; }
+    .reg-ok .big { font-size: 40px; }
+    .reg-ok h2 { margin: 10px 0 6px; }
+    .reg-ok p { color: #667; font-size: 15px; line-height: 1.5; }
+    .reg-back { display: inline-block; margin-top: 16px; font-size: 14px; color: #1B4F72; }
+  </style>
+</head>
+<body>
+  <div class="reg-wrap">
+    <div class="reg-card">
+
+      <!-- Skjema -->
+      <div id="reg-form-view">
+        <div class="reg-logo">2GM EIENDOM</div>
+        <h1 class="reg-title">Registrer firma</h1>
+        <p class="reg-sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
+          Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
+
+        <form id="reg-form" novalidate>
+          <div class="field">
+            <label class="field-label" for="f-firma">Firmanavn <span class="req">*</span></label>
+            <input type="text" id="f-firma" autocomplete="organization" required />
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-orgnr">Org.nr</label>
+            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre (valgfritt)" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-kontakt">Kontaktperson <span class="req">*</span></label>
+            <input type="text" id="f-kontakt" autocomplete="name" required />
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-epost">E-post <span class="req">*</span></label>
+            <input type="email" id="f-epost" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-telefon">Telefon <span class="req">*</span></label>
+            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="8 sifre" required />
+          </div>
+          <div class="field">
+            <span class="field-label">Ønskede lokasjoner</span>
+            <div class="locs" id="f-locs"></div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-melding">Melding (valgfritt)</label>
+            <textarea id="f-melding" maxlength="1000" placeholder="Antall ansatte, perioder, behov …"></textarea>
+          </div>
+          <p id="reg-error" class="reg-error" hidden></p>
+          <button type="submit" id="reg-submit" class="btn btn-primary" style="width:100%;margin-top:6px">Send registrering</button>
+        </form>
+      </div>
+
+      <!-- Kvittering -->
+      <div id="reg-ok-view" class="reg-ok" hidden>
+        <div class="big">✅</div>
+        <h2>Takk for registreringen!</h2>
+        <p>Vi har mottatt forespørselen fra <strong id="ok-firma"></strong>.<br>
+          Du får tilgang til portalen på e-post og SMS så snart vi har godkjent kontoen.</p>
+        <a class="reg-back" href="/">← Til innlogging</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // Må matche PROPERTY_MAP i functions/_utils/sharepoint.js.
+    var LOCATIONS = [
+      { slug: 'rigg24',         title: 'Rigg 24' },
+      { slug: 'rigg44',         title: 'Rigg 44' },
+      { slug: 'riggbotnhagen',  title: 'Rigg Botnhågen' },
+      { slug: 'andslimoen',     title: 'Rigg Andslimoen' },
+      { slug: 'strandveien112', title: 'Strandveien 112' },
+    ];
+
+    var locsEl = document.getElementById('f-locs');
+    locsEl.innerHTML = LOCATIONS.map(function (l) {
+      return '<label><input type="checkbox" value="' + l.slug + '"> ' + l.title + '</label>';
+    }).join('');
+
+    function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim()); }
+    function isValidPhone(s) {
+      var c = String(s || '').replace(/[\s\-()./]/g, '').replace(/^(\+47|0047|47)/, '');
+      return /^[2-9]\d{7}$/.test(c);
+    }
+
+    var form = document.getElementById('reg-form');
+    var btn = document.getElementById('reg-submit');
+    var errEl = document.getElementById('reg-error');
+
+    function showErr(msg) { errEl.textContent = msg; errEl.hidden = false; }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errEl.hidden = true;
+
+      var firma = document.getElementById('f-firma').value.trim();
+      var kontakt = document.getElementById('f-kontakt').value.trim();
+      var epost = document.getElementById('f-epost').value.trim();
+      var telefon = document.getElementById('f-telefon').value.trim();
+      var orgnr = document.getElementById('f-orgnr').value.trim();
+      var melding = document.getElementById('f-melding').value.trim();
+      var lokasjoner = Array.prototype.slice
+        .call(locsEl.querySelectorAll('input:checked'))
+        .map(function (c) { return c.value; });
+
+      if (!firma) return showErr('Fyll inn firmanavn.');
+      if (!kontakt) return showErr('Fyll inn kontaktperson.');
+      if (!isValidEmail(epost)) return showErr('Ugyldig e-postadresse.');
+      if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer (8 sifre, norsk).');
+
+      btn.disabled = true;
+      btn.textContent = 'Sender …';
+
+      fetch('/api/register-company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firma: firma, orgnr: orgnr, kontaktperson: kontakt,
+          epost: epost, telefon: telefon, lokasjoner: lokasjoner,
+          melding: melding, lang: 'nb',
+        }),
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (data) {
+          if (data && data.ok) {
+            document.getElementById('ok-firma').textContent = firma;
+            document.getElementById('reg-form-view').hidden = true;
+            document.getElementById('reg-ok-view').hidden = false;
+            window.scrollTo(0, 0);
+          } else {
+            var map = {
+              missing_firma: 'Fyll inn firmanavn.',
+              missing_contact: 'Fyll inn kontaktperson.',
+              invalid_email: 'Ugyldig e-postadresse.',
+              invalid_phone: 'Ugyldig telefonnummer.',
+            };
+            showErr((data && map[data.error]) || 'Noe gikk galt. Prøv igjen om litt.');
+            btn.disabled = false;
+            btn.textContent = 'Send registrering';
+          }
+        })
+        .catch(function () {
+          showErr('Nettverksfeil — prøv igjen.');
+          btn.disabled = false;
+          btn.textContent = 'Send registrering';
+        });
+    });
+  })();
+  </script>
+</body>
+</html>
