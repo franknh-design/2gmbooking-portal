@@ -198,7 +198,7 @@ export async function getPropertyMetaMap(env) {
 // Leser privat-bookingens globale config fra Properties-raden for en gitt
 // property. enabled = master av/på for publikum-siden; nightlyRate = felles
 // privatmarked-nattsats. Manglende rad/felt => deaktivert (fail closed).
-export async function getPublicConfig(env, propertyName) {
+export async function getPrivateConfig(env, propertyName) {
   const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: SELECT_PUBLIC_CONFIG });
   const row = items.find((it) => (it.fields?.Title || "") === propertyName);
   if (!row) return { enabled: false, nightlyRate: 0 };
@@ -831,7 +831,7 @@ export async function createBookingRows(env, rows) {
 // Source="Public", Pending_Confirmation=false (auto-tildelt, aldri i admins
 // manuelle kø), konkret RoomLookupId, HoldExpiry + PaymentStatus=pending satt.
 // Datoer er ISO 'YYYY-MM-DD'; holdExpiryISO er full ISO-tid. Returnerer Graph-raden.
-export async function createPublicHoldRow(env, fields) {
+export async function createPrivateHoldRow(env, fields) {
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items`;
   const spFields = {
     Title: fields.bookingRef,
@@ -844,7 +844,7 @@ export async function createPublicHoldRow(env, fields) {
     RoomLookupId: fields.roomId,
     Status: "Upcoming",
     Pending_Confirmation: false,
-    Source: "Public",
+    Source: "Private",
     PaymentStatus: "pending",
     HoldExpiry: fields.holdExpiryISO,
     PaymentRef: fields.paymentRef || null,

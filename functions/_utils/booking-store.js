@@ -7,7 +7,7 @@ import {
   getPropertyMetaMap,
   getRoomsForProperty,
   getBookingsForProperty,
-  createPublicHoldRow,
+  createPrivateHoldRow,
   updateBookingFields,
 } from "./sharepoint.js";
 import { parseDateUtcMs } from "./availability-math.js";
@@ -82,7 +82,7 @@ export function createSharePointStore(env, propertyName) {
     },
 
     async createHold({ bookingRef, roomId, checkInISO, checkOutISO, guest, holdExpiryMs, paymentRef }) {
-      const res = await createPublicHoldRow(env, {
+      const res = await createPrivateHoldRow(env, {
         bookingRef,
         propertyName,
         guestName: guest.name,

@@ -1,5 +1,5 @@
 // functions/_utils/public-availability.js
-// v1.0 — Env-bundet wrapper rundt computePublicAvailability. Henter rom og
+// v1.0 — Env-bundet wrapper rundt computePrivateAvailability. Henter rom og
 // bookinger via eksisterende SharePoint-helpere og mapper til den rene
 // funksjonens input. Rør IKKE calculateAvailability (bedriftslogikk).
 
@@ -8,10 +8,10 @@ import {
   getRoomsForProperty,
   getBookingsForProperty,
 } from "./sharepoint.js";
-import { computePublicAvailability, parseDateUtcMs } from "./availability-math.js";
+import { computePrivateAvailability, parseDateUtcMs } from "./availability-math.js";
 import { filterExpiredHolds } from "./booking-holds.js";
 
-export async function calculatePublicAvailability(env, propertyName, fromISO, toISO) {
+export async function calculatePrivateAvailability(env, propertyName, fromISO, toISO) {
   // Bygg id->title-map (samme oppskrift som calculateAvailability bruker).
   const propertyMeta = await getPropertyMetaMap(env);
   const propertyMap = {};
@@ -54,10 +54,10 @@ export async function calculatePublicAvailability(env, propertyName, fromISO, to
   const bookings = filterExpiredHolds(richBookings, now).map((b) => ({
     checkInMs: b.checkInMs,
     checkOutMs: b.checkOutMs,
-    isPublic: b.source === "Public",
+    isPrivate: b.source === "Private",
   }));
 
-  const { days } = computePublicAvailability({
+  const { days } = computePrivateAvailability({
     rooms,
     bookings,
     fromMs: parseDateUtcMs(fromISO),
