@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.1 -->
+<!-- company v2.2 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -22,6 +22,9 @@
     .req { color: #c0392b; }
     .locs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 4px; }
     .locs label { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 14px; }
+    .radio-row { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; margin-top: 5px; }
+    .radio-row input[type="radio"] { width: 16px; height: 16px; flex: 0 0 auto; margin: 0; }
+    #f-fakturaepost { margin-top: 8px; }
     textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cdd3da;
       border-radius: 8px; font: inherit; resize: vertical; min-height: 70px; }
     .reg-error { color: #c0392b; font-size: 14px; margin-top: 10px; }
@@ -82,6 +85,12 @@
             <label class="field-label" for="f-epost"><span data-i18n="l_epost">E-post</span> <span class="req">*</span></label>
             <input type="email" id="f-epost" autocomplete="email" required />
           </div>
+          <div class="field" id="f-invoice-field">
+            <span class="field-label" data-i18n="l_invoice">Fakturamottak</span>
+            <label class="radio-row"><input type="radio" name="fakturametode" value="ehf" id="f-inv-ehf" checked /> <span data-i18n="inv_ehf">EHF-faktura (til org.nr)</span></label>
+            <label class="radio-row"><input type="radio" name="fakturametode" value="epost" id="f-inv-epost" /> <span data-i18n="inv_email">Faktura på e-post</span></label>
+            <input type="email" id="f-fakturaepost" autocomplete="email" placeholder="Faktura-e-post" data-i18n-ph="ph_fakturaepost" hidden />
+          </div>
           <div class="field" id="f-locs-field" hidden>
             <span class="field-label" data-i18n="l_locs">Ønskede lokasjoner</span>
             <div class="locs" id="f-locs"></div>
@@ -128,6 +137,9 @@
         ph_telefon: 'Med landskode hvis utenlandsk, f.eks. +47 …',
         l_locs: 'Ønskede lokasjoner', l_melding: 'Melding (valgfritt)',
         ph_melding: 'Antall ansatte, perioder, behov …',
+        l_invoice: 'Fakturamottak', inv_ehf: 'EHF-faktura (til org.nr)',
+        inv_email: 'Faktura på e-post', ph_fakturaepost: 'Faktura-e-post',
+        err_fakturaepost: 'Ugyldig faktura-e-post.',
         submit: 'Send registrering', sending: 'Sender …',
         ok_title: 'Takk for registreringen!',
         ok_body1: 'Vi har mottatt forespørselen fra',
@@ -147,6 +159,9 @@
         ph_telefon: 'Incl. country code if abroad, e.g. +47 …',
         l_locs: 'Desired locations', l_melding: 'Message (optional)',
         ph_melding: 'Number of staff, periods, needs …',
+        l_invoice: 'Invoicing', inv_ehf: 'EHF invoice (to org. no.)',
+        inv_email: 'Invoice by email', ph_fakturaepost: 'Invoice email',
+        err_fakturaepost: 'Invalid invoice email.',
         submit: 'Send registration', sending: 'Sending …',
         ok_title: 'Thank you for registering!',
         ok_body1: "We've received the request from",
@@ -259,6 +274,14 @@
 
     function showErr(msg) { errEl.textContent = msg; errEl.hidden = false; }
 
+    // Vis faktura-e-postfeltet kun når «Faktura på e-post» er valgt.
+    var invEmailRadio = document.getElementById('f-inv-epost');
+    var invEmailField = document.getElementById('f-fakturaepost');
+    function syncInvoiceField() { invEmailField.hidden = !invEmailRadio.checked; }
+    document.getElementById('f-inv-ehf').addEventListener('change', syncInvoiceField);
+    invEmailRadio.addEventListener('change', syncInvoiceField);
+    syncInvoiceField();
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       errEl.hidden = true;
@@ -272,12 +295,15 @@
       var lokasjoner = Array.prototype.slice
         .call(locsEl.querySelectorAll('input:checked'))
         .map(function (c) { return c.value; });
+      var fakturametode = invEmailRadio.checked ? 'epost' : 'ehf';
+      var fakturaepost = invEmailField.value.trim();
 
       if (!firma) return showErr(t('err_firma'));
       if (!/^\d{9}$/.test(orgnr)) return showErr(t('err_orgnr'));
       if (!kontakt) return showErr(t('err_kontakt'));
       if (!isValidEmail(epost)) return showErr(t('err_epost'));
       if (!isValidPhone(telefon)) return showErr(t('err_telefon'));
+      if (fakturametode === 'epost' && !isValidEmail(fakturaepost)) return showErr(t('err_fakturaepost'));
 
       var cfToken = '';
       if (TURNSTILE_SITEKEY) {
@@ -301,6 +327,7 @@
         body: JSON.stringify({
           firma: firma, orgnr: orgnr, kontaktperson: kontakt,
           epost: epost, telefon: telefon, lokasjoner: lokasjoner,
+          fakturametode: fakturametode, fakturaepost: fakturaepost,
           melding: melding, lang: CURRENT_LANG, cfToken: cfToken, website: website,
         }),
       })
@@ -318,6 +345,7 @@
               missing_contact: t('err_kontakt'),
               invalid_email: t('err_epost'),
               invalid_phone: t('err_telefon'),
+              invalid_invoice_email: t('err_fakturaepost'),
               verification_failed: t('err_verify'),
             };
             showErr((data && map[data.error]) || t('err_generic'));

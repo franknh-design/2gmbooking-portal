@@ -1,4 +1,4 @@
-// functions/api/company-register.js — v1.0
+// functions/api/company-register.js — v1.1
 // Selvregistrering av nye firmakunder til token-portalen.
 //
 // POST /api/company-register
@@ -9,6 +9,8 @@
 //   epost:        "ola@eksempel.no",        (påkrevd)
 //   telefon:      "99102030",               (påkrevd, norsk format)
 //   lokasjoner:   ["rigg24","andslimoen"],  (valgfritt — ønskede lokasjoner)
+//   fakturametode:"ehf" | "epost",          (valgfritt, default ehf)
+//   fakturaepost: "faktura@eksempel.no",    (påkrevd hvis fakturametode=epost)
 //   melding:      "fritekst",               (valgfritt)
 //   lang:         "nb" | "en"               (valgfritt)
 // }
@@ -48,13 +50,15 @@ export async function onRequestPost(context) {
       if (!ok) return jsonResponse({ ok: false, error: "verification_failed" }, 403);
     }
 
-    let { firma, orgnr, kontaktperson, epost, telefon, lokasjoner, melding, lang } = body;
+    let { firma, orgnr, kontaktperson, epost, telefon, lokasjoner, fakturametode, fakturaepost, melding, lang } = body;
 
     firma = _trim(firma);
     orgnr = String(orgnr == null ? "" : orgnr).replace(/\s/g, "").slice(0, 20);
     kontaktperson = _trim(kontaktperson);
     epost = _trim(epost);
     telefon = _trim(telefon);
+    fakturametode = String(fakturametode || "ehf").toLowerCase() === "epost" ? "epost" : "ehf";
+    fakturaepost = _trim(fakturaepost);
     melding = _trim(melding, MAX_MELDING_LEN);
     lang = String(lang || "nb").toLowerCase() === "en" ? "en" : "nb";
 
@@ -64,6 +68,15 @@ export async function onRequestPost(context) {
     if (!kontaktperson) return jsonResponse({ ok: false, error: "missing_contact" }, 400);
     if (!epost || !_isValidEmail(epost)) return jsonResponse({ ok: false, error: "invalid_email" }, 400);
     if (!telefon || !_isValidPhone(telefon)) return jsonResponse({ ok: false, error: "invalid_phone" }, 400);
+    // Faktura-e-post kreves kun når metode = epost. EHF rutes på org.nr.
+    if (fakturametode === "epost" && !_isValidEmail(fakturaepost)) {
+      return jsonResponse({ ok: false, error: "invalid_invoice_email" }, 400);
+    }
+    if (fakturametode !== "epost") fakturaepost = "";
+
+    // Menneskelesbar fakturamottak-info (e-post til Frank) + SP-lagringsverdier.
+    const invoiceMethodLabel = fakturametode === "epost" ? "E-post" : "EHF";
+    const invoiceInfo = fakturametode === "epost" ? `E-post → ${fakturaepost}` : `EHF (til org.nr ${orgnr})`;
 
     // Behold kun gyldige lokasjon-slugs.
     const slugs = Array.isArray(lokasjoner)
@@ -91,7 +104,7 @@ export async function onRequestPost(context) {
         ? "Eksisterende AKTIV kunde forsøkte å registrere seg på nytt."
         : "Allerede registrert og venter på godkjenning (duplikat-forsøk).";
       _fireEmail(context, sendOwnerNotification(env, {
-        firma, orgnr, kontaktperson, epost, telefon, requestedNames, melding, note,
+        firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding, note,
       }));
       // #2 Returner samme generiske svar som ved nyregistrering — avslør IKKE
       // (via status-feltet) om e-posten allerede finnes (enumerasjons-vern).
@@ -99,7 +112,7 @@ export async function onRequestPost(context) {
     }
 
     // --- Opprett inaktiv rad ---
-    await createPendingCustomerToken(env, {
+    const baseFields = {
       Title: firma,
       Firma: firma,
       Kontaktperson: kontaktperson,
@@ -108,11 +121,22 @@ export async function onRequestPost(context) {
       Sprak: lang,
       Aktiv: false,
       TillatteLokasjoner: slugs.join(","),
-    });
+    };
+    // Fakturafeltene skrives kun hvis SP-kolonnene finnes. Mangler de (ennå),
+    // faller vi tilbake til kjernefeltene så registreringen ALDRI feiler —
+    // valget når Frank uansett via varsel-e-posten under.
+    const invoiceFields = { Fakturametode: invoiceMethodLabel };
+    if (fakturametode === "epost") invoiceFields.FakturaEpost = fakturaepost;
+    try {
+      await createPendingCustomerToken(env, { ...baseFields, ...invoiceFields });
+    } catch (e) {
+      console.error("[company-register] insert med fakturafelt feilet, prøver uten (mangler SP-kolonner?):", e);
+      await createPendingCustomerToken(env, baseFields);
+    }
 
     // --- Varsle Frank ---
     _fireEmail(context, sendOwnerNotification(env, {
-      firma, orgnr, kontaktperson, epost, telefon, requestedNames, melding,
+      firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding,
       note: "Ny registrering — venter på godkjenning i booking-appen.",
     }));
 
@@ -135,7 +159,7 @@ function _fireEmail(context, promise) {
 }
 
 async function sendOwnerNotification(env, data) {
-  const { firma, orgnr, kontaktperson, epost, telefon, requestedNames, melding, note } = data;
+  const { firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding, note } = data;
   const lines = [
     note || "Ny firma-registrering fra portalen.",
     "",
@@ -144,6 +168,7 @@ async function sendOwnerNotification(env, data) {
     `Kontakt:      ${kontaktperson}`,
     `E-post:       ${epost}`,
     `Telefon:      ${telefon}`,
+    `Faktura:      ${invoiceInfo || "(ikke oppgitt)"}`,
     `Ønsker:       ${requestedNames.length ? requestedNames.join(", ") : "(ikke spesifisert)"}`,
   ];
   if (melding) lines.push("", "Melding:", melding);
