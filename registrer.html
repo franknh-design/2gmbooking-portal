@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v2.0 -->
+<!-- registrer v2.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -179,6 +179,7 @@
         b.classList.toggle('active', b.getAttribute('data-lang') === CURRENT_LANG);
       });
       try { localStorage.setItem('reg_lang', CURRENT_LANG); } catch (e) {}
+      if (typeof renderTurnstile === 'function') renderTurnstile(); // re-render med nytt språk
     }
 
     document.getElementById('lang-toggle').addEventListener('click', function (e) {
@@ -189,15 +190,26 @@
     // === Turnstile (bot-vern) ===
     // Lim inn site key fra Cloudflare → Turnstile aktiveres (krever også at
     // TURNSTILE_SECRET settes som Cloudflare-secret for server-verifisering).
-    // Tom = av (skjemaet virker uten).
+    // Tom = av (skjemaet virker uten). Eksplisitt render så widgeten kan
+    // re-rendres med riktig språk når NO/EN-bryteren brukes.
     var TURNSTILE_SITEKEY = '0x4AAAAAADl36_i1SsZ20nxm';
+    var _tsWidgetId = null;
+    function renderTurnstile() {
+      if (!TURNSTILE_SITEKEY || !window.turnstile) return;
+      var holder = document.getElementById('ts-holder');
+      if (!holder) return;
+      if (_tsWidgetId !== null) { try { window.turnstile.remove(_tsWidgetId); } catch (e) {} _tsWidgetId = null; }
+      holder.innerHTML = '';
+      // EN støttes; for NO faller ukjent kode uansett tilbake til auto (=norsk).
+      _tsWidgetId = window.turnstile.render(holder, {
+        sitekey: TURNSTILE_SITEKEY,
+        language: (CURRENT_LANG === 'en') ? 'en' : 'no',
+      });
+    }
+    window._tsOnload = renderTurnstile; // kalles når api.js er lastet
     if (TURNSTILE_SITEKEY) {
-      var w = document.createElement('div');
-      w.className = 'cf-turnstile';
-      w.setAttribute('data-sitekey', TURNSTILE_SITEKEY);
-      document.getElementById('ts-holder').appendChild(w);
       var ts = document.createElement('script');
-      ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=_tsOnload';
       ts.async = true; ts.defer = true;
       document.head.appendChild(ts);
     }
@@ -269,8 +281,13 @@
 
       var cfToken = '';
       if (TURNSTILE_SITEKEY) {
-        var tsInput = form.querySelector('[name="cf-turnstile-response"]');
-        cfToken = tsInput ? tsInput.value : '';
+        if (window.turnstile && _tsWidgetId !== null) {
+          try { cfToken = window.turnstile.getResponse(_tsWidgetId) || ''; } catch (e) { cfToken = ''; }
+        }
+        if (!cfToken) {
+          var tsInput = form.querySelector('[name="cf-turnstile-response"]');
+          cfToken = tsInput ? tsInput.value : '';
+        }
         if (!cfToken) return showErr(t('err_robot'));
       }
       var website = document.getElementById('f-website').value; // honningfelle
