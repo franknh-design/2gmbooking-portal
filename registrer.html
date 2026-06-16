@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.1 -->
+<!-- registrer v1.2 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -59,7 +59,7 @@
           </div>
           <div class="field">
             <label class="field-label" for="f-telefon">Telefon <span class="req">*</span></label>
-            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="8 sifre" required />
+            <input type="tel" id="f-telefon" autocomplete="tel" placeholder="Med landskode hvis utenlandsk, f.eks. +47 …" required />
           </div>
           <div class="field" id="f-locs-field" hidden>
             <span class="field-label">Ønskede lokasjoner</span>
@@ -121,9 +121,11 @@
       .catch(function () { renderLocations(FALLBACK_LOCATIONS); });
 
     function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim()); }
+    // Internasjonalt vennlig — firmakunder kan være utenlandske.
+    // Valgfri ledende +, 6–15 siffer etter at skilletegn er strippet (E.164-aktig).
     function isValidPhone(s) {
-      var c = String(s || '').replace(/[\s\-()./]/g, '').replace(/^(\+47|0047|47)/, '');
-      return /^[2-9]\d{7}$/.test(c);
+      var c = String(s || '').replace(/[\s\-()./]/g, '');
+      return /^\+?\d{6,15}$/.test(c);
     }
 
     var form = document.getElementById('reg-form');
@@ -150,7 +152,7 @@
       if (!/^\d{9}$/.test(orgnr)) return showErr('Org.nr må være 9 sifre.');
       if (!kontakt) return showErr('Fyll inn kontaktperson.');
       if (!isValidEmail(epost)) return showErr('Ugyldig e-postadresse.');
-      if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer (8 sifre, norsk).');
+      if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer.');
 
       btn.disabled = true;
       btn.textContent = 'Sender …';

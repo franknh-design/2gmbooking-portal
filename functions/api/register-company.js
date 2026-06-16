@@ -49,7 +49,7 @@ export async function onRequestPost(context) {
     if (!/^\d{9}$/.test(orgnr)) return jsonResponse({ ok: false, error: "invalid_orgnr" }, 400);
     if (!kontaktperson) return jsonResponse({ ok: false, error: "missing_contact" }, 400);
     if (!epost || !_isValidEmail(epost)) return jsonResponse({ ok: false, error: "invalid_email" }, 400);
-    if (!telefon || !_isValidNoPhone(telefon)) return jsonResponse({ ok: false, error: "invalid_phone" }, 400);
+    if (!telefon || !_isValidPhone(telefon)) return jsonResponse({ ok: false, error: "invalid_phone" }, 400);
 
     // Behold kun gyldige lokasjon-slugs.
     const slugs = Array.isArray(lokasjoner)
@@ -156,12 +156,12 @@ function _isValidEmail(s) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || "").trim());
 }
 
-// Norsk telefonvalidering — speiler submit-booking.js.
-function _isValidNoPhone(s) {
-  const cleaned = String(s || "")
-    .replace(/[\s\-()./]/g, "")
-    .replace(/^(\+47|0047|47)/, "");
-  return /^[2-9]\d{7}$/.test(cleaned);
+// Internasjonalt vennlig telefonvalidering — firmakunder kan være utenlandske.
+// Valgfri ledende +, 6–15 siffer etter at skilletegn er strippet (E.164-aktig).
+// Speiler isValidPhone i andslimoen-format.mjs.
+function _isValidPhone(s) {
+  const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
+  return /^\+?\d{6,15}$/.test(cleaned);
 }
 
 function jsonResponse(data, status = 200) {
