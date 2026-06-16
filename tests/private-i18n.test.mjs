@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { STRINGS, fmt, pickLang } from "../assets/js/andslimoen-i18n.mjs";
+import { STRINGS, fmt, pickLang } from "../assets/js/private-i18n.mjs";
 
 test("nb and en have exactly the same keys (no missing translations)", () => {
   const nb = Object.keys(STRINGS.nb).sort();

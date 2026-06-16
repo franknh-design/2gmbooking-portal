@@ -10,7 +10,7 @@
   <!-- v1.2: preconnect til CDN-en så flatpickr-ressursene henter raskere -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
-  <link rel="stylesheet" href="assets/css/andslimoen.css" />
+  <link rel="stylesheet" href="assets/css/private.css" />
   <!-- v1.2: defer → ikke render-blokkerende. Rekkefølge bevares (flatpickr før
        no.js før andslimoen.mjs), så globalen er klar når modulen kjører. -->
   <script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
@@ -35,7 +35,7 @@
     <!-- Booking-tilstand -->
     <section class="booking" id="booking-state" hidden>
       <div class="gallery">
-        <img class="gallery-main" id="gallery-main" src="assets/img/andslimoen/rom.jpg" alt="Rom på Rigg Andslimoen" decoding="async" fetchpriority="high" />
+        <img class="gallery-main" id="gallery-main" src="assets/img/private/rom.jpg" alt="Rom på Rigg Andslimoen" decoding="async" fetchpriority="high" />
         <div class="gallery-thumbs" id="gallery-thumbs"></div>
       </div>
 
@@ -58,7 +58,7 @@
         <input type="text" id="guest-name" data-i18n-ph="namePlaceholder" placeholder="Navn" autocomplete="name" />
         <input type="tel" id="guest-phone" data-i18n-ph="phonePlaceholder" placeholder="Telefon (8 siffer)" autocomplete="tel" />
         <input type="email" id="guest-email" data-i18n-ph="emailPlaceholder" placeholder="E-post (valgfritt)" autocomplete="email" />
-        <label class="terms"><input type="checkbox" id="terms-check" /> <span data-i18n="termsLabel">Jeg godtar </span><a href="andslimoen-vilkar.html" target="_blank" data-i18n="termsLink">vilkårene</a></label>
+        <label class="terms"><input type="checkbox" id="terms-check" /> <span data-i18n="termsLabel">Jeg godtar </span><a href="private-vilkar.html" target="_blank" data-i18n="termsLink">vilkårene</a></label>
         <p class="field-error" id="form-error" hidden></p>
         <button type="submit" id="reserve-btn" data-i18n="reserve" disabled>Reserver</button>
         <p class="hint" data-i18n="hint">Betaling via Vipps (kommer). Du holder rommet i 15 minutter.</p>
@@ -75,6 +75,6 @@
     </section>
   </main>
 
-  <script type="module" src="assets/js/andslimoen.mjs"></script>
+  <script type="module" src="assets/js/private.mjs"></script>
 </body>
 </html>

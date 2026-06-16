@@ -7,7 +7,7 @@ import {
   minAvailableForStay,
   isValidPhone,
   isValidEmail,
-} from "../assets/js/andslimoen-format.mjs";
+} from "../assets/js/private-format.mjs";
 
 test("nightsBetween counts nights (checkout - checkin)", () => {
   assert.equal(nightsBetween("2026-06-16", "2026-06-18"), 2);

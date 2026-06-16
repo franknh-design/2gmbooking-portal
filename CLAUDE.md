@@ -96,6 +96,36 @@ Rom telles ikke i totalantallet hvis Active=false eller Title mangler.
 - Booking-listen har 656+ rader → **paginering er tvingende nødvendig** (`fetchAllItems`)
 - Token uten Utlopsdato = aldri utløper. Token med dato i fortid = ugyldig.
 
+## Gruppe-bookinger og match-logikk (v3.15.10 — KRITISK)
+
+Flere bookinger kan dele samme `Title` (= booking-ref `2GM-XXXXXX`) når en kunde har bestilt flere rom i én operasjon. Eksempel: `2GM-UGEURM` med Bartec på rom 401 + Marcin på rom 402.
+
+**Anti-pattern (FIXET):** `items.find(it => idMatch || refMatch)` returnerer FØRSTE rad som matcher EN AV betingelsene — så ref-treff på en annen rad kan vinne over id-treff på riktig rad. Det kunne (1) kansellere feil booking i `cancel-booking`, (2) ende feil booking i `end-booking`, eller (3) validere mot feil currentCheckOut i `extend-booking`.
+
+**Korrekt mønster** (gjelder ALLE booking-spesifikke endepunkter i `functions/api/`):
+
+```js
+let match = null;
+if (hasId) {
+  const idStr = String(bookingId).trim();
+  match = items.find(it => String(it.id) === idStr) || null;
+}
+if (!match && hasRef) {
+  const refStr = bookingRef.trim();
+  match = items.find(it => (it.fields?.Title || "").trim() === refStr) || null;
+}
+```
+
+ID-match først, ref kun som fallback. Frontend sender alltid `bookingId` for spesifikk rad — `bookingRef` er legacy-fallback for eldre call-sites.
+
+## Extend-booking — feilkoder
+
+`/api/extend-booking` returnerer strukturerte feilkoder (v3.15.9+):
+- `bad_date_format` — ny dato manglet eller ugyldig format
+- `date_not_after_current` — ny dato ≤ eksisterende Check_Out. **Responsen inkluderer `currentCheckOut: "YYYY-MM-DD"`** så frontend kan vise eksakt dato i hjelpemeldingen ("Bookingen har allerede utflytting DD.MM.YYYY — velg en senere dato").
+
+`mybookings.js#submitExtension` håndterer disse spesifikt; ukjente koder faller til generisk `extend.errFail`.
+
 ## Status (2026-05-09)
 
 ✅ Backend komplett (3 endepunkter, paginering)

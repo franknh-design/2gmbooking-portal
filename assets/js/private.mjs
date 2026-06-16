@@ -1,7 +1,7 @@
 // assets/js/andslimoen.mjs — v1.3. DOM-orkestrering for den offentlige
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
-// + ledighet, sender reservasjon. Ren logikk i andslimoen-format.mjs, tekster i
-// andslimoen-i18n.mjs.
+// + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
+// private-i18n.mjs.
 import {
   nightsBetween,
   totalPrice,
@@ -9,16 +9,16 @@ import {
   minAvailableForStay,
   isValidPhone,
   isValidEmail,
-} from "./andslimoen-format.mjs";
-import { STRINGS, fmt, pickLang } from "./andslimoen-i18n.mjs";
+} from "./private-format.mjs";
+import { STRINGS, fmt, pickLang } from "./private-i18n.mjs";
 
 const $ = (id) => document.getElementById(id);
 const GALLERY = [
-  { src: "assets/img/andslimoen/rom.jpg", key: "galRom" },
-  { src: "assets/img/andslimoen/bad.jpg", key: "galBad" },
-  { src: "assets/img/andslimoen/vaskerom.jpg", key: "galVaskerom" },
-  { src: "assets/img/andslimoen/kjokken.jpg", key: "galKjokken" },
-  { src: "assets/img/andslimoen/rigg.jpg", key: "galRigg" },
+  { src: "assets/img/private/rom.jpg", key: "galRom" },
+  { src: "assets/img/private/bad.jpg", key: "galBad" },
+  { src: "assets/img/private/vaskerom.jpg", key: "galVaskerom" },
+  { src: "assets/img/private/kjokken.jpg", key: "galKjokken" },
+  { src: "assets/img/private/rigg.jpg", key: "galRigg" },
 ];
 const LANG_KEY = "andslimoen_lang";
 
@@ -131,7 +131,7 @@ async function init() {
 
   let config;
   try {
-    config = await postJSON("/api/public-availability", { fromDate: today, toDate: today });
+    config = await postJSON("/api/private-availability", { fromDate: today, toDate: today });
   } catch {
     config = { enabled: false };
   }
@@ -209,7 +209,7 @@ async function onDatesChanged() {
   $("price-summary").textContent = "";
   let data;
   try {
-    data = await postJSON("/api/public-availability", { fromDate: from, toDate: to });
+    data = await postJSON("/api/private-availability", { fromDate: from, toDate: to });
   } catch {
     av.textContent = t("availError"); av.className = "availability full";
     refreshButton();
@@ -257,7 +257,7 @@ async function onSubmit(e) {
   btn.textContent = t("reserving");
   let data;
   try {
-    data = await postJSON("/api/public-booking", {
+    data = await postJSON("/api/private-booking", {
       fromDate: lastStay.from,
       toDate: lastStay.to,
       lang,
