@@ -1,12 +1,14 @@
 # Andslimoen offentlig booking — status & overlevering
 
-Sist oppdatert: 2026-06-14. Repo: `franknh-design/2gmbooking-portal` (Cloudflare Pages, auto-deploy fra `main`).
+Sist oppdatert: 2026-06-16. Repo: `franknh-design/2gmbooking-portal` (Cloudflare Pages, auto-deploy fra `main`).
+
+> **OMDØPING (2026-06-16):** Andslimoen-bookingen er omdøpt fra «public/offentlig» til **private** (URL `/private`, endepunkter `/api/private-availability` + `/api/private-booking`). Gamle `/andslimoen` + `/api/public-*` er slettet (ingen redirect). SharePoint-feltnavn (`PublicBookingEnabled`, `PublicNightlyRate`, `Source="Private"`) er beholdt som lagring — interne SP-navn kan ikke endres. **Neste omdøping:** `registrer` → `company` (egen runde).
 
 > **VIKTIG:** Rigg Andslimoen er **ikke i drift enda**. Alt er bygget i forkant og skal stå **AV** (`PublicBookingEnabled = Nei` på Andslimoen-raden i Properties-lista) til riggen faktisk åpner. Ingen ekte gjester før den skrus på.
 
 ## Hva er live nå
 
-Offentlig bookingside: **https://2gmbooking-portal.pages.dev/andslimoen**
+Offentlig bookingside: **https://2gmbooking-portal.pages.dev/private**
 (inert / viser «stengt» når `PublicBookingEnabled = Nei` — som den skal stå nå)
 
 | Fase | Hva | Status |
