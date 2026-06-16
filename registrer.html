@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.0 -->
+<!-- registrer v1.1 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -46,8 +46,8 @@
             <input type="text" id="f-firma" autocomplete="organization" required />
           </div>
           <div class="field">
-            <label class="field-label" for="f-orgnr">Org.nr</label>
-            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre (valgfritt)" />
+            <label class="field-label" for="f-orgnr">Org.nr <span class="req">*</span></label>
+            <input type="text" id="f-orgnr" inputmode="numeric" autocomplete="off" placeholder="9 sifre" required />
           </div>
           <div class="field">
             <label class="field-label" for="f-kontakt">Kontaktperson <span class="req">*</span></label>
@@ -61,7 +61,7 @@
             <label class="field-label" for="f-telefon">Telefon <span class="req">*</span></label>
             <input type="tel" id="f-telefon" autocomplete="tel" placeholder="8 sifre" required />
           </div>
-          <div class="field">
+          <div class="field" id="f-locs-field" hidden>
             <span class="field-label">Ønskede lokasjoner</span>
             <div class="locs" id="f-locs"></div>
           </div>
@@ -90,8 +90,9 @@
   (function () {
     'use strict';
 
-    // Må matche PROPERTY_MAP i functions/_utils/sharepoint.js.
-    var LOCATIONS = [
+    // Fallback hvis endepunktet feiler — må matche PROPERTY_MAP i
+    // functions/_utils/sharepoint.js.
+    var FALLBACK_LOCATIONS = [
       { slug: 'rigg24',         title: 'Rigg 24' },
       { slug: 'rigg44',         title: 'Rigg 44' },
       { slug: 'riggbotnhagen',  title: 'Rigg Botnhågen' },
@@ -100,9 +101,24 @@
     ];
 
     var locsEl = document.getElementById('f-locs');
-    locsEl.innerHTML = LOCATIONS.map(function (l) {
-      return '<label><input type="checkbox" value="' + l.slug + '"> ' + l.title + '</label>';
-    }).join('');
+    var locsField = document.getElementById('f-locs-field');
+
+    function renderLocations(list) {
+      if (!list || !list.length) { locsField.hidden = true; return; }
+      locsField.hidden = false;
+      locsEl.innerHTML = list.map(function (l) {
+        return '<label><input type="checkbox" value="' + l.slug + '"> ' + l.title + '</label>';
+      }).join('');
+    }
+
+    // Hent lokasjonene som admin har slått på for registrering. Tom liste =
+    // skjul feltet (ingen valgt i admin). Feil/nettverk = bruk fallback.
+    fetch('/api/registration-locations')
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (data) {
+        renderLocations((data && data.ok && Array.isArray(data.locations)) ? data.locations : FALLBACK_LOCATIONS);
+      })
+      .catch(function () { renderLocations(FALLBACK_LOCATIONS); });
 
     function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim()); }
     function isValidPhone(s) {
@@ -124,13 +140,14 @@
       var kontakt = document.getElementById('f-kontakt').value.trim();
       var epost = document.getElementById('f-epost').value.trim();
       var telefon = document.getElementById('f-telefon').value.trim();
-      var orgnr = document.getElementById('f-orgnr').value.trim();
+      var orgnr = document.getElementById('f-orgnr').value.replace(/\s/g, '');
       var melding = document.getElementById('f-melding').value.trim();
       var lokasjoner = Array.prototype.slice
         .call(locsEl.querySelectorAll('input:checked'))
         .map(function (c) { return c.value; });
 
       if (!firma) return showErr('Fyll inn firmanavn.');
+      if (!/^\d{9}$/.test(orgnr)) return showErr('Org.nr må være 9 sifre.');
       if (!kontakt) return showErr('Fyll inn kontaktperson.');
       if (!isValidEmail(epost)) return showErr('Ugyldig e-postadresse.');
       if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer (8 sifre, norsk).');
@@ -157,6 +174,7 @@
           } else {
             var map = {
               missing_firma: 'Fyll inn firmanavn.',
+              invalid_orgnr: 'Org.nr må være 9 sifre.',
               missing_contact: 'Fyll inn kontaktperson.',
               invalid_email: 'Ugyldig e-postadresse.',
               invalid_phone: 'Ugyldig telefonnummer.',

@@ -37,7 +37,7 @@ export async function onRequestPost(context) {
       body || {};
 
     firma = _trim(firma);
-    orgnr = _trim(orgnr);
+    orgnr = String(orgnr == null ? "" : orgnr).replace(/\s/g, "").slice(0, 20);
     kontaktperson = _trim(kontaktperson);
     epost = _trim(epost);
     telefon = _trim(telefon);
@@ -46,6 +46,7 @@ export async function onRequestPost(context) {
 
     // --- Validering (defense in depth — frontend validerer også) ---
     if (!firma) return jsonResponse({ ok: false, error: "missing_firma" }, 400);
+    if (!/^\d{9}$/.test(orgnr)) return jsonResponse({ ok: false, error: "invalid_orgnr" }, 400);
     if (!kontaktperson) return jsonResponse({ ok: false, error: "missing_contact" }, 400);
     if (!epost || !_isValidEmail(epost)) return jsonResponse({ ok: false, error: "invalid_email" }, 400);
     if (!telefon || !_isValidNoPhone(telefon)) return jsonResponse({ ok: false, error: "invalid_phone" }, 400);

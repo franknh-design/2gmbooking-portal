@@ -491,6 +491,26 @@ export async function getPropertiesByIdMap(env) {
   return map;
 }
 
+// Lokasjoner som skal vises på den offentlige registreringssiden (/registrer).
+// Styres per eiendom av Properties.ShowOnRegistration (Yes/No), satt i admin
+// (Priser → Portal-booking). Returnerer [{ slug, title }] kun for påslåtte.
+export async function getRegistrationLocations(env) {
+  const nameToSlug = {};
+  for (const slug of Object.keys(PROPERTY_MAP)) {
+    nameToSlug[String(PROPERTY_MAP[slug]).toLowerCase()] = slug;
+  }
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,ShowOnRegistration" });
+  const out = [];
+  for (const it of items) {
+    const f = it.fields || {};
+    if (f.ShowOnRegistration !== true) continue;
+    const title = String(f.Title || "").trim();
+    const slug = nameToSlug[title.toLowerCase()];
+    if (slug && title) out.push({ slug, title });
+  }
+  return out;
+}
+
 // PATCH Status på en booking-rad. Brukes av auto-checkin i my-bookings.js.
 export async function updateBookingStatus(env, itemId, status) {
   const path = `/sites/${SITE_ID}/lists/${LIST_IDS.BOOKINGS}/items/${itemId}/fields`;
