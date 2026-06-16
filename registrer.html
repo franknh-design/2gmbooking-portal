@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- registrer v1.2 -->
+<!-- registrer v1.3 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -27,6 +27,9 @@
     .reg-ok h2 { margin: 10px 0 6px; }
     .reg-ok p { color: #667; font-size: 15px; line-height: 1.5; }
     .reg-back { display: inline-block; margin-top: 16px; font-size: 14px; color: #1B4F72; }
+    /* Honningfelle — skjult for mennesker, synlig for bots. */
+    .hp-field { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
+    #ts-holder { margin: 4px 0 12px; }
   </style>
 </head>
 <body>
@@ -69,6 +72,13 @@
             <label class="field-label" for="f-melding">Melding (valgfritt)</label>
             <textarea id="f-melding" maxlength="1000" placeholder="Antall ansatte, perioder, behov …"></textarea>
           </div>
+          <!-- Honningfelle: ikke fyll ut. Skjult for mennesker. -->
+          <div class="hp-field" aria-hidden="true">
+            <label for="f-website">Nettside (la stå tom)</label>
+            <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off" />
+          </div>
+          <!-- Turnstile-widget (vises kun når site key er satt) -->
+          <div id="ts-holder"></div>
           <p id="reg-error" class="reg-error" hidden></p>
           <button type="submit" id="reg-submit" class="btn btn-primary" style="width:100%;margin-top:6px">Send registrering</button>
         </form>
@@ -89,6 +99,22 @@
   <script>
   (function () {
     'use strict';
+
+    // === Turnstile (bot-vern) ===
+    // Lim inn site key fra Cloudflare → Turnstile aktiveres (krever også at
+    // TURNSTILE_SECRET settes som Cloudflare-secret for server-verifisering).
+    // Tom = av (skjemaet virker uten).
+    var TURNSTILE_SITEKEY = '';
+    if (TURNSTILE_SITEKEY) {
+      var w = document.createElement('div');
+      w.className = 'cf-turnstile';
+      w.setAttribute('data-sitekey', TURNSTILE_SITEKEY);
+      document.getElementById('ts-holder').appendChild(w);
+      var ts = document.createElement('script');
+      ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      ts.async = true; ts.defer = true;
+      document.head.appendChild(ts);
+    }
 
     // Fallback hvis endepunktet feiler — må matche PROPERTY_MAP i
     // functions/_utils/sharepoint.js.
@@ -154,6 +180,14 @@
       if (!isValidEmail(epost)) return showErr('Ugyldig e-postadresse.');
       if (!isValidPhone(telefon)) return showErr('Ugyldig telefonnummer.');
 
+      var cfToken = '';
+      if (TURNSTILE_SITEKEY) {
+        var tsInput = form.querySelector('[name="cf-turnstile-response"]');
+        cfToken = tsInput ? tsInput.value : '';
+        if (!cfToken) return showErr('Bekreft at du ikke er en robot.');
+      }
+      var website = document.getElementById('f-website').value; // honningfelle
+
       btn.disabled = true;
       btn.textContent = 'Sender …';
 
@@ -163,7 +197,7 @@
         body: JSON.stringify({
           firma: firma, orgnr: orgnr, kontaktperson: kontakt,
           epost: epost, telefon: telefon, lokasjoner: lokasjoner,
-          melding: melding, lang: 'nb',
+          melding: melding, lang: 'nb', cfToken: cfToken, website: website,
         }),
       })
         .then(function (r) { return r.json().catch(function () { return {}; }); })
@@ -180,6 +214,7 @@
               missing_contact: 'Fyll inn kontaktperson.',
               invalid_email: 'Ugyldig e-postadresse.',
               invalid_phone: 'Ugyldig telefonnummer.',
+              verification_failed: 'Robot-sjekken feilet — last siden på nytt og prøv igjen.',
             };
             showErr((data && map[data.error]) || 'Noe gikk galt. Prøv igjen om litt.');
             btn.disabled = false;

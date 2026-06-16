@@ -32,9 +32,23 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
-    const body = await request.json().catch(() => ({}));
-    let { firma, orgnr, kontaktperson, epost, telefon, lokasjoner, melding, lang } =
-      body || {};
+    const body = await request.json().catch(() => ({})) || {};
+
+    // #1 Honningfelle — ekte brukere ser ikke «website»-feltet. Fyller en bot
+    // det ut, later vi som om alt gikk bra (ingen rad opprettes, ingen e-post).
+    if (String(body.website || "").trim()) {
+      return jsonResponse({ ok: true }, 200);
+    }
+
+    // #3 Turnstile (bot-vern) — aktiveres automatisk når TURNSTILE_SECRET er
+    // satt som Cloudflare-secret. Uten secret hoppes sjekken over, så skjemaet
+    // virker også før nøklene er på plass. Fail-closed når den er påslått.
+    if (env.TURNSTILE_SECRET) {
+      const ok = await _verifyTurnstile(env, body.cfToken || "", request.headers.get("CF-Connecting-IP"));
+      if (!ok) return jsonResponse({ ok: false, error: "verification_failed" }, 403);
+    }
+
+    let { firma, orgnr, kontaktperson, epost, telefon, lokasjoner, melding, lang } = body;
 
     firma = _trim(firma);
     orgnr = String(orgnr == null ? "" : orgnr).replace(/\s/g, "").slice(0, 20);
@@ -79,7 +93,9 @@ export async function onRequestPost(context) {
       _fireEmail(context, sendOwnerNotification(env, {
         firma, orgnr, kontaktperson, epost, telefon, requestedNames, melding, note,
       }));
-      return jsonResponse({ ok: true, status: isActive ? "exists_active" : "already_pending" });
+      // #2 Returner samme generiske svar som ved nyregistrering — avslør IKKE
+      // (via status-feltet) om e-posten allerede finnes (enumerasjons-vern).
+      return jsonResponse({ ok: true });
     }
 
     // --- Opprett inaktiv rad ---
@@ -100,7 +116,7 @@ export async function onRequestPost(context) {
       note: "Ny registrering — venter på godkjenning i booking-appen.",
     }));
 
-    return jsonResponse({ ok: true, status: "registered" });
+    return jsonResponse({ ok: true });
   } catch (err) {
     console.error("register-company error:", err);
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
@@ -147,6 +163,27 @@ async function sendOwnerNotification(env, data) {
 }
 
 // ----------------------------------------------------------------------------
+
+// #3 Verifiser Turnstile-token mot Cloudflare. Fail-closed: returnerer false
+// ved manglende token eller nettverksfeil (kalles kun når TURNSTILE_SECRET er satt).
+async function _verifyTurnstile(env, token, ip) {
+  if (!token) return false;
+  try {
+    const form = new URLSearchParams();
+    form.append("secret", env.TURNSTILE_SECRET);
+    form.append("response", token);
+    if (ip) form.append("remoteip", ip);
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    return data && data.success === true;
+  } catch (e) {
+    console.error("[register-company] Turnstile-verifisering feilet:", e);
+    return false;
+  }
+}
 
 function _trim(s, max = MAX_FIELD_LEN) {
   return String(s == null ? "" : s).trim().slice(0, max);
