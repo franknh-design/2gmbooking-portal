@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.5. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.6. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -92,7 +92,7 @@ function renderRigSelector() {
   wrap.hidden = false;
   wrap.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px";
   wrap.innerHTML = locations.map((l) =>
-    '<button type="button" data-slug="' + escLite(l.slug) + '" style="padding:8px 14px;border:1px solid #cdd3da;border-radius:8px;background:#fff;color:#222;cursor:pointer;font:inherit;font-size:14px">' + escLite(l.title) + "</button>"
+    '<button type="button" data-slug="' + escLite(l.slug) + '" style="padding:8px 14px;border:1px solid #cdd3da;border-radius:8px;background:#fff;color:#222;cursor:pointer;font:inherit;font-size:14px">' + escLite(l.address || l.title) + "</button>"
   ).join("");
   wrap.querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => selectRig(b.dataset.slug));
@@ -118,7 +118,8 @@ function renderSelectedTitle() {
   const loc = locations.find((l) => l.slug === selectedSlug);
   if (!el || !loc) return;
   el.removeAttribute("data-i18n"); // ikke overskriv av applyLang
-  el.textContent = (lang === "en" ? "Rooms at " : "Rom på ") + loc.title;
+  // Vis adressen (kunder kjenner ikke interne rigg-navn); «Rom i <adresse>».
+  el.textContent = (lang === "en" ? "Rooms at " : "Rom i ") + (loc.address || loc.title);
 }
 
 async function selectRig(slug) {
