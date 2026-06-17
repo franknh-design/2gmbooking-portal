@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.7 -->
+<!-- company v2.8 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -187,8 +187,12 @@
       },
     };
 
-    var CURRENT_LANG = 'nb';
-    try { var stored = localStorage.getItem('reg_lang'); if (stored === 'nb' || stored === 'en') CURRENT_LANG = stored; } catch (e) {}
+    // Språkvalg: lagret valg > nettleser-språk. Ikke-norsk nettleser → start på engelsk.
+    var CURRENT_LANG = (function () {
+      try { var s = localStorage.getItem('reg_lang'); if (s === 'nb' || s === 'en') return s; } catch (e) {}
+      var n = String(navigator.language || '').toLowerCase();
+      return (n.indexOf('nb') === 0 || n.indexOf('no') === 0 || n.indexOf('nn') === 0) ? 'nb' : 'en';
+    })();
 
     function t(k) { return (T[CURRENT_LANG] && T[CURRENT_LANG][k]) || T.nb[k] || k; }
 
