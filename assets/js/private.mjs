@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.6. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.7. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -287,7 +287,9 @@ function renderStay() {
     const unit = nights === 1 ? t("nightOne") : t("nightMany");
     ps.textContent = fmt(t("priceFor"), { p: formatKr(totalPrice(nightlyRate, from, to)), n: nights, unit });
   } else {
-    av.textContent = t("noRooms");
+    // Med flere åpne rigger: nudge kunden til å prøve en annen lokasjon.
+    const extra = locations.length > 1 ? " " + t("noRoomsTryOther") : "";
+    av.textContent = t("noRooms") + extra;
     av.className = "availability full";
     ps.textContent = "";
   }
