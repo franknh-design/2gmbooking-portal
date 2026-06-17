@@ -12,13 +12,14 @@
 // Bundet til Rigg Andslimoen. Ingen token. Betaling via Stripe Checkout; webhook
 // (stripe-webhook.js) bekrefter. Lås er mock i Fase 4 (ekte Yale/Tuya = Fase 5).
 
-import { getPrivateConfig, generateBookingRef } from "../_utils/sharepoint.js";
+import { getPrivateConfig, generateBookingRef, propertyIdToName } from "../_utils/sharepoint.js";
 import { createSharePointStore } from "../_utils/booking-store.js";
 import { mockLock } from "../_utils/providers-mock.js";
 import { createStripePayment } from "../_utils/payment-stripe.js";
 import { createHold } from "../_utils/booking-orchestrator.js";
 
-const PROPERTY_NAME = "Rigg Andslimoen";
+// Default-rigg når ingen `property` sendes (bakoverkompatibelt med enkelt-rigg).
+const DEFAULT_PROPERTY = "Rigg Andslimoen";
 const MAX_NIGHTS = 90; // øvre grense på opphold — hindrer absurde hold (anonymt skrive-endepunkt)
 const TERMS_VERSION = "2026-06-15";
 
@@ -32,6 +33,11 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "invalid_request" }, 400);
     }
     const { fromDate, toDate, guest } = body || {};
+
+    // Rigg-velger: resolve slug → eiendomsnavn. Ingen slug = default-riggen.
+    // Ukjent slug → behandles som stengt (fail closed).
+    const property = (body && body.property) ? propertyIdToName(body.property) : DEFAULT_PROPERTY;
+    if (!property) return jsonResponse({ ok: false, error: "public_booking_disabled" }, 403);
 
     if (!fromDate || !toDate) return jsonResponse({ ok: false, error: "invalid_dates" }, 400);
     const from = new Date(fromDate);
@@ -72,18 +78,18 @@ export async function onRequestPost(context) {
       if (!human) return jsonResponse({ ok: false, error: "verification_failed" }, 403);
     }
 
-    const config = await getPrivateConfig(env, PROPERTY_NAME);
+    const config = await getPrivateConfig(env, property);
     if (!config.enabled) return jsonResponse({ ok: false, error: "public_booking_disabled" }, 403);
 
     const baseUrl = (env.PUBLIC_BASE_URL || new URL(request.url).origin).replace(/\/$/, "");
-    const store = createSharePointStore(env, PROPERTY_NAME);
+    const store = createSharePointStore(env, property);
     const deps = {
       store,
       payment: createStripePayment(env, baseUrl),
       lock: mockLock,
       now: () => Date.now(),
       generateRef: generateBookingRef,
-      propertyName: PROPERTY_NAME,
+      propertyName: property,
       nightlyRate: config.nightlyRate,
     };
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.4 -->
+<!-- v1.5 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -34,13 +34,15 @@
 
     <!-- Booking-tilstand -->
     <section class="booking" id="booking-state" hidden>
+      <!-- Rigg-velger — vises kun når 2+ rigger er åpne for privat booking. -->
+      <div class="rig-selector" id="rig-selector" hidden></div>
       <div class="gallery">
         <img class="gallery-main" id="gallery-main" src="assets/img/private/rom.jpg" alt="Rom på Rigg Andslimoen" decoding="async" fetchpriority="high" />
         <div class="gallery-thumbs" id="gallery-thumbs"></div>
       </div>
 
       <div class="intro">
-        <h1 data-i18n="introTitle">Rom på Rigg Andslimoen</h1>
+        <h1 id="introTitle" data-i18n="introTitle">Rom på Rigg Andslimoen</h1>
         <p data-i18n="introDesc">Rene rom med eget bad og toalett. Felles kjøkken og vaskerom.</p>
         <p class="price"><strong id="nightly-rate">–</strong> <span data-i18n="perNight">kr / natt</span></p>
       </div>

@@ -11,10 +11,11 @@
 //
 // Bundet til Rigg Andslimoen. Ingen token — dette er publikum-siden.
 
-import { getPrivateConfig } from "../_utils/sharepoint.js";
+import { getPrivateConfig, propertyIdToName } from "../_utils/sharepoint.js";
 import { calculatePrivateAvailability } from "../_utils/private-availability.js";
 
-const PROPERTY_NAME = "Rigg Andslimoen";
+// Default-rigg når ingen `property` sendes (bakoverkompatibelt med enkelt-rigg).
+const DEFAULT_PROPERTY = "Rigg Andslimoen";
 const MAX_DAYS = 92;
 
 export async function onRequestPost(context) {
@@ -27,6 +28,13 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: "invalid_request" }, 400);
     }
     const { fromDate, toDate } = body || {};
+
+    // Rigg-velger: resolve slug → eiendomsnavn. Ingen slug = default-riggen.
+    // Ukjent slug behandles som stengt (fail closed).
+    const property = (body && body.property) ? propertyIdToName(body.property) : DEFAULT_PROPERTY;
+    if (!property) {
+      return jsonResponse({ enabled: false });
+    }
 
     if (!fromDate || !toDate) {
       return jsonResponse({ error: "invalid_dates" }, 400);
@@ -41,12 +49,12 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: "range_too_large", maxDays: MAX_DAYS }, 400);
     }
 
-    const config = await getPrivateConfig(env, PROPERTY_NAME);
+    const config = await getPrivateConfig(env, property);
     if (!config.enabled) {
       return jsonResponse({ enabled: false });
     }
 
-    const result = await calculatePrivateAvailability(env, PROPERTY_NAME, fromDate, toDate);
+    const result = await calculatePrivateAvailability(env, property, fromDate, toDate);
     return jsonResponse({
       enabled: true,
       nightlyRate: config.nightlyRate,

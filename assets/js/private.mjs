@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.4. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.5. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -32,8 +32,14 @@ let lang = "nb";
 let galleryIndex = 0;
 let lastStay = { from: "", to: "", available: 0 };
 let tsWidgetId = null;
+let locations = [];        // rigger åpne for privat booking (fra /api/private-locations)
+let selectedSlug = null;   // valgt rigg-slug
 const fpInstances = [];
 const thumbImgs = [];
+
+function escLite(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
 
 function t(key) {
   return (STRINGS[lang] && STRINGS[lang][key]) || key;
@@ -69,6 +75,62 @@ async function postJSON(path, body) {
     body: JSON.stringify(body),
   });
   return res.json();
+}
+
+async function getJSON(path) {
+  const res = await fetch(path);
+  return res.json();
+}
+
+// --- Rigg-velger (multi-rigg) ------------------------------------------------
+// Vises kun når 2+ rigger er åpne for privat booking. Bytte rigg oppdaterer
+// tittel, pris og ledighet; valgt slug sendes med til availability/booking.
+function renderRigSelector() {
+  const wrap = $("rig-selector");
+  if (!wrap) return;
+  if (locations.length < 2) { wrap.hidden = true; wrap.innerHTML = ""; return; }
+  wrap.hidden = false;
+  wrap.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px";
+  wrap.innerHTML = locations.map((l) =>
+    '<button type="button" data-slug="' + escLite(l.slug) + '" style="padding:8px 14px;border:1px solid #cdd3da;border-radius:8px;background:#fff;color:#222;cursor:pointer;font:inherit;font-size:14px">' + escLite(l.title) + "</button>"
+  ).join("");
+  wrap.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => selectRig(b.dataset.slug));
+  });
+}
+
+function applySelectedRig() {
+  const loc = locations.find((l) => l.slug === selectedSlug) || locations[0];
+  if (!loc) return;
+  nightlyRate = Number(loc.nightlyRate) || 0;
+  if ($("nightly-rate")) $("nightly-rate").textContent = formatKr(nightlyRate);
+  renderSelectedTitle();
+  document.querySelectorAll("#rig-selector button").forEach((b) => {
+    const on = b.dataset.slug === selectedSlug;
+    b.style.background = on ? "#1B4F72" : "#fff";
+    b.style.color = on ? "#fff" : "#222";
+    b.style.fontWeight = on ? "600" : "400";
+  });
+}
+
+function renderSelectedTitle() {
+  const el = $("introTitle");
+  const loc = locations.find((l) => l.slug === selectedSlug);
+  if (!el || !loc) return;
+  el.removeAttribute("data-i18n"); // ikke overskriv av applyLang
+  el.textContent = (lang === "en" ? "Rooms at " : "Rom på ") + loc.title;
+}
+
+async function selectRig(slug) {
+  if (!slug || slug === selectedSlug) return;
+  selectedSlug = slug;
+  applySelectedRig();
+  // Re-spør ledighet for ny rigg hvis datoer allerede er valgt.
+  if (lastStay.from && lastStay.to && nightsBetween(lastStay.from, lastStay.to) > 0) {
+    await onDatesChanged();
+  } else {
+    renderStay();
+  }
 }
 
 function todayISO() {
@@ -123,8 +185,9 @@ function applyLang(newLang) {
     b.classList.toggle("active", b.dataset.lang === lang);
   });
 
-  // Re-lokaliser eventuell allerede-vist ledighet/pris/knapp.
+  // Re-lokaliser eventuell allerede-vist ledighet/pris/knapp + rigg-tittel.
   renderStay();
+  renderSelectedTitle(); // "Rom på {rigg}" på valgt språk (no-op før rigger lastet)
   renderTurnstile(); // re-render bot-widgeten på nytt språk (no-op før lastet)
 }
 
@@ -160,19 +223,23 @@ async function init() {
   loadTurnstile(); // injiser Turnstile-script (rendres via _tsOnload når klart)
   applyLang(lang); // sett flatpickr-placeholder/lokalitet nå som instansene finnes
 
-  let config;
+  // Hent riggene som er åpne for privat booking. Tom liste = stengt.
+  let locs = [];
   try {
-    config = await postJSON("/api/private-availability", { fromDate: today, toDate: today });
-  } catch {
-    config = { enabled: false };
-  }
-  if (!config || !config.enabled) {
+    const r = await getJSON("/api/private-locations");
+    if (r && r.ok && Array.isArray(r.locations)) locs = r.locations;
+  } catch { locs = []; }
+  if (!locs.length) {
     $("booking-state").hidden = true;
     $("closed-state").hidden = false;
     return;
   }
-  nightlyRate = Number(config.nightlyRate) || 0;
-  $("nightly-rate").textContent = formatKr(nightlyRate);
+  locations = locs;
+  // Forhåndsvalg fra ?rigg=slug hvis gyldig, ellers første åpne rigg.
+  const wantSlug = _params.get("rigg");
+  selectedSlug = (wantSlug && locs.some((l) => l.slug === wantSlug)) ? wantSlug : locs[0].slug;
+  renderRigSelector();
+  applySelectedRig();
 }
 
 function initDatePickers(todayStr) {
@@ -240,7 +307,7 @@ async function onDatesChanged() {
   $("price-summary").textContent = "";
   let data;
   try {
-    data = await postJSON("/api/private-availability", { fromDate: from, toDate: to });
+    data = await postJSON("/api/private-availability", { fromDate: from, toDate: to, property: selectedSlug });
   } catch {
     av.textContent = t("availError"); av.className = "availability full";
     refreshButton();
@@ -304,6 +371,7 @@ async function onSubmit(e) {
       fromDate: lastStay.from,
       toDate: lastStay.to,
       lang,
+      property: selectedSlug,
       termsAccepted: $("terms-check").checked,
       cfToken,
       guest: { name: $("guest-name").value.trim(), phone: $("guest-phone").value, email: email || undefined },

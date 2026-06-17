@@ -221,6 +221,28 @@ export async function isAnyPrivateEnabled(env) {
   return items.some((it) => isPrivateOpen(it.fields || {}));
 }
 
+// Lister alle eiendommer som er åpne for privat booking (PublicBookingEnabled +
+// positiv pris) → [{ slug, title, nightlyRate, address }]. Brukes av
+// /private-siden til rigg-velgeren når flere rigger er åpne.
+export async function getPrivateLocations(env) {
+  const nameToSlug = {};
+  for (const slug of Object.keys(PROPERTY_MAP)) {
+    nameToSlug[String(PROPERTY_MAP[slug]).toLowerCase()] = slug;
+  }
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES, { select: "Title,PublicBookingEnabled,PublicNightlyRate,Adress" });
+  const out = [];
+  for (const it of items) {
+    const f = it.fields || {};
+    if (!isPrivateOpen(f)) continue;
+    const title = String(f.Title || "").trim();
+    const slug = nameToSlug[title.toLowerCase()];
+    if (slug && title) {
+      out.push({ slug, title, nightlyRate: Number(f.PublicNightlyRate) || 0, address: String(f.Adress || "").trim() });
+    }
+  }
+  return out;
+}
+
 // Leser den globale løsøre-prislista (Deposit_Prices) → { <vare-nøkkel>: <pris kr> }.
 // Kun rader med positiv pris tas med. Tom/feil => tomt map (fail-closed: charge avvises).
 export async function getDepositPrices(env) {
