@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.7. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.8. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -105,12 +105,28 @@ function applySelectedRig() {
   nightlyRate = Number(loc.nightlyRate) || 0;
   if ($("nightly-rate")) $("nightly-rate").textContent = formatKr(nightlyRate);
   renderSelectedTitle();
+  updateMap(loc.address);
   document.querySelectorAll("#rig-selector button").forEach((b) => {
     const on = b.dataset.slug === selectedSlug;
     b.style.background = on ? "#1B4F72" : "#fff";
     b.style.color = on ? "#fff" : "#222";
     b.style.fontWeight = on ? "600" : "400";
   });
+}
+
+// Innebygd Google-kart for valgt adresse (ingen API-nøkkel). Skjules hvis
+// adressen mangler. Link åpner full Maps i ny fane.
+function updateMap(address) {
+  const wrap = $("map-wrap");
+  if (!wrap) return;
+  const addr = String(address || "").trim();
+  if (!addr) { wrap.hidden = true; return; }
+  const q = encodeURIComponent(addr);
+  const frame = $("loc-map");
+  if (frame) frame.src = "https://www.google.com/maps?q=" + q + "&output=embed&hl=" + (lang === "en" ? "en" : "no");
+  const link = $("map-link");
+  if (link) link.href = "https://www.google.com/maps/search/?api=1&query=" + q;
+  wrap.hidden = false;
 }
 
 function renderSelectedTitle() {
