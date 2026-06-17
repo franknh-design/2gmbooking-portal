@@ -5,7 +5,7 @@
 export const STRINGS = {
   nb: {
     introTitle: "Rom på Rigg Andslimoen",
-    introDesc: "Rene rom med eget bad og toalett. Håndklær (lite og stort) og sengetøy er inkludert. Felles kjøkken og vaskerom.",
+    introDesc: "Rene rom med egen dusj og toalett. Håndklær (liten og stor) og sengetøy er inkludert. Felles kjøkken og vaskerom.",
     perNight: "kr / natt",
     checkin: "Innsjekk",
     checkout: "Utsjekk",
@@ -51,7 +51,7 @@ export const STRINGS = {
   },
   en: {
     introTitle: "Rooms at Rigg Andslimoen",
-    introDesc: "Clean rooms with a private bathroom and toilet. Towels (small and large) and bedding included. Shared kitchen and laundry.",
+    introDesc: "Clean rooms with a private shower and toilet. Towels (small and large) and bedding included. Shared kitchen and laundry.",
     perNight: "kr / night",
     checkin: "Check-in",
     checkout: "Check-out",
