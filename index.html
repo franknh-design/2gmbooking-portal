@@ -1,8 +1,21 @@
 <!DOCTYPE html>
-<!-- v3.16.6 -->
+<!-- v3.16.7 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    /* v3.16.7: Apex-inngang. Token-portalen (denne fila) er for bedriftskunder
+       med personlig ?token=-lenke. Uten token er besøkende publikum → send til
+       inngangssiden /start (Bedrift|Privat). Kjøres først i <head> så vi unngår
+       å blinke innloggings/demo-skjermen. ?token=… går rett til innlogging. */
+    (function () {
+      try {
+        if (!new URLSearchParams(location.search).get("token")) {
+          location.replace("/start");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1B4F72" />
   <meta name="color-scheme" content="light" />
@@ -305,7 +318,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.16.6</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.16.7</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
