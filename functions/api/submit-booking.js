@@ -510,7 +510,7 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
     const co = g.checkOut ? _fmtNoDate(g.checkOut) : "åpen";
     return `• ${g.name} · ${ci} → ${co}`;
   }).join("\n");
-  const portalUrl = token ? `https://2gmbooking-portal.pages.dev/?token=${encodeURIComponent(token)}` : "https://2gmbooking-portal.pages.dev/";
+  const portalUrl = token ? `https://www.2gm.no/?token=${encodeURIComponent(token)}` : "https://www.2gm.no/";
   return {
     customer,
     contact,
