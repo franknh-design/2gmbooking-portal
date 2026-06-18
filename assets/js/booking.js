@@ -233,7 +233,7 @@
 
       list.innerHTML = "";
       for (let i = 1; i <= count; i++) {
-        list.appendChild(this._buildGuestRow(i, existing[String(i)] || {}));
+        list.appendChild(this._buildGuestRow(i, existing[String(i)] || {}, count));
       }
       this._refreshGuestSummaries();
       // v3.16.9: med kun 1 rom finnes ingen fellesperiode å avvike fra — skjul
@@ -247,7 +247,7 @@
       this._renderPriceSummary();
     },
 
-    _buildGuestRow(idx, prev) {
+    _buildGuestRow(idx, prev, count) {
       const row = document.createElement("div");
       row.className = "guest-row";
       row.dataset.guestIdx = String(idx);
