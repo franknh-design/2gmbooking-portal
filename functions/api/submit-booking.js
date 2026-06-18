@@ -548,14 +548,12 @@ function corsHeaders() {
   };
 }
 
-// v3.14.0: norsk telefonvalidering — duplikat av frontend-regelen i
-// booking.js. Stripper whitespace/skilletegn + valgfri +47/0047/47-prefiks
-// og krever 8 sifre med ledende 2-9 (gyldige norske start-sifre).
+// v3.16.9: internasjonalt vennlig telefonvalidering (gjester kan være
+// utenlandske) — duplikat av frontend-regelen i booking.js. Valgfri +,
+// 6–15 siffer etter at skilletegn er strippet (E.164-aktig).
 function _isValidNoPhone(s) {
-  const cleaned = String(s || "")
-    .replace(/[\s\-()./]/g, "")
-    .replace(/^(\+47|0047|47)/, "");
-  return /^[2-9]\d{7}$/.test(cleaned);
+  const cleaned = String(s || "").replace(/[\s\-()./]/g, "");
+  return /^\+?\d{6,15}$/.test(cleaned);
 }
 
 // E-post-regex — speiler isValidEmail i booking.js (frontend). Bevisst lett,

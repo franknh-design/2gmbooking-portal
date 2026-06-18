@@ -236,6 +236,13 @@
         list.appendChild(this._buildGuestRow(i, existing[String(i)] || {}));
       }
       this._refreshGuestSummaries();
+      // v3.16.9: med kun 1 rom finnes ingen fellesperiode å avvike fra — skjul
+      // hjelpeteksten + mobil-knappen som refererer «Avvikende datoer».
+      const _single = count <= 1;
+      const _hint = document.querySelector(".guests-hint");
+      if (_hint) _hint.hidden = _single;
+      const _mDev = document.getElementById("m-deviating-link");
+      if (_mDev) _mDev.hidden = _single;
       // Rom-antall påvirker både rad-antall og pris (rom × natt + utvask/gjest).
       this._renderPriceSummary();
     },
@@ -287,16 +294,12 @@
       phoneEl.type = "tel";
       phoneEl.placeholder = tx("booking.guestPhone");
       phoneEl.dataset.field = "phone";
-      phoneEl.value = prev.phone || "+47 ";
+      phoneEl.value = prev.phone || "";
       phoneEl.autocomplete = "tel";
       phoneEl.inputMode = "tel";
       phoneEl.required = true;
-      // Live-validering: marker .invalid mens kunden skriver så feilen er
-      // synlig før submit. "+47 " alene regnes ikke som invalid (tom-tilstand).
-      const isEffectivelyEmpty = (v) => {
-        const cleaned = String(v || "").replace(/[\s\-()./]/g, "").replace(/^(\+47|0047|47)/, "");
-        return cleaned === "";
-      };
+      // v3.16.9: ikke forhåndsfyll "+47" — gjesten kan være utenlandsk. Tom = tom-tilstand.
+      const isEffectivelyEmpty = (v) => !/\d/.test(String(v || ""));
       phoneEl.addEventListener("input", () => {
         const v = phoneEl.value.trim();
         if (!v || isEffectivelyEmpty(v)) { phoneEl.classList.remove("invalid"); return; }
@@ -342,6 +345,9 @@
       const toggle = document.createElement("button");
       toggle.type = "button";
       toggle.className = "guest-toggle";
+      // v3.16.9: med kun 1 rom finnes ingen «fellesperiode» å avvike fra —
+      // skjul «Avvikende datoer».
+      toggle.hidden = count <= 1;
 
       main.append(numEl, inputs, toggle);
 
@@ -1020,9 +1026,11 @@
   function normalizeNoPhone(s) {
     return String(s || "").replace(/[\s\-()./]/g, "");
   }
+  // v3.16.9: internasjonalt vennlig (gjester kan være utenlandske) — valgfri +,
+  // 6–15 siffer. Speiler isValidPhone i private-/company-sidene.
   function isValidNoPhone(s) {
-    const cleaned = normalizeNoPhone(s).replace(/^(\+47|0047|47)/, "");
-    return /^[2-9]\d{7}$/.test(cleaned);
+    const cleaned = normalizeNoPhone(s);
+    return /^\+?\d{6,15}$/.test(cleaned);
   }
 
   // Enkel e-post-regex — bevisst lett (ingen RFC 5322-compliance). Krever
