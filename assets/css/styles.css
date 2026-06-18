@@ -248,9 +248,12 @@ input, select, button { font-family: inherit; }
   letter-spacing: .1px;
 }
 .topbar-logo {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  height: 24px;
+  width: auto;
+  display: block;
+}
+@media (max-width: 600px) {
+  .topbar-logo { height: 20px; max-width: 52vw; object-fit: contain; }
 }
 .topbar-divider { color: var(--color-text-tertiary); font-weight: 400; }
 .topbar-app {
