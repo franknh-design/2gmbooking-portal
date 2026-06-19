@@ -136,6 +136,8 @@ function renderSelectedTitle() {
   el.removeAttribute("data-i18n"); // ikke overskriv av applyLang
   // Vis adressen (kunder kjenner ikke interne rigg-navn); «Rom i <adresse>».
   el.textContent = (lang === "en" ? "Rooms at " : "Rom i ") + (loc.address || loc.title);
+  // v2.2: speil tittelen til nettleser-fanen (ellers hardkodet rigg-navn).
+  try { document.title = el.textContent + " — 2GM Eiendom"; } catch (_) {}
 }
 
 async function selectRig(slug) {
