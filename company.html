@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.16 -->
+<!-- company v2.17 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -42,10 +42,15 @@
     .co-gallery-nav { flex: 0 0 auto; width: 32px; height: 32px; border: 1px solid #cdd3da; background: #fff; color: #1B4F72; border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1; }
     .co-gallery-nav:hover { background: #f0f4f8; }
     .co-gallery-main { width: 100%; aspect-ratio: 16/9; max-height: 340px; object-fit: cover; border-radius: 12px; display: block; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    .co-gallery-map { width: 100%; aspect-ratio: 16/9; max-height: 340px; border: 0; border-radius: 12px; display: block; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
     .co-gallery-thumbs { display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
     .co-gallery-thumbs img { width: 72px; height: 54px; object-fit: cover; border-radius: 7px; cursor: pointer; border: 2px solid transparent; opacity: .85; transition: opacity .15s, border-color .15s; }
     .co-gallery-thumbs img:hover { opacity: 1; }
     .co-gallery-thumbs img.active { border-color: #1B4F72; opacity: 1; }
+    .co-map-thumb { width: 72px; height: 54px; border-radius: 7px; cursor: pointer; border: 2px solid transparent; background: #e9f0e6; color: #2c5530; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; opacity: .85; transition: opacity .15s, border-color .15s; font-size: 10px; font-weight: 700; line-height: 1; }
+    .co-map-thumb svg { width: 18px; height: 18px; }
+    .co-map-thumb:hover { opacity: 1; }
+    .co-map-thumb.active { border-color: #1B4F72; opacity: 1; }
     /* Honningfelle — skjult for mennesker, synlig for bots. */
     .hp-field { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
     #ts-holder { margin: 4px 0 12px; display: flex; justify-content: center; }
@@ -84,7 +89,10 @@
             <span class="co-gallery-label" id="co-gallery-label"></span>
             <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
           </div>
-          <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
+          <div class="co-gallery-stage">
+            <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
+            <iframe class="co-gallery-map" id="co-gallery-map" title="Kart" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:none"></iframe>
+          </div>
           <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
         </div>
 
@@ -407,19 +415,32 @@
   // LOC_IMAGES når de finnes. Ingen avhuking med bilder → galleriet skjult.
   (function () {
     var LOC_IMAGES = {
-      // Industriveien 4 (Rigg Botnhågen) — utvendig først, deretter rom-bilder.
+      // Industriveien 4 (Rigg Botnhågen) — utvendig først, deretter rom-bilder, kart sist.
       riggbotnhagen: [
         'assets/img/company/riggbotnhagen/outside.png',
         'assets/img/company/riggbotnhagen/rom.jpg',
         'assets/img/company/riggbotnhagen/bad.jpg',
         'assets/img/company/riggbotnhagen/vaskerom.jpg',
         'assets/img/company/riggbotnhagen/kjokken.jpg',
+        { kind: 'map', q: 'Industriveien 4, 9300 Finnsnes' },
       ],
-      // Aspeveien 2 (Rigg 24) — utvendig-foto.
-      rigg24: ['assets/img/company/rigg24/utvendig.jpg'],
+      // Aspeveien 2 (Rigg 24) — utvendig-foto + kart.
+      rigg24: [
+        'assets/img/company/rigg24/utvendig.jpg',
+        { kind: 'map', q: 'Aspeveien 2, 9300 Finnsnes' },
+      ],
     };
+    // Pin-ikon + etikett til kart-thumbnailen. Egen IIFE → ikke tilgang til i18n-en
+    // over; leser språk fra document.lang (satt av applyLang).
+    var MAP_THUMB_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+    var MAP_LABEL = { nb: 'Kart', en: 'Map' };
+    function curLang() { return (document.documentElement.lang === 'en') ? 'en' : 'nb'; }
+    function mapSrc(q) {
+      return 'https://www.google.com/maps?q=' + encodeURIComponent(q) + '&z=16&hl=' + (curLang() === 'en' ? 'en' : 'no') + '&output=embed';
+    }
     var wrap = document.getElementById('co-gallery');
     var main = document.getElementById('co-gallery-main');
+    var mapFrame = document.getElementById('co-gallery-map');
     var thumbs = document.getElementById('co-gallery-thumbs');
     var locs = document.getElementById('f-locs');
     var head = document.getElementById('co-gallery-head');
@@ -444,52 +465,77 @@
       });
       if (curIdx >= groups.length) curIdx = 0;
     }
-    // Viser bildene for ÉN lokasjon (groups[curIdx]). Tittel + piler vises kun
-    // når 2+ lokasjoner med bilder er valgt. Galleriet vises først når et bilde
-    // faktisk laster (graceful).
+    function isMap(item) { return item && typeof item === 'object' && item.kind === 'map'; }
+    // Viser bildene for ÉN lokasjon (groups[curIdx]). Tittel + piler vises kun når
+    // 2+ lokasjoner er valgt. Foto vises først når det faktisk laster (graceful);
+    // kart-feltet legges sist som egen thumbnail og åpner et innebygd Google-kart.
     function renderGroup() {
       thumbs.innerHTML = '';
       main.removeAttribute('src');
+      main.style.display = '';
+      mapFrame.style.display = 'none';
+      mapFrame.removeAttribute('src');
       wrap.hidden = true;
       if (head) head.hidden = true;
       if (!groups.length) return;
       var multi = groups.length > 1;
       var grp = groups[curIdx];
+      var items = grp.images;
+      var hasPhotos = items.some(function (it) { return !isMap(it); });
       var userPicked = false; // sann så snart brukeren har klikket en thumb
-      // Velg hovedbilde rekkefølge-stabilt: laveste lastede indeks vinner, slik at
+      var loaded = {};        // idx -> {src, el} (kun foto)
+
+      function showGallery() {
+        wrap.hidden = false;
+        if (head) { head.hidden = !multi; if (multi && labelEl) labelEl.textContent = grp.label; }
+      }
+      function clearActive() {
+        Array.prototype.slice.call(thumbs.children).forEach(function (x) { x.classList.remove('active'); });
+      }
+      function showPhoto(src, el) {
+        mapFrame.style.display = 'none'; mapFrame.removeAttribute('src');
+        main.style.display = ''; main.src = src;
+        clearActive(); if (el) el.classList.add('active');
+      }
+      function showMap(q, el) {
+        main.style.display = 'none'; main.removeAttribute('src');
+        mapFrame.style.display = ''; mapFrame.src = mapSrc(q);
+        clearActive(); if (el) el.classList.add('active');
+      }
+      // Hovedbilde rekkefølge-stabilt: laveste lastede foto-indeks vinner, slik at
       // utvendig-bildet (først i lista) blir hero selv om en jpg laster raskere.
-      var loaded = {}; // idx -> {src, el}
       function pickMain() {
         if (userPicked) return;
-        for (var i = 0; i < grp.images.length; i++) {
-          if (loaded[i]) {
-            main.src = loaded[i].src;
-            thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
-            loaded[i].el.classList.add('active');
-            break;
-          }
+        for (var i = 0; i < items.length; i++) {
+          if (loaded[i]) { showPhoto(loaded[i].src, loaded[i].el); return; }
         }
       }
-      grp.images.forEach(function (src, idx) {
-        var t = document.createElement('img');
-        t.style.display = 'none'; // ikke loading=lazy: skjulte lazy-bilder lastes aldri
-        t.decoding = 'async'; t.alt = '';
-        t.addEventListener('load', function () {
-          t.style.display = '';
-          wrap.hidden = false;
-          if (head) { head.hidden = !multi; if (multi && labelEl) labelEl.textContent = grp.label; }
-          loaded[idx] = { src: src, el: t };
+
+      items.forEach(function (item, idx) {
+        if (isMap(item)) {
+          var d = document.createElement('div');
+          d.className = 'co-map-thumb';
+          d.innerHTML = MAP_THUMB_SVG + '<span>' + MAP_LABEL[curLang()] + '</span>';
+          d.addEventListener('click', function () { userPicked = true; showMap(item.q, d); });
+          thumbs.appendChild(d);
+          // Lokasjon uten foto → vis kartet som hovedvisning med en gang.
+          if (!hasPhotos) { showGallery(); if (!userPicked) showMap(item.q, d); }
+          return;
+        }
+        var src = item;
+        var t2 = document.createElement('img');
+        t2.style.display = 'none'; // ikke loading=lazy: skjulte lazy-bilder lastes aldri
+        t2.decoding = 'async'; t2.alt = '';
+        t2.addEventListener('load', function () {
+          t2.style.display = '';
+          showGallery();
+          loaded[idx] = { src: src, el: t2 };
           pickMain();
         });
-        t.addEventListener('click', function () {
-          userPicked = true;
-          main.src = src;
-          thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
-          t.classList.add('active');
-        });
-        t.addEventListener('error', function () { t.remove(); });
-        t.src = src;
-        thumbs.appendChild(t);
+        t2.addEventListener('click', function () { userPicked = true; showPhoto(src, t2); });
+        t2.addEventListener('error', function () { t2.remove(); });
+        t2.src = src;
+        thumbs.appendChild(t2);
       });
     }
     function rebuild() { computeGroups(); renderGroup(); }
