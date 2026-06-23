@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.19 -->
+<!-- company v2.20 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -17,7 +17,12 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
     .reg-title { font-size: 22px; margin: 6px 0 4px; }
-    .reg-sub { color: #667; font-size: 14px; margin: 0 0 18px; line-height: 1.45; }
+    .reg-sub { color: #667; font-size: 14px; margin: 0 0 14px; line-height: 1.45; }
+    .reg-rigs { margin: 0 0 18px; padding: 12px 14px; background: #f4f8f0; border: 1px solid #e1ebd5; border-radius: 10px; }
+    .reg-rigs-lead { font-weight: 600; color: #1B4F72; font-size: 14px; margin: 0 0 8px; }
+    .reg-rigs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .reg-rigs-list li { position: relative; padding-left: 23px; font-size: 14px; color: #445; line-height: 1.4; }
+    .reg-rigs-list li::before { content: '✓'; position: absolute; left: 0; top: 0; color: #639922; font-weight: 700; }
     .reg-wrap .field { margin-bottom: 13px; }
     .req { color: #c0392b; }
     .locs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 4px; }
@@ -81,6 +86,18 @@
         <h1 class="reg-title" data-i18n="title">Registrer firma</h1>
         <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
+
+        <div class="reg-rigs">
+          <p class="reg-rigs-lead" data-i18n="rigsLead">Om riggene – dette er inkludert:</p>
+          <ul class="reg-rigs-list">
+            <li data-i18n="rig_bath">Eget bad med dusj og toalett på hvert rom</li>
+            <li data-i18n="rig_fridge">Minikjøleskap på rommet</li>
+            <li data-i18n="rig_wifi">Gratis WiFi</li>
+            <li data-i18n="rig_linen">Håndklær og sengetøy inkludert</li>
+            <li data-i18n="rig_clean">Rommet rengjøres én gang i uken</li>
+            <li data-i18n="rig_change">Nye håndklær hver uke, sengetøy annenhver uke</li>
+          </ul>
+        </div>
 
         <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
         <div class="co-gallery" id="co-gallery" hidden>
@@ -173,6 +190,13 @@
         l_firma: 'Firmanavn', l_orgnr: 'Org.nr', ph_orgnr: '9 sifre',
         l_kontakt: 'Kontaktperson', l_epost: 'E-post', l_telefon: 'Telefon',
         ph_telefon: 'Med landskode hvis utenlandsk, f.eks. +47 …',
+        rigsLead: 'Om riggene – dette er inkludert:',
+        rig_bath: 'Eget bad med dusj og toalett på hvert rom',
+        rig_fridge: 'Minikjøleskap på rommet',
+        rig_wifi: 'Gratis WiFi',
+        rig_linen: 'Håndklær og sengetøy inkludert',
+        rig_clean: 'Rommet rengjøres én gang i uken',
+        rig_change: 'Nye håndklær hver uke, sengetøy annenhver uke',
         l_locs: 'Ønskede lokasjoner', l_melding: 'Melding (valgfritt)',
         ph_melding: 'Antall ansatte, perioder, behov …',
         l_invoice: 'Fakturamottak', inv_ehf: 'EHF-faktura (til org.nr)',
@@ -197,6 +221,13 @@
         l_firma: 'Company name', l_orgnr: 'Org. no.', ph_orgnr: '9 digits',
         l_kontakt: 'Contact person', l_epost: 'Email', l_telefon: 'Phone',
         ph_telefon: 'Incl. country code if abroad, e.g. +47 …',
+        rigsLead: 'About the rigs – this is included:',
+        rig_bath: 'Private bathroom with shower and toilet in every room',
+        rig_fridge: 'Mini fridge in the room',
+        rig_wifi: 'Free WiFi',
+        rig_linen: 'Towels and bedding included',
+        rig_clean: 'Room cleaned once a week',
+        rig_change: 'Fresh towels weekly, bedding every other week',
         l_locs: 'Desired locations', l_melding: 'Message (optional)',
         ph_melding: 'Number of staff, periods, needs …',
         l_invoice: 'Invoicing', inv_ehf: 'EHF invoice (to org. no.)',
