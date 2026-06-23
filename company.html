@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.12 -->
+<!-- company v2.13 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -37,6 +37,10 @@
     .reg-contact a { color: #1B4F72; text-decoration: none; font-weight: 600; }
     .reg-hours { display: block; margin-top: 4px; font-size: 13px; color: #889; }
     .co-gallery { margin: 4px 0 18px; }
+    .co-gallery-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .co-gallery-label { flex: 1; text-align: center; font-weight: 600; font-size: 14px; color: #1B4F72; }
+    .co-gallery-nav { flex: 0 0 auto; width: 32px; height: 32px; border: 1px solid #cdd3da; background: #fff; color: #1B4F72; border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1; }
+    .co-gallery-nav:hover { background: #f0f4f8; }
     .co-gallery-main { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; display: block; }
     .co-gallery-thumbs { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
     .co-gallery-thumbs img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
@@ -74,6 +78,11 @@
 
         <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
         <div class="co-gallery" id="co-gallery" hidden>
+          <div class="co-gallery-head" id="co-gallery-head" hidden>
+            <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
+            <span class="co-gallery-label" id="co-gallery-label"></span>
+            <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
+          </div>
           <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
           <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
         </div>
@@ -409,23 +418,48 @@
     var main = document.getElementById('co-gallery-main');
     var thumbs = document.getElementById('co-gallery-thumbs');
     var locs = document.getElementById('f-locs');
+    var head = document.getElementById('co-gallery-head');
+    var labelEl = document.getElementById('co-gallery-label');
+    var prevBtn = document.getElementById('co-gallery-prev');
+    var nextBtn = document.getElementById('co-gallery-next');
     if (!wrap || !main || !thumbs || !locs) return;
-    function rebuild() {
-      var slugs = Array.prototype.slice.call(locs.querySelectorAll('input:checked')).map(function (c) { return c.value; });
-      var srcs = [];
-      slugs.forEach(function (s) { (LOC_IMAGES[s] || []).forEach(function (src) { if (srcs.indexOf(src) < 0) srcs.push(src); }); });
+
+    var groups = [];   // [{slug, label, images}] — én per valgt lokasjon med bilder
+    var curIdx = 0;
+
+    function labelForSlug(slug) {
+      var input = locs.querySelector('input[value="' + slug + '"]');
+      var lab = input && input.closest('label');
+      return lab ? lab.textContent.trim() : slug;
+    }
+    function computeGroups() {
+      groups = [];
+      Array.prototype.slice.call(locs.querySelectorAll('input:checked')).forEach(function (c) {
+        var imgs = LOC_IMAGES[c.value] || [];
+        if (imgs.length) groups.push({ slug: c.value, label: labelForSlug(c.value), images: imgs });
+      });
+      if (curIdx >= groups.length) curIdx = 0;
+    }
+    // Viser bildene for ÉN lokasjon (groups[curIdx]). Tittel + piler vises kun
+    // når 2+ lokasjoner med bilder er valgt. Galleriet vises først når et bilde
+    // faktisk laster (graceful).
+    function renderGroup() {
       thumbs.innerHTML = '';
       main.removeAttribute('src');
       wrap.hidden = true;
-      if (!srcs.length) return;
+      if (head) head.hidden = true;
+      if (!groups.length) return;
+      var multi = groups.length > 1;
+      var grp = groups[curIdx];
       var firstSet = false;
-      srcs.forEach(function (src) {
+      grp.images.forEach(function (src) {
         var t = document.createElement('img');
         t.style.display = 'none'; // ikke loading=lazy: skjulte lazy-bilder lastes aldri
         t.decoding = 'async'; t.alt = '';
         t.addEventListener('load', function () {
           t.style.display = '';
           wrap.hidden = false;
+          if (head) { head.hidden = !multi; if (multi && labelEl) labelEl.textContent = grp.label; }
           if (!firstSet) { firstSet = true; main.src = src; t.classList.add('active'); }
           t.addEventListener('click', function () {
             main.src = src;
@@ -438,6 +472,10 @@
         thumbs.appendChild(t);
       });
     }
+    function rebuild() { computeGroups(); renderGroup(); }
+    function step(d) { if (groups.length) { curIdx = (curIdx + d + groups.length) % groups.length; renderGroup(); } }
+    if (prevBtn) prevBtn.addEventListener('click', function () { step(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { step(1); });
     // Event-delegation: virker selv om avhukingene legges til dynamisk etter fetch.
     locs.addEventListener('change', rebuild);
     rebuild(); // initial — skjult til en lokasjon med bilder er valgt
