@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.8 -->
+<!-- company v2.9 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -36,6 +36,11 @@
     .reg-contact { margin-top: 20px; padding-top: 14px; border-top: .5px solid #e3e7ec; font-size: 14px; color: #667; text-align: center; }
     .reg-contact a { color: #1B4F72; text-decoration: none; font-weight: 600; }
     .reg-hours { display: block; margin-top: 4px; font-size: 13px; color: #889; }
+    .co-gallery { margin: 4px 0 18px; }
+    .co-gallery-main { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; display: block; }
+    .co-gallery-thumbs { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .co-gallery-thumbs img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
+    .co-gallery-thumbs img.active { border-color: #1B4F72; }
     /* Honningfelle — skjult for mennesker, synlig for bots. */
     .hp-field { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
     #ts-holder { margin: 4px 0 12px; display: flex; justify-content: center; }
@@ -66,6 +71,12 @@
         <h1 class="reg-title" data-i18n="title">Registrer firma</h1>
         <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
+
+        <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
+        <div class="co-gallery" id="co-gallery" hidden>
+          <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
+          <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
+        </div>
 
         <form id="reg-form" novalidate>
           <div class="row2">
@@ -375,6 +386,38 @@
           btn.disabled = false;
           btn.textContent = t('submit');
         });
+    });
+  })();
+  </script>
+
+  <script>
+  // Rigg-bilder: gjenbruker /private-galleriet. Hver thumb starter skjult og
+  // vises kun hvis bildet faktisk laster (graceful — manglende filer fjernes,
+  // ingen brutt-bilde-ikon). Hele galleriet forblir skjult hvis ingen laster.
+  (function () {
+    var SRCS = ['rom', 'bad', 'vaskerom', 'kjokken', 'rigg'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; });
+    var wrap = document.getElementById('co-gallery');
+    var main = document.getElementById('co-gallery-main');
+    var thumbs = document.getElementById('co-gallery-thumbs');
+    if (!wrap || !main || !thumbs) return;
+    var firstSet = false;
+    SRCS.forEach(function (src) {
+      var t = document.createElement('img');
+      t.style.display = 'none';
+      t.loading = 'lazy'; t.decoding = 'async'; t.alt = '';
+      t.addEventListener('load', function () {
+        t.style.display = '';
+        wrap.hidden = false;
+        if (!firstSet) { firstSet = true; main.src = src; t.classList.add('active'); }
+        t.addEventListener('click', function () {
+          main.src = src;
+          thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
+          t.classList.add('active');
+        });
+      });
+      t.addEventListener('error', function () { t.remove(); });
+      t.src = src;
+      thumbs.appendChild(t);
     });
   })();
   </script>
