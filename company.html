@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.14 -->
+<!-- company v2.15 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -41,10 +41,11 @@
     .co-gallery-label { flex: 1; text-align: center; font-weight: 600; font-size: 14px; color: #1B4F72; }
     .co-gallery-nav { flex: 0 0 auto; width: 32px; height: 32px; border: 1px solid #cdd3da; background: #fff; color: #1B4F72; border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1; }
     .co-gallery-nav:hover { background: #f0f4f8; }
-    .co-gallery-main { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; display: block; }
-    .co-gallery-thumbs { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-    .co-gallery-thumbs img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
-    .co-gallery-thumbs img.active { border-color: #1B4F72; }
+    .co-gallery-main { width: 100%; aspect-ratio: 16/9; max-height: 340px; object-fit: cover; border-radius: 12px; display: block; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    .co-gallery-thumbs { display: flex; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
+    .co-gallery-thumbs img { width: 72px; height: 54px; object-fit: cover; border-radius: 7px; cursor: pointer; border: 2px solid transparent; opacity: .85; transition: opacity .15s, border-color .15s; }
+    .co-gallery-thumbs img:hover { opacity: 1; }
+    .co-gallery-thumbs img.active { border-color: #1B4F72; opacity: 1; }
     /* Honningfelle — skjult for mennesker, synlig for bots. */
     .hp-field { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
     #ts-holder { margin: 4px 0 12px; display: flex; justify-content: center; }
@@ -406,13 +407,16 @@
   // LOC_IMAGES når de finnes. Ingen avhuking med bilder → galleriet skjult.
   (function () {
     var LOC_IMAGES = {
-      // Industriveien 4 (Rigg Botnhågen) — rom-bildene. 'rigg' utelatt: den fila
-      // er et plassholder-bilde med «Rigg Andslimoen»-tekst, ikke et ekte
-      // utvendig-foto av Botnhågen. Legg inn ekte utvendig-bilde her når det finnes.
-      riggbotnhagen: ['rom', 'bad', 'vaskerom', 'kjokken'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; }),
-      // Aspeveien 2 (Rigg 24) — utvendig-foto. Flere bilder kan legges til i lista.
+      // Industriveien 4 (Rigg Botnhågen) — utvendig først, deretter rom-bilder.
+      riggbotnhagen: [
+        'assets/img/company/riggbotnhagen/outside.png',
+        'assets/img/company/riggbotnhagen/rom.jpg',
+        'assets/img/company/riggbotnhagen/bad.jpg',
+        'assets/img/company/riggbotnhagen/vaskerom.jpg',
+        'assets/img/company/riggbotnhagen/kjokken.jpg',
+      ],
+      // Aspeveien 2 (Rigg 24) — utvendig-foto.
       rigg24: ['assets/img/company/rigg24/utvendig.jpg'],
-      // andslimoen: ['assets/img/company/andslimoen/1.jpg', ...],
     };
     var wrap = document.getElementById('co-gallery');
     var main = document.getElementById('co-gallery-main');

@@ -1,4 +1,4 @@
-// assets/js/private.mjs — v1.8. DOM-orkestrering for den private
+// assets/js/private.mjs — v1.9. DOM-orkestrering for den private
 // bookingsiden, tospråklig (NO/EN). Laster config, håndterer flatpickr-datovelger
 // + ledighet, sender reservasjon. Ren logikk i private-format.mjs, tekster i
 // private-i18n.mjs.
@@ -14,11 +14,11 @@ import { STRINGS, fmt, pickLang } from "./private-i18n.mjs";
 
 const $ = (id) => document.getElementById(id);
 const GALLERY = [
-  { src: "assets/img/private/rom.jpg", key: "galRom" },
-  { src: "assets/img/private/bad.jpg", key: "galBad" },
-  { src: "assets/img/private/vaskerom.jpg", key: "galVaskerom" },
-  { src: "assets/img/private/kjokken.jpg", key: "galKjokken" },
-  { src: "assets/img/private/rigg.jpg", key: "galRigg" },
+  { src: "assets/img/private/riggbotnhagen/rom.jpg", key: "galRom" },
+  { src: "assets/img/private/riggbotnhagen/bad.jpg", key: "galBad" },
+  { src: "assets/img/private/riggbotnhagen/vaskerom.jpg", key: "galVaskerom" },
+  { src: "assets/img/private/riggbotnhagen/kjokken.jpg", key: "galKjokken" },
+  { src: "assets/img/private/riggbotnhagen/rigg.jpg", key: "galRigg" },
 ];
 const LANG_KEY = "andslimoen_lang";
 
