@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.11 -->
+<!-- company v2.12 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -397,8 +397,10 @@
   // LOC_IMAGES når de finnes. Ingen avhuking med bilder → galleriet skjult.
   (function () {
     var LOC_IMAGES = {
-      // Industriveien 4 (Rigg Botnhågen) — bruker dagens bildesett.
-      riggbotnhagen: ['rom', 'bad', 'vaskerom', 'kjokken', 'rigg'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; }),
+      // Industriveien 4 (Rigg Botnhågen) — rom-bildene. 'rigg' utelatt: den fila
+      // er et plassholder-bilde med «Rigg Andslimoen»-tekst, ikke et ekte
+      // utvendig-foto av Botnhågen. Legg inn ekte utvendig-bilde her når det finnes.
+      riggbotnhagen: ['rom', 'bad', 'vaskerom', 'kjokken'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; }),
       // Legg til når bilder finnes, f.eks.:
       // rigg24: ['assets/img/company/rigg24/1.jpg', ...],
       // andslimoen: ['assets/img/company/andslimoen/1.jpg', ...],
