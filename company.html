@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.15 -->
+<!-- company v2.16 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -455,8 +455,22 @@
       if (!groups.length) return;
       var multi = groups.length > 1;
       var grp = groups[curIdx];
-      var firstSet = false;
-      grp.images.forEach(function (src) {
+      var userPicked = false; // sann så snart brukeren har klikket en thumb
+      // Velg hovedbilde rekkefølge-stabilt: laveste lastede indeks vinner, slik at
+      // utvendig-bildet (først i lista) blir hero selv om en jpg laster raskere.
+      var loaded = {}; // idx -> {src, el}
+      function pickMain() {
+        if (userPicked) return;
+        for (var i = 0; i < grp.images.length; i++) {
+          if (loaded[i]) {
+            main.src = loaded[i].src;
+            thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
+            loaded[i].el.classList.add('active');
+            break;
+          }
+        }
+      }
+      grp.images.forEach(function (src, idx) {
         var t = document.createElement('img');
         t.style.display = 'none'; // ikke loading=lazy: skjulte lazy-bilder lastes aldri
         t.decoding = 'async'; t.alt = '';
@@ -464,12 +478,14 @@
           t.style.display = '';
           wrap.hidden = false;
           if (head) { head.hidden = !multi; if (multi && labelEl) labelEl.textContent = grp.label; }
-          if (!firstSet) { firstSet = true; main.src = src; t.classList.add('active'); }
-          t.addEventListener('click', function () {
-            main.src = src;
-            thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
-            t.classList.add('active');
-          });
+          loaded[idx] = { src: src, el: t };
+          pickMain();
+        });
+        t.addEventListener('click', function () {
+          userPicked = true;
+          main.src = src;
+          thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
+          t.classList.add('active');
         });
         t.addEventListener('error', function () { t.remove(); });
         t.src = src;
