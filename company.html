@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.23 -->
+<!-- company v2.24 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -87,6 +87,20 @@
         <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
 
+        <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
+        <div class="co-gallery" id="co-gallery" hidden>
+          <div class="co-gallery-head" id="co-gallery-head" hidden>
+            <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
+            <span class="co-gallery-label" id="co-gallery-label"></span>
+            <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
+          </div>
+          <div class="co-gallery-stage">
+            <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
+            <iframe class="co-gallery-map" id="co-gallery-map" title="Kart" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:none"></iframe>
+          </div>
+          <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
+        </div>
+
         <div class="reg-rigs">
           <p class="reg-rigs-lead" data-i18n="rigsLead">Om riggene – dette er inkludert:</p>
           <ul class="reg-rigs-list">
@@ -101,20 +115,6 @@
             <li data-i18n="rig_camera">Kameraovervåking i fellesområdene</li>
             <li data-i18n="rig_fire">Brannvarslingssystem tilkoblet lokalt brannvesen</li>
           </ul>
-        </div>
-
-        <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
-        <div class="co-gallery" id="co-gallery" hidden>
-          <div class="co-gallery-head" id="co-gallery-head" hidden>
-            <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
-            <span class="co-gallery-label" id="co-gallery-label"></span>
-            <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
-          </div>
-          <div class="co-gallery-stage">
-            <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
-            <iframe class="co-gallery-map" id="co-gallery-map" title="Kart" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:none"></iframe>
-          </div>
-          <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
         </div>
 
         <form id="reg-form" novalidate>
