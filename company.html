@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.10 -->
+<!-- company v2.11 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -391,36 +391,54 @@
   </script>
 
   <script>
-  // Rigg-bilder: gjenbruker /private-galleriet. Hver thumb starter skjult og
-  // vises kun hvis bildet faktisk laster (graceful — manglende filer fjernes,
-  // ingen brutt-bilde-ikon). Hele galleriet forblir skjult hvis ingen laster.
+  // Per-lokasjon rigg-bilder: galleriet vises KUN for lokasjoner som er huket av
+  // i «Ønskede lokasjoner», og bygges om når avhukingene endres. Hvert bilde
+  // vises kun hvis det faktisk laster (graceful). Legg til bilder per slug i
+  // LOC_IMAGES når de finnes. Ingen avhuking med bilder → galleriet skjult.
   (function () {
-    var SRCS = ['rom', 'bad', 'vaskerom', 'kjokken', 'rigg'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; });
+    var LOC_IMAGES = {
+      // Industriveien 4 (Rigg Botnhågen) — bruker dagens bildesett.
+      riggbotnhagen: ['rom', 'bad', 'vaskerom', 'kjokken', 'rigg'].map(function (k) { return 'assets/img/private/' + k + '.jpg'; }),
+      // Legg til når bilder finnes, f.eks.:
+      // rigg24: ['assets/img/company/rigg24/1.jpg', ...],
+      // andslimoen: ['assets/img/company/andslimoen/1.jpg', ...],
+    };
     var wrap = document.getElementById('co-gallery');
     var main = document.getElementById('co-gallery-main');
     var thumbs = document.getElementById('co-gallery-thumbs');
-    if (!wrap || !main || !thumbs) return;
-    var firstSet = false;
-    SRCS.forEach(function (src) {
-      var t = document.createElement('img');
-      t.style.display = 'none';
-      // IKKE loading="lazy" her: en skjult (display:none) lazy-img lastes aldri
-      // av nettleseren, så load-eventet ville aldri fyrt → galleriet vist aldri.
-      t.decoding = 'async'; t.alt = '';
-      t.addEventListener('load', function () {
-        t.style.display = '';
-        wrap.hidden = false;
-        if (!firstSet) { firstSet = true; main.src = src; t.classList.add('active'); }
-        t.addEventListener('click', function () {
-          main.src = src;
-          thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
-          t.classList.add('active');
+    var locs = document.getElementById('f-locs');
+    if (!wrap || !main || !thumbs || !locs) return;
+    function rebuild() {
+      var slugs = Array.prototype.slice.call(locs.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+      var srcs = [];
+      slugs.forEach(function (s) { (LOC_IMAGES[s] || []).forEach(function (src) { if (srcs.indexOf(src) < 0) srcs.push(src); }); });
+      thumbs.innerHTML = '';
+      main.removeAttribute('src');
+      wrap.hidden = true;
+      if (!srcs.length) return;
+      var firstSet = false;
+      srcs.forEach(function (src) {
+        var t = document.createElement('img');
+        t.style.display = 'none'; // ikke loading=lazy: skjulte lazy-bilder lastes aldri
+        t.decoding = 'async'; t.alt = '';
+        t.addEventListener('load', function () {
+          t.style.display = '';
+          wrap.hidden = false;
+          if (!firstSet) { firstSet = true; main.src = src; t.classList.add('active'); }
+          t.addEventListener('click', function () {
+            main.src = src;
+            thumbs.querySelectorAll('img').forEach(function (x) { x.classList.remove('active'); });
+            t.classList.add('active');
+          });
         });
+        t.addEventListener('error', function () { t.remove(); });
+        t.src = src;
+        thumbs.appendChild(t);
       });
-      t.addEventListener('error', function () { t.remove(); });
-      t.src = src;
-      thumbs.appendChild(t);
-    });
+    }
+    // Event-delegation: virker selv om avhukingene legges til dynamisk etter fetch.
+    locs.addEventListener('change', rebuild);
+    rebuild(); // initial — skjult til en lokasjon med bilder er valgt
   })();
   </script>
 </body>
