@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.17 -->
+<!-- company v2.18 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -241,6 +241,8 @@
       });
       try { localStorage.setItem('reg_lang', CURRENT_LANG); } catch (e) {}
       if (typeof renderTurnstile === 'function') renderTurnstile(); // re-render med nytt språk
+      // Varsle galleri-IIFE-en (egen scope) så «Kart»-etiketten følger språket.
+      document.dispatchEvent(new CustomEvent('reg:langchange'));
     }
 
     document.getElementById('lang-toggle').addEventListener('click', function (e) {
@@ -544,6 +546,8 @@
     if (nextBtn) nextBtn.addEventListener('click', function () { step(1); });
     // Event-delegation: virker selv om avhukingene legges til dynamisk etter fetch.
     locs.addEventListener('change', rebuild);
+    // Språkbytte → bygg om så «Kart»-etiketten følger valgt språk.
+    document.addEventListener('reg:langchange', rebuild);
     rebuild(); // initial — skjult til en lokasjon med bilder er valgt
   })();
   </script>
