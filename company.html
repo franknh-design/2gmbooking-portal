@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.22 -->
+<!-- company v2.23 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -338,8 +338,10 @@
       locsField.hidden = false;
       locsEl.innerHTML = list.map(function (l) {
         var label = l.address || l.title; // vis adresse, fallback til navn
-        return '<label><input type="checkbox" value="' + l.slug + '"> ' + label + '</label>';
+        return '<label><input type="checkbox" value="' + l.slug + '" checked> ' + label + '</label>';
       }).join('');
+      // Programmatisk «checked» trigger ikke change — varsle galleriet manuelt.
+      locsEl.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     // Hent lokasjonene som admin har slått på for registrering. Tom liste =
@@ -496,6 +498,8 @@
 
     var groups = [];   // [{slug, label, images}] — én per valgt lokasjon med bilder
     var curIdx = 0;
+    var didInitDefault = false; // standardvisning (Botnhågen) settes én gang ved første ikke-tomme build
+    var DEFAULT_SLUG = 'riggbotnhagen';
 
     function labelForSlug(slug) {
       var input = locs.querySelector('input[value="' + slug + '"]');
@@ -508,6 +512,11 @@
         var imgs = LOC_IMAGES[c.value] || [];
         if (imgs.length) groups.push({ slug: c.value, label: labelForSlug(c.value), images: imgs });
       });
+      // Første gang galleriet har innhold: start på Botnhågen hvis den er blant valgte.
+      if (!didInitDefault && groups.length) {
+        didInitDefault = true;
+        for (var i = 0; i < groups.length; i++) { if (groups[i].slug === DEFAULT_SLUG) { curIdx = i; break; } }
+      }
       if (curIdx >= groups.length) curIdx = 0;
     }
     function isMap(item) { return item && typeof item === 'object' && item.kind === 'map'; }
