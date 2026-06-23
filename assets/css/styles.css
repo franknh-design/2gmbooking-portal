@@ -1149,6 +1149,7 @@ input, select, button { font-family: inherit; }
 
 input[type="text"],
 input[type="tel"],
+input[type="email"],
 input[type="date"],
 input[type="number"],
 select {
