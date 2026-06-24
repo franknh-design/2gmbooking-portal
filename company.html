@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.24 -->
+<!-- company v2.25 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -18,6 +18,7 @@
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
     .reg-title { font-size: 22px; margin: 6px 0 4px; }
     .reg-sub { color: #667; font-size: 14px; margin: 0 0 14px; line-height: 1.45; }
+    .reg-only-co { margin: 0 0 16px; padding: 10px 13px; background: #FAEEDA; border: 1px solid #E7C887; border-radius: 9px; color: #7A5712; font-size: 14px; font-weight: 600; line-height: 1.4; }
     .reg-rigs { margin: 0 0 18px; padding: 12px 14px; background: #f4f8f0; border: 1px solid #e1ebd5; border-radius: 10px; }
     .reg-rigs-lead { font-weight: 600; color: #1B4F72; font-size: 14px; margin: 0 0 8px; }
     .reg-rigs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -86,6 +87,9 @@
         <h1 class="reg-title" data-i18n="title">Registrer firma</h1>
         <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
           Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
+
+        <!-- Vises kun når privat booking er avslått (avledet av /api/private-enabled). -->
+        <p class="reg-only-co" id="reg-only-co" data-i18n="onlyCompanies" hidden>Vi tar for tiden kun imot bedriftskunder — rom kan kun bookes via en firmakonto.</p>
 
         <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
         <div class="co-gallery" id="co-gallery" hidden>
@@ -194,6 +198,7 @@
         l_firma: 'Firmanavn', l_orgnr: 'Org.nr', ph_orgnr: '9 sifre',
         l_kontakt: 'Kontaktperson', l_epost: 'E-post', l_telefon: 'Telefon',
         ph_telefon: 'Med landskode hvis utenlandsk, f.eks. +47 …',
+        onlyCompanies: 'Vi tar for tiden kun imot bedriftskunder — rom kan kun bookes via en firmakonto.',
         rigsLead: 'Om riggene – dette er inkludert:',
         rig_bath: 'Eget bad med dusj og toalett på hvert rom',
         rig_fridge: 'Minikjøleskap på rommet',
@@ -229,6 +234,7 @@
         l_firma: 'Company name', l_orgnr: 'Org. no.', ph_orgnr: '9 digits',
         l_kontakt: 'Contact person', l_epost: 'Email', l_telefon: 'Phone',
         ph_telefon: 'Incl. country code if abroad, e.g. +47 …',
+        onlyCompanies: 'We currently only accept business customers — rooms can only be booked through a company account.',
         rigsLead: 'About the rigs – this is included:',
         rig_bath: 'Private bathroom with shower and toilet in every room',
         rig_fridge: 'Mini fridge in the room',
@@ -352,6 +358,17 @@
         renderLocations((data && data.ok && Array.isArray(data.locations)) ? data.locations : FALLBACK_LOCATIONS);
       })
       .catch(function () { renderLocations(FALLBACK_LOCATIONS); });
+
+    // Når ingen eiendom er åpen for privat booking → si i klartekst at kun firma kan
+    // booke. Avledet av /api/private-enabled (PublicBookingEnabled + positiv nattsats).
+    // Feil/nettverk → la linja være skjult (ingen feilaktig påstand).
+    fetch('/api/private-enabled')
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (data) {
+        var el = document.getElementById('reg-only-co');
+        if (el && data && data.privateEnabled === false) el.hidden = false;
+      })
+      .catch(function () {});
 
     function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || '').trim()); }
     // Internasjonalt vennlig — firmakunder kan være utenlandske.
