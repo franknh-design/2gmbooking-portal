@@ -271,7 +271,7 @@ async function sendSms(env, phone, body) {
   try {
     const res = await fetch(`${notifyBase}/notify/text`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Notify-Secret": env.NOTIFY_SHARED_SECRET || "" },
       body: JSON.stringify({ to: phone, body }),
     });
     let json = null;

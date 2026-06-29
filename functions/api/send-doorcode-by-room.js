@@ -132,7 +132,7 @@ export async function onRequestPost(context) {
     const notifyBase = env.NOTIFY_PROXY_BASE || DEFAULT_NOTIFY_BASE;
     const smsResp = await fetch(`${notifyBase}/notify/text`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Notify-Secret": env.NOTIFY_SHARED_SECRET || "" },
       body: JSON.stringify({ to: cleanPhone, body: message }),
     });
     let smsJson = null;
