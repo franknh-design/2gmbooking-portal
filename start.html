@@ -33,14 +33,10 @@
       padding: 12px 16px; background: #fff; border-bottom: 1px solid #e4e8ec; }
     .site-header .brand { font-size: 13px; font-weight: 600; letter-spacing: .06em; color: #1B4F72; }
     .site-header .brand-logo { height: 22px; width: auto; display: block; }
-    .site-header { position: relative; }
-    .site-header .hdr-contact { position: absolute; left: 50%; transform: translateX(-50%);
-      display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-    .site-header .hdr-contact a { color: #1B4F72; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-    .site-header .hdr-contact a:hover { text-decoration: underline; }
-    @media (max-width: 640px) { .site-header { flex-wrap: wrap; gap: 8px 12px; }
-      .site-header .hdr-contact { position: static; left: auto; transform: none;
-        order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid #e4e8ec; padding-top: 8px; } }
+    .contact-bar { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap;
+      padding: 10px 16px; background: #fff; border-bottom: 1px solid #e4e8ec; font-size: 14px; font-weight: 600; }
+    .contact-bar a { color: #1B4F72; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .contact-bar a:hover { text-decoration: underline; }
     .site-header .lang { display: flex; gap: 4px; }
     .site-header .lang button { border: 1px solid #e4e8ec; background: #fff; color: #5f6b78;
       font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: inherit; }
@@ -53,15 +49,16 @@
 <body>
   <header class="site-header">
     <img class="brand-logo" src="assets/img/2gm-logo.png" alt="2GM Eiendom">
-    <div class="hdr-contact">
-      <a href="tel:+4799101041">📞 +47 99 10 10 41</a>
-      <a href="mailto:frank@2gm.no">✉️ frank@2gm.no</a>
-    </div>
     <div class="lang" id="lang-toggle">
       <button type="button" data-lang="nb">NO</button>
       <button type="button" data-lang="en">EN</button>
     </div>
   </header>
+  <div class="contact-bar">
+    <a href="tel:+4799101041">📞 +47 99 10 10 41</a>
+    <a href="mailto:frank@2gm.no">✉️ frank@2gm.no</a>
+  </div>
+
   <div class="entry-wrap">
     <div class="entry-card">
       <h1 class="entry-title" data-i18n="title">Book rom hos 2GM</h1>

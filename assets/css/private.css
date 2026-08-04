@@ -25,19 +25,13 @@ body {
 .brand { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--brand); }
 .brand-logo { height: 22px; width: auto; display: block; }
 .site-title { font-size: 13px; color: var(--muted); }
-/* v1.9.0: kontaktinfo i banneret — brukerne skal finne telefon/e-post uten å lete. */
-.site-header { position: relative; }
-/* v3.18.1: absolutt sentrert i banneret — flex space-between ga skjev plassering
-   fordi logo og språkvelger har ulik bredde. */
-.hdr-contact { position: absolute; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-.hdr-contact a { color: var(--brand); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-.hdr-contact a:hover { text-decoration: underline; }
-@media (max-width: 640px) {
-  .site-header { flex-wrap: wrap; gap: 8px 12px; }
-  .hdr-contact { position: static; left: auto; transform: none;
-    order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid var(--line); padding-top: 8px; }
-}
+/* v3.18.2: kontaktinfo som egen sentrert linje over innholdet — brukerne skal
+   finne telefon/e-post uten å lete, uten å trenge seg inn i bannerraden. */
+.contact-bar { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 600; }
+.contact-bar a { color: var(--brand); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.contact-bar a:hover { text-decoration: underline; }
 .lang { display: flex; gap: 4px; }
 .lang button {
   border: 1px solid var(--line); background: #fff; color: var(--muted);
