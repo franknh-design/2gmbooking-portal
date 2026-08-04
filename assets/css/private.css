@@ -25,6 +25,14 @@ body {
 .brand { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--brand); }
 .brand-logo { height: 22px; width: auto; display: block; }
 .site-title { font-size: 13px; color: var(--muted); }
+/* v1.9.0: kontaktinfo i banneret — brukerne skal finne telefon/e-post uten å lete. */
+.hdr-contact { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.hdr-contact a { color: var(--brand); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+.hdr-contact a:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .site-header { flex-wrap: wrap; gap: 8px 12px; }
+  .hdr-contact { order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid var(--line); padding-top: 8px; }
+}
 .lang { display: flex; gap: 4px; }
 .lang button {
   border: 1px solid var(--line); background: #fff; color: var(--muted);
