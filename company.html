@@ -65,11 +65,14 @@
       padding: 12px 16px; background: #fff; border-bottom: 1px solid #e4e8ec; }
     .site-header .brand { font-size: 13px; font-weight: 600; letter-spacing: .06em; color: #1B4F72; }
     .site-header .brand-logo { height: 22px; width: auto; display: block; }
-    .site-header .hdr-contact { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .site-header { position: relative; }
+    .site-header .hdr-contact { position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
     .site-header .hdr-contact a { color: #1B4F72; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
     .site-header .hdr-contact a:hover { text-decoration: underline; }
     @media (max-width: 640px) { .site-header { flex-wrap: wrap; gap: 8px 12px; }
-      .site-header .hdr-contact { order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid #e4e8ec; padding-top: 8px; } }
+      .site-header .hdr-contact { position: static; left: auto; transform: none;
+        order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid #e4e8ec; padding-top: 8px; } }
     .site-header .lang { display: flex; gap: 4px; }
     .site-header .lang button { border: 1px solid #e4e8ec; background: #fff; color: #5f6b78;
       font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: inherit; }

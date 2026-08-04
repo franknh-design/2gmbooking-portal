@@ -26,12 +26,17 @@ body {
 .brand-logo { height: 22px; width: auto; display: block; }
 .site-title { font-size: 13px; color: var(--muted); }
 /* v1.9.0: kontaktinfo i banneret — brukerne skal finne telefon/e-post uten å lete. */
-.hdr-contact { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.site-header { position: relative; }
+/* v3.18.1: absolutt sentrert i banneret — flex space-between ga skjev plassering
+   fordi logo og språkvelger har ulik bredde. */
+.hdr-contact { position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .hdr-contact a { color: var(--brand); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
 .hdr-contact a:hover { text-decoration: underline; }
 @media (max-width: 640px) {
   .site-header { flex-wrap: wrap; gap: 8px 12px; }
-  .hdr-contact { order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .hdr-contact { position: static; left: auto; transform: none;
+    order: 3; width: 100%; justify-content: center; gap: 16px; border-top: 1px solid var(--line); padding-top: 8px; }
 }
 .lang { display: flex; gap: 4px; }
 .lang button {
