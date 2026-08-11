@@ -118,7 +118,7 @@
           <p class="reg-rigs-lead" data-i18n="rigsLead">Om riggene – dette er inkludert:</p>
           <ul class="reg-rigs-list">
             <li data-i18n="rig_bath">Eget bad med dusj og toalett på hvert rom</li>
-            <li data-i18n="rig_fridge">Minikjøleskap på rommet (unntatt Rigg Andslimoen)</li>
+            <li data-i18n="rig_fridge" id="rig-fridge">Minikjøleskap på rommet</li>
             <li data-i18n="rig_wifi">WiFi</li>
             <li data-i18n="rig_lock">Digital dørlås med personlig PIN-kode til rommet</li>
             <li data-i18n="rig_linen">Håndklær og sengetøy inkludert</li>
@@ -200,7 +200,9 @@
     'use strict';
 
     // === Språk (NO/EN) ===
-    var T = {
+    // v3.19.4: eksponert på window så galleri-IIFE-en (egen scope) kan lese
+    // tekster — brukes av syncFridgeLine.
+    var T = window.REG_I18N = {
       nb: {
         title: 'Registrer firma',
         sub: 'Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen. Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.',
@@ -210,7 +212,8 @@
         onlyCompanies: 'Vi tar for tiden kun imot bedriftskunder. Rom bookes via firmakonto i portalen — eller direkte med Frank på telefon eller e-post (se øverst på siden).',
         rigsLead: 'Om riggene – dette er inkludert:',
         rig_bath: 'Eget bad med dusj og toalett på hvert rom',
-        rig_fridge: 'Minikjøleskap på rommet (unntatt Rigg Andslimoen)',
+        rig_fridge: 'Minikjøleskap på rommet',
+        rig_fridge_except: 'Minikjøleskap på rommet (ikke Rigg Andslimoen)',
         rig_wifi: 'WiFi',
         rig_lock: 'Digital dørlås med personlig PIN-kode til rommet',
         rig_linen: 'Håndklær og sengetøy inkludert',
@@ -246,7 +249,8 @@
         onlyCompanies: 'We currently only accept business customers. Rooms are booked through a company account in the portal — or directly with Frank by phone or e-mail (see top of page).',
         rigsLead: 'About the rigs – this is included:',
         rig_bath: 'Private bathroom with shower and toilet in every room',
-        rig_fridge: 'Mini fridge in the room (except Rigg Andslimoen)',
+        rig_fridge: 'Mini fridge in the room',
+        rig_fridge_except: 'Mini fridge in the room (not Rigg Andslimoen)',
         rig_wifi: 'WiFi',
         rig_lock: 'Digital door lock with a personal PIN code for your room',
         rig_linen: 'Towels and bedding included',
@@ -623,7 +627,22 @@
         thumbs.appendChild(t2);
       });
     }
-    function rebuild() { computeGroups(); renderGroup(); }
+    // v3.19.4: Rigg Andslimoen har IKKE minikjøleskap. Linja skjules helt når
+    // bare Andslimoen er valgt, og presiseres når den er valgt sammen med
+    // andre rigger. Ingen avhuking → generell tekst (som før).
+    function syncFridgeLine() {
+      var li = document.getElementById('rig-fridge');
+      if (!li) return;
+      var checked = Array.prototype.slice.call(locs.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+      var hasAnds = checked.indexOf('andslimoen') >= 0;
+      var onlyAnds = hasAnds && checked.length === 1;
+      li.hidden = onlyAnds;
+      var key = (hasAnds && !onlyAnds) ? 'rig_fridge_except' : 'rig_fridge';
+      li.setAttribute('data-i18n', key);
+      var dict = (window.REG_I18N && window.REG_I18N[document.documentElement.lang === 'en' ? 'en' : 'nb']) || null;
+      if (dict && dict[key]) li.textContent = dict[key];
+    }
+    function rebuild() { computeGroups(); renderGroup(); syncFridgeLine(); }
     function step(d) { if (groups.length) { curIdx = (curIdx + d + groups.length) % groups.length; renderGroup(); } }
     if (prevBtn) prevBtn.addEventListener('click', function () { step(-1); });
     if (nextBtn) nextBtn.addEventListener('click', function () { step(1); });
