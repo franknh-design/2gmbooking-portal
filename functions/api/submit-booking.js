@@ -43,6 +43,11 @@ export async function onRequestPost(context) {
   try {
     const body = await request.json();
     const { token, property, guests } = body || {};
+    // v3.19.7: valgfritt prosjektnr/referanse fra kunden. Trimmes og kappes så
+    // en manipulert request ikke kan skrive vilkårlig store verdier til SP.
+    const projectNo = (typeof body?.projectNo === "string")
+      ? body.projectNo.trim().slice(0, 50)
+      : "";
 
     // Valider input
     if (!token || typeof token !== "string") {
@@ -200,6 +205,7 @@ export async function onRequestPost(context) {
         companyName: tokenRow.fields.Firma || "",
         checkIn: g.checkIn,
         checkOut: g.checkOut || null,
+        projectNo: projectNo || null,
         notes: noteParts.join(" · "),
       };
     });
@@ -241,6 +247,7 @@ export async function onRequestPost(context) {
         propertyName,
         guests,
         capacityWarning,
+        projectNo: projectNo || null,
         partialFailure: result.failed.length > 0 ? result.failed : null,
       }),
       sendCustomerReceipt(env, {
@@ -249,6 +256,7 @@ export async function onRequestPost(context) {
         propertyName,
         guests,
         capacityWarning,
+        projectNo: projectNo || null,
       }),
     ]);
 
@@ -326,6 +334,7 @@ async function sendBookingNotification(env, data) {
     `E-post:       ${email}`,
     `Lokasjon:     ${propertyName}`,
     `Antall rom:   ${guests.length}`,
+    ...(data.projectNo ? [`Prosjektnr:   ${data.projectNo}`] : []),
     ``,
     `Gjester:`,
     guestLines,
@@ -390,7 +399,7 @@ async function sendCustomerReceipt(env, data) {
   } catch (e) {
     console.error("[Receipt] priceBlock-feil:", e);
   }
-  const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock });
+  const vars = buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock, projectNo: data.projectNo || null });
   // v3.12.1: HTML-mal får html:true så gjestenavn etc. blir HTML-escapet.
   // Plain text-mal beholder default (ingen escape).
   const subject = renderTemplate(template.subject, vars) || `Bestilling ${bookingRef} mottatt`;
@@ -494,7 +503,7 @@ async function buildPriceBlock(env, { tokenRow, propertyName, guests }) {
   return lines.join("\n");
 }
 
-function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock }) {
+function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock, projectNo }) {
   const customer = tokenRow.fields.Firma || "";
   const contact = tokenRow.fields.Kontaktperson || "";
   const token = tokenRow.fields.Token || "";
@@ -522,6 +531,11 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
     checkOut: latestCheckOut ? _fmtNoDate(latestCheckOut) : "åpen",
     portalUrl,
     capacityWarning: capacityWarning || "",
+    // v3.19.7: kundens prosjektnr/ref. {projectNo} er rå verdi; {projectNoLine}
+    // er hele linjen og blir tom når feltet ikke er fylt ut, slik at malen ikke
+    // får en naken «Prosjektnr:».
+    projectNo: projectNo || "",
+    projectNoLine: projectNo ? `Prosjektnr: ${projectNo}` : "",
     // Pris-estimat-blokk — plain-text med \n, samme behandling som guestList.
     // Tom streng hvis pris ikke kunne beregnes; {priceBlock} rendres da til
     // ingenting i både bodyText og bodyHtml.

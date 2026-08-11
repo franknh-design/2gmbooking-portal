@@ -815,6 +815,9 @@ export async function createBookingRow(env, fields) {
     Email: fields.guestEmail || null,
     Check_In: fields.checkIn,
     Check_Out: fields.checkOut || null,
+    // v3.19.7: kundens prosjektnr/ref fra bestillingsskjemaet. Samme kolonne som
+    // admin fyller manuelt, og den følger videre inn i fakturagrunnlaget.
+    Prosjektnr: fields.projectNo || null,
     Status: "Upcoming",
     Pending_Confirmation: true,
     // v3.14.5: Source merker bookingen som portal-skapt. Admin-appens

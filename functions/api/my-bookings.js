@@ -100,6 +100,8 @@ export async function onRequestPost(context) {
         property: f.Property_Name || "",
         propertyAddress: propertyAddress(f.Property_Name),
         guest: f.Person_Name || "",
+        // v3.19.7: prosjektnr/ref vises på kortet i «Mine bookinger»
+        projectNo: (f.Prosjektnr || "").trim() || null,
         checkIn: f.Check_In || null,
         checkOut: f.Check_Out || null,
         status: f.Status || "",

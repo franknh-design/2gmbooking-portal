@@ -161,12 +161,12 @@
    *
    * Kaster IKKE exception - kalleren sjekker .ok.
    */
-  async function submitBooking({ token, property, guests }) {
+  async function submitBooking({ token, property, guests, projectNo }) {
     try {
       const response = await fetch(`${API_BASE}/submit-booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, property, guests })
+        body: JSON.stringify({ token, property, guests, projectNo: projectNo || null })
       });
 
       const data = await response.json().catch(() => ({ ok: false, error: "invalid_response" }));

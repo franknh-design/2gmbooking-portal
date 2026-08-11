@@ -99,6 +99,13 @@ export function renderTemplate(str, vars, opts) {
   if (!str) return "";
   if (!vars) return String(str);
   const html = opts && opts.html === true;
+  // v3.19.7: en placeholder som står ALENE på en linje og er tom fjerner hele
+  // linjen — ellers får malen et hull der f.eks. prosjektnr mangler. Samme
+  // regel som i admin-appens portal_emails.js.
+  str = String(str).replace(/^[ \t]*\{(\w+)\}[ \t]*\r?\n/gm, (m, key) => {
+    const v = vars[key];
+    return (v != null && String(v).trim() === "") ? "" : m;
+  });
   return String(str).replace(/\{(\w+)\}/g, (m, key) => {
     const v = vars[key];
     if (v == null) return m;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.19.6 -->
+<!-- v3.19.7 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -222,6 +222,16 @@
               <p class="guests-hint" data-i18n="booking.guestsHint">Bruker fellesperioden over med mindre du klikker «Avvikende datoer».</p>
               <div id="guests-list" class="guests-list"></div>
             </fieldset>
+
+            <!-- v3.19.7: Prosjektnr/referanse — kundens eget merke på bestillingen.
+                 Følger med til Bookings.Prosjektnr og videre inn i fakturagrunnlaget. -->
+            <label class="field">
+              <span class="field-label" data-i18n="booking.projectNo">Prosjektnr / referanse (valgfritt)</span>
+              <input type="text" id="f-project" name="projectNo" maxlength="50" autocomplete="off"
+                     placeholder="Eks. P-1042 eller bestiller-ref"
+                     data-i18n-placeholder="booking.projectNoPlaceholder" />
+              <span class="guests-hint" data-i18n="booking.projectNoHint">Vises på bekreftelsen og på fakturaen.</span>
+            </label>
           </div>
 
           <!-- Live pris-estimat — fylles av booking.js når rom/datoer endres -->
@@ -318,7 +328,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.19.6</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.19.7</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->

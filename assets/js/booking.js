@@ -845,10 +845,16 @@
         checkOut: g.openEnded ? null : g.to
       }));
 
+      // v3.19.7: kundens eget prosjektnr/ref følger bestillingen inn i
+      // Bookings.Prosjektnr (samme kolonne admin fyller manuelt).
+      const projEl = document.getElementById("f-project");
+      const projectNo = projEl ? String(projEl.value || "").trim().slice(0, 50) : "";
+
       const res = await window.Api.submitBooking({
         token: window.Auth?.token || null,
         property: locId,
-        guests: apiGuests
+        guests: apiGuests,
+        projectNo: projectNo || null
       });
 
       submitBtn.disabled = false;

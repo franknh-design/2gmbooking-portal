@@ -677,6 +677,14 @@
         refEl.textContent = b.ref;
         metaEl.appendChild(refEl);
       }
+      // v3.19.7: kundens eget prosjektnr/ref — samme plass som booking-referansen
+      // så kunden kjenner igjen bestillingen sin uten å åpne noe.
+      if (b.projectNo) {
+        const projEl = document.createElement("span");
+        projEl.className = "mb-card-ref mb-card-project";
+        projEl.textContent = tx("mybookings.lblProjectNo") + ": " + b.projectNo;
+        metaEl.appendChild(projEl);
+      }
       right.appendChild(metaEl);
       row.appendChild(right);
 
