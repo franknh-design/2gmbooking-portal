@@ -18,10 +18,13 @@
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
     .reg-title { font-size: 22px; margin: 6px 0 4px; }
     .reg-sub { color: #667; font-size: 14px; margin: 0 0 14px; line-height: 1.45; }
-    .reg-jump { display: block; width: 100%; margin: 0 0 16px; padding: 11px 14px; border: 1px solid #1B4F72;
-      background: #1B4F72; color: #fff; border-radius: 9px; font-size: 15px; font-weight: 600;
-      font-family: inherit; cursor: pointer; }
-    .reg-jump:hover { background: #16405d; }
+    .reg-jump-float { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 60;
+      padding: 12px 22px; border: 0; background: #1B4F72; color: #fff; border-radius: 24px;
+      font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,.28); }
+    .reg-jump-float:hover { background: #16405d; }
+    .reg-jump-float[hidden] { display: none; }
+    @media (max-width: 640px) { .reg-jump-float { bottom: 14px; padding: 11px 18px; font-size: 14px; } }
     .reg-form-anchor { scroll-margin-top: 12px; }
     .reg-only-co { margin: 0 0 16px; padding: 10px 13px; background: #FAEEDA; border: 1px solid #E7C887; border-radius: 9px; color: #7A5712; font-size: 14px; font-weight: 600; line-height: 1.4; }
     .reg-rigs { margin: 0 0 18px; padding: 12px 14px; background: #f4f8f0; border: 1px solid #e1ebd5; border-radius: 10px; }
@@ -106,11 +109,6 @@
         <p class="reg-only-co" id="reg-only-co" data-i18n="onlyCompanies" hidden>Vi tar for tiden kun imot bedriftskunder. Rom bookes via firmakonto i portalen — eller direkte med Frank på telefon eller e-post (se øverst på siden).</p>
 
         <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
-        <!-- v3.19.5: bildegalleri + rigg-info dytter skjemaet under folden, så
-             brukere trodde siden bare var informasjon. Denne knappen (og pilen
-             nederst i info-boksen) viser tydelig at skjemaet ligger lenger ned. -->
-        <button type="button" class="reg-jump" id="reg-jump" data-i18n="jumpToForm">↓ Fyll ut firmaopplysninger</button>
-
         <div class="co-gallery" id="co-gallery" hidden>
           <div class="co-gallery-head" id="co-gallery-head" hidden>
             <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
@@ -205,6 +203,11 @@
     </div>
   </div>
 
+  <!-- v3.19.6: flytende «hopp til skjema»-knapp. Galleri + rigg-info dytter
+       skjemaet under folden, så brukere trodde siden bare var informasjon.
+       Knappen følger skjermen mens man scroller og skjuler seg selv når
+       skjemaet er synlig (IntersectionObserver, med scroll-fallback). -->
+  <button type="button" class="reg-jump-float" id="reg-jump" data-i18n="jumpToForm" hidden>↓ Fyll ut firmaopplysninger</button>
   <script>
   (function () {
     'use strict';
@@ -361,7 +364,8 @@
       { slug: 'strandveien112', title: 'Strandveien 112', address: '' },
     ];
 
-    // v3.19.5: hopp til skjemaet + fokus i første felt.
+    // v3.19.5/6: flytende hopp-til-skjema-knapp. Synlig så lenge skjemaet er
+    // utenfor viewporten; forsvinner når brukeren faktisk ser skjemaet.
     (function () {
       var jump = document.getElementById('reg-jump');
       var form = document.getElementById('reg-form');
@@ -371,6 +375,20 @@
         var first = document.getElementById('f-firma');
         if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 420);
       });
+      function setVisible(show) { jump.hidden = !show; }
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          setVisible(!entries[0].isIntersecting);
+        }, { threshold: 0.08 }).observe(form);
+      } else {
+        var check = function () {
+          var r = form.getBoundingClientRect();
+          setVisible(r.top > (window.innerHeight - 80));
+        };
+        window.addEventListener('scroll', check, { passive: true });
+        window.addEventListener('resize', check);
+        check();
+      }
     })();
 
     var locsEl = document.getElementById('f-locs');
