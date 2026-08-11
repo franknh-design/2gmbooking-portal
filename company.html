@@ -18,6 +18,11 @@
     .reg-logo { font-weight: 700; letter-spacing: .04em; color: #1B4F72; font-size: 15px; }
     .reg-title { font-size: 22px; margin: 6px 0 4px; }
     .reg-sub { color: #667; font-size: 14px; margin: 0 0 14px; line-height: 1.45; }
+    .reg-jump { display: block; width: 100%; margin: 0 0 16px; padding: 11px 14px; border: 1px solid #1B4F72;
+      background: #1B4F72; color: #fff; border-radius: 9px; font-size: 15px; font-weight: 600;
+      font-family: inherit; cursor: pointer; }
+    .reg-jump:hover { background: #16405d; }
+    .reg-form-anchor { scroll-margin-top: 12px; }
     .reg-only-co { margin: 0 0 16px; padding: 10px 13px; background: #FAEEDA; border: 1px solid #E7C887; border-radius: 9px; color: #7A5712; font-size: 14px; font-weight: 600; line-height: 1.4; }
     .reg-rigs { margin: 0 0 18px; padding: 12px 14px; background: #f4f8f0; border: 1px solid #e1ebd5; border-radius: 10px; }
     .reg-rigs-lead { font-weight: 600; color: #1B4F72; font-size: 14px; margin: 0 0 8px; }
@@ -101,6 +106,11 @@
         <p class="reg-only-co" id="reg-only-co" data-i18n="onlyCompanies" hidden>Vi tar for tiden kun imot bedriftskunder. Rom bookes via firmakonto i portalen — eller direkte med Frank på telefon eller e-post (se øverst på siden).</p>
 
         <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
+        <!-- v3.19.5: bildegalleri + rigg-info dytter skjemaet under folden, så
+             brukere trodde siden bare var informasjon. Denne knappen (og pilen
+             nederst i info-boksen) viser tydelig at skjemaet ligger lenger ned. -->
+        <button type="button" class="reg-jump" id="reg-jump" data-i18n="jumpToForm">↓ Fyll ut firmaopplysninger</button>
+
         <div class="co-gallery" id="co-gallery" hidden>
           <div class="co-gallery-head" id="co-gallery-head" hidden>
             <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
@@ -130,7 +140,7 @@
           </ul>
         </div>
 
-        <form id="reg-form" novalidate>
+        <form id="reg-form" class="reg-form-anchor" novalidate>
           <div class="row2">
             <div class="field">
               <label class="field-label" for="f-firma"><span data-i18n="l_firma">Firmanavn</span> <span class="req">*</span></label>
@@ -211,6 +221,7 @@
         ph_telefon: 'Med landskode hvis utenlandsk, f.eks. +47 …',
         onlyCompanies: 'Vi tar for tiden kun imot bedriftskunder. Rom bookes via firmakonto i portalen — eller direkte med Frank på telefon eller e-post (se øverst på siden).',
         rigsLead: 'Om riggene – dette er inkludert:',
+        jumpToForm: '↓ Fyll ut firmaopplysninger',
         rig_bath: 'Eget bad med dusj og toalett på hvert rom',
         rig_fridge: 'Minikjøleskap på rommet',
         rig_fridge_except: 'Minikjøleskap på rommet (ikke Rigg Andslimoen)',
@@ -248,6 +259,7 @@
         ph_telefon: 'Incl. country code if abroad, e.g. +47 …',
         onlyCompanies: 'We currently only accept business customers. Rooms are booked through a company account in the portal — or directly with Frank by phone or e-mail (see top of page).',
         rigsLead: 'About the rigs – this is included:',
+        jumpToForm: '↓ Fill in company details',
         rig_bath: 'Private bathroom with shower and toilet in every room',
         rig_fridge: 'Mini fridge in the room',
         rig_fridge_except: 'Mini fridge in the room (not Rigg Andslimoen)',
@@ -348,6 +360,18 @@
       { slug: 'andslimoen',     title: 'Rigg Andslimoen', address: 'Industriveien 22, Bardufoss' },
       { slug: 'strandveien112', title: 'Strandveien 112', address: '' },
     ];
+
+    // v3.19.5: hopp til skjemaet + fokus i første felt.
+    (function () {
+      var jump = document.getElementById('reg-jump');
+      var form = document.getElementById('reg-form');
+      if (!jump || !form) return;
+      jump.addEventListener('click', function () {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var first = document.getElementById('f-firma');
+        if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 420);
+      });
+    })();
 
     var locsEl = document.getElementById('f-locs');
     var locsField = document.getElementById('f-locs-field');
@@ -494,10 +518,10 @@
     var LOC_IMAGES = {
       // Industriveien 4, 9308 Finnsnes (Rigg Botnhågen) — utvendig først, deretter rom-bilder, kart sist.
       riggbotnhagen: [
-        'assets/img/company/riggbotnhagen/outside.png',
+        'assets/img/company/riggbotnhagen/outside.jpg',
         'assets/img/company/riggbotnhagen/rom.jpg',
         'assets/img/company/riggbotnhagen/bad.jpg',
-        'assets/img/company/riggbotnhagen/vaskerom.png',
+        'assets/img/company/riggbotnhagen/vaskerom.jpg',
         'assets/img/company/riggbotnhagen/kjokken.jpg',
         { kind: 'map', q: 'Industriveien 4, 9308 Finnsnes' },
       ],
