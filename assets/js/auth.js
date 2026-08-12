@@ -88,7 +88,8 @@
           name: result.firma,
           contactName: result.kontaktperson,
           locations: result.tillatte_lokasjoner || [],
-          maxRooms: result.maks_rom || 1
+          maxRooms: result.maks_rom || 1,
+          projectNo: result.prosjektnr || ''
         };
         this._currentStamp = result.tokenStamp || null;
 

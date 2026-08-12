@@ -25,6 +25,7 @@
 
       this._populateLocations();
       this._wireUp();
+      this._prefillProjectNo();
       this._renderGuests(this._getRooms());
       this._setMinDates();
       this._applyOpenEndedState();
@@ -32,6 +33,16 @@
     },
 
     OPEN_ENDED_DAYS: 90,
+
+    // v3.19.11: firmaets standardreferanse (Customer_Tokens.Prosjektnr) som
+    // utgangspunkt. Kun når feltet er tomt — kunden skal kunne overstyre per
+    // bestilling, og en tom verdi er et gyldig valg de har tatt selv.
+    _prefillProjectNo() {
+      const el = document.getElementById("f-project");
+      if (!el || el.value.trim()) return;
+      const def = (this.customer && this.customer.projectNo) || "";
+      if (def) el.value = def;
+    },
 
     isOpenEnded() {
       const cb = document.getElementById("f-open-ended");

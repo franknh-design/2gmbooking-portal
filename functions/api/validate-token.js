@@ -54,6 +54,10 @@ export async function onRequestPost(context) {
       telefon_maskert: maskPhone(fields.Telefon),
       tillatte_lokasjoner: tillatteLokasjoner,
       maks_rom: fields.MaksRomPerBestilling || 1,
+      // v3.19.11: firmaets standard fakturareferanse (satt ved registrering
+      // eller av admin). Prefyller prosjektnr-feltet i bestillingsskjemaet —
+      // kunden kan overstyre per bestilling.
+      prosjektnr: String(fields.Prosjektnr || "").trim(),
       language: language === "nb" || language === "en" ? language : "",
       // v1.1: token-stempel = hash av Pin+Aktiv+Token+Lokasjoner.
       // Klienten lagrer dette i sesjonen og logger ut hvis det endrer
