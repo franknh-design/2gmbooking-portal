@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.27 -->
+<!-- company v2.28 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -163,6 +163,24 @@
             <label class="field-label" for="f-epost"><span data-i18n="l_epost">E-post</span> <span class="req">*</span></label>
             <input type="email" id="f-epost" autocomplete="email" required />
           </div>
+          <!-- v3.19.8: fakturaadresse. Valgfritt — en manglende adresse skal
+               aldri blokkere en registrering, men vi spør så Frank slipper å
+               etterspørre den. Poststedet fylles automatisk fra postnummeret. -->
+          <div class="field">
+            <label class="field-label" for="f-adresse" data-i18n="l_adresse">Fakturaadresse (valgfritt)</label>
+            <input type="text" id="f-adresse" autocomplete="street-address" placeholder="Gateadresse" data-i18n-ph="ph_adresse" />
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="field-label" for="f-postnr" data-i18n="l_postnr">Postnr.</label>
+              <input type="text" id="f-postnr" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="9300" />
+              <span id="f-postnr-status" class="reg-hint" style="font-size:13px"></span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-poststed" data-i18n="l_poststed">Poststed</label>
+              <input type="text" id="f-poststed" autocomplete="address-level2" />
+            </div>
+          </div>
           <div class="field" id="f-invoice-field">
             <span class="field-label" data-i18n="l_invoice">Fakturamottak</span>
             <label class="radio-row"><input type="radio" name="fakturametode" value="ehf" id="f-inv-ehf" checked /> <span data-i18n="inv_ehf">EHF-faktura (til org.nr)</span></label>
@@ -238,6 +256,8 @@
         rig_fire: 'Brannvarslingssystem tilkoblet 110-sentralen',
         l_locs: 'Ønskede lokasjoner', l_melding: 'Melding (valgfritt)',
         ph_melding: 'Antall ansatte, perioder, behov …',
+        l_adresse: 'Fakturaadresse (valgfritt)', ph_adresse: 'Gateadresse',
+        l_postnr: 'Postnr.', l_poststed: 'Poststed', err_postnr: 'Ukjent postnummer.',
         l_invoice: 'Fakturamottak', inv_ehf: 'EHF-faktura (til org.nr)',
         inv_email: 'Faktura på e-post', ph_fakturaepost: 'Faktura-e-post',
         err_fakturaepost: 'Ugyldig faktura-e-post.',
@@ -276,6 +296,8 @@
         rig_fire: 'Fire alarm system connected to the 110 emergency centre',
         l_locs: 'Desired locations', l_melding: 'Message (optional)',
         ph_melding: 'Number of staff, periods, needs …',
+        l_adresse: 'Invoice address (optional)', ph_adresse: 'Street address',
+        l_postnr: 'Postal code', l_poststed: 'City', err_postnr: 'Unknown postal code.',
         l_invoice: 'Invoicing', inv_ehf: 'EHF invoice (to org. no.)',
         inv_email: 'Invoice by email', ph_fakturaepost: 'Invoice email',
         err_fakturaepost: 'Invalid invoice email.',
@@ -447,6 +469,46 @@
     invEmailRadio.addEventListener('change', syncInvoiceField);
     syncInvoiceField();
 
+    // v3.19.8: postnr → poststed via Brings gratis postnummer-API (ingen nøkkel,
+    // CORS-godkjent). Poststedet følger nummeret, så feltet overskrives når
+    // nummeret endres. Nettverksfeil er stille — feltet er fortsatt redigerbart.
+    (function wirePostnr() {
+      var pnrEl = document.getElementById('f-postnr');
+      var cityEl = document.getElementById('f-poststed');
+      var statusEl = document.getElementById('f-postnr-status');
+      if (!pnrEl || !cityEl) return;
+      var cache = {}, timer = null;
+      function apply(pnr, place) {
+        if (String(pnrEl.value || '').replace(/\D/g, '') !== pnr) return;
+        if (place) {
+          cityEl.value = place;
+          if (statusEl) { statusEl.textContent = ''; }
+        } else if (statusEl) {
+          statusEl.textContent = t('err_postnr');
+          statusEl.style.color = '#c0392b';
+        }
+      }
+      pnrEl.addEventListener('input', function () {
+        var pnr = String(pnrEl.value || '').replace(/\D/g, '').slice(0, 4);
+        if (pnrEl.value !== pnr) pnrEl.value = pnr;
+        if (statusEl) statusEl.textContent = '';
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (pnr.length !== 4) return;
+        if (cache[pnr] !== undefined) { apply(pnr, cache[pnr]); return; }
+        timer = setTimeout(function () {
+          timer = null;
+          fetch('https://api.bring.com/shippingguide/api/postalCode.json?clientUrl='
+            + encodeURIComponent(location.origin) + '&pnr=' + pnr)
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+              cache[pnr] = (d && d.valid && d.result) ? d.result : null;
+              apply(pnr, cache[pnr]);
+            })
+            .catch(function () { /* stille — adressen er valgfri uansett */ });
+        }, 350);
+      });
+    })();
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       errEl.hidden = true;
@@ -457,6 +519,9 @@
       var telefon = document.getElementById('f-telefon').value.trim();
       var orgnr = document.getElementById('f-orgnr').value.replace(/\s/g, '');
       var melding = document.getElementById('f-melding').value.trim();
+      var adresse = document.getElementById('f-adresse').value.trim();
+      var postnr = document.getElementById('f-postnr').value.replace(/\D/g, '').slice(0, 4);
+      var poststed = document.getElementById('f-poststed').value.trim();
       var lokasjoner = Array.prototype.slice
         .call(locsEl.querySelectorAll('input:checked'))
         .map(function (c) { return c.value; });
@@ -493,6 +558,7 @@
           firma: firma, orgnr: orgnr, kontaktperson: kontakt,
           epost: epost, telefon: telefon, lokasjoner: lokasjoner,
           fakturametode: fakturametode, fakturaepost: fakturaepost,
+          adresse: adresse, postnr: postnr, poststed: poststed,
           melding: melding, lang: CURRENT_LANG, cfToken: cfToken, website: website,
         }),
       })
