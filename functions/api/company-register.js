@@ -56,6 +56,9 @@ export async function onRequestPost(context) {
     let adresse = _trim(body.adresse, 120);
     let postnr = String(body.postnr == null ? "" : body.postnr).replace(/\D/g, "").slice(0, 4);
     let poststed = _trim(body.poststed, 60);
+    // Firmaets STANDARD fakturareferanse. Per-booking-referansen settes i
+    // bestillingsskjemaet (Bookings.Prosjektnr) og overstyrer denne.
+    let prosjektnr = _trim(body.prosjektnr, 50);
 
     firma = _trim(firma);
     orgnr = String(orgnr == null ? "" : orgnr).replace(/\s/g, "").slice(0, 20);
@@ -110,7 +113,7 @@ export async function onRequestPost(context) {
         : "Allerede registrert og venter på godkjenning (duplikat-forsøk).";
       _fireEmail(context, sendOwnerNotification(env, {
         firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding, note,
-        adresse, postnr, poststed,
+        adresse, postnr, poststed, prosjektnr,
       }));
       // #2 Returner samme generiske svar som ved nyregistrering — avslør IKKE
       // (via status-feltet) om e-posten allerede finnes (enumerasjons-vern).
@@ -138,6 +141,7 @@ export async function onRequestPost(context) {
     if (adresse) invoiceFields.Adresse = adresse;
     if (postnr) invoiceFields.Postnr = postnr;
     if (poststed) invoiceFields.Poststed = poststed;
+    if (prosjektnr) invoiceFields.Prosjektnr = prosjektnr;
     try {
       await createPendingCustomerToken(env, { ...baseFields, ...invoiceFields });
     } catch (e) {
@@ -148,7 +152,7 @@ export async function onRequestPost(context) {
     // --- Varsle Frank ---
     _fireEmail(context, sendOwnerNotification(env, {
       firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding,
-      adresse, postnr, poststed,
+      adresse, postnr, poststed, prosjektnr,
       note: "Ny registrering — venter på godkjenning i booking-appen.",
     }));
 
@@ -172,7 +176,7 @@ function _fireEmail(context, promise) {
 
 async function sendOwnerNotification(env, data) {
   const { firma, orgnr, kontaktperson, epost, telefon, requestedNames, invoiceInfo, melding, note,
-          adresse, postnr, poststed } = data;
+          adresse, postnr, poststed, prosjektnr } = data;
   const adresseLinje = [adresse, [postnr, poststed].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const lines = [
     note || "Ny firma-registrering fra portalen.",
@@ -184,6 +188,7 @@ async function sendOwnerNotification(env, data) {
     `Telefon:      ${telefon}`,
     `Faktura:      ${invoiceInfo || "(ikke oppgitt)"}`,
     `Adresse:      ${adresseLinje || "(ikke oppgitt)"}`,
+    `Prosjektnr:   ${prosjektnr || "(ikke oppgitt)"}`,
     `Ønsker:       ${requestedNames.length ? requestedNames.join(", ") : "(ikke spesifisert)"}`,
   ];
   if (melding) lines.push("", "Melding:", melding);

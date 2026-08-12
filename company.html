@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.29 -->
+<!-- company v2.30 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -187,6 +187,13 @@
             <label class="radio-row"><input type="radio" name="fakturametode" value="epost" id="f-inv-epost" /> <span data-i18n="inv_email">Faktura på e-post</span></label>
             <input type="email" id="f-fakturaepost" autocomplete="email" placeholder="Faktura-e-post" data-i18n-ph="ph_fakturaepost" hidden />
           </div>
+          <!-- v3.19.10: prosjektnr/referanse. På en REGISTRERING er dette firmaets
+               standardreferanse (den som skal på fakturaen), ikke referansen for
+               ett bestemt opphold — den settes per booking i bestillingsskjemaet. -->
+          <div class="field">
+            <label class="field-label" for="f-prosjektnr" data-i18n="l_prosjektnr">Prosjektnr / referanse på faktura (valgfritt)</label>
+            <input type="text" id="f-prosjektnr" maxlength="50" autocomplete="off" placeholder="Eks. P-1042 eller bestiller-ref" data-i18n-ph="ph_prosjektnr" />
+          </div>
           <div class="field" id="f-locs-field" hidden>
             <span class="field-label" data-i18n="l_locs">Ønskede lokasjoner</span>
             <div class="locs" id="f-locs"></div>
@@ -256,6 +263,8 @@
         rig_fire: 'Brannvarslingssystem tilkoblet 110-sentralen',
         l_locs: 'Ønskede lokasjoner', l_melding: 'Melding (valgfritt)',
         ph_melding: 'Antall ansatte, perioder, behov …',
+        l_prosjektnr: 'Prosjektnr / referanse på faktura (valgfritt)',
+        ph_prosjektnr: 'Eks. P-1042 eller bestiller-ref',
         l_adresse: 'Fakturaadresse (valgfritt)', ph_adresse: 'Gateadresse',
         l_postnr: 'Postnr.', l_poststed: 'Poststed', err_postnr: 'Ukjent postnummer.',
         l_invoice: 'Fakturamottak', inv_ehf: 'EHF-faktura (til org.nr)',
@@ -296,6 +305,8 @@
         rig_fire: 'Fire alarm system connected to the 110 emergency centre',
         l_locs: 'Desired locations', l_melding: 'Message (optional)',
         ph_melding: 'Number of staff, periods, needs …',
+        l_prosjektnr: 'Project no / invoice reference (optional)',
+        ph_prosjektnr: 'E.g. P-1042 or your own ref',
         l_adresse: 'Invoice address (optional)', ph_adresse: 'Street address',
         l_postnr: 'Postal code', l_poststed: 'City', err_postnr: 'Unknown postal code.',
         l_invoice: 'Invoicing', inv_ehf: 'EHF invoice (to org. no.)',
@@ -528,6 +539,7 @@
       var adresse = document.getElementById('f-adresse').value.trim();
       var postnr = document.getElementById('f-postnr').value.replace(/\D/g, '').slice(0, 4);
       var poststed = document.getElementById('f-poststed').value.trim();
+      var prosjektnr = document.getElementById('f-prosjektnr').value.trim();
       var lokasjoner = Array.prototype.slice
         .call(locsEl.querySelectorAll('input:checked'))
         .map(function (c) { return c.value; });
@@ -564,7 +576,7 @@
           firma: firma, orgnr: orgnr, kontaktperson: kontakt,
           epost: epost, telefon: telefon, lokasjoner: lokasjoner,
           fakturametode: fakturametode, fakturaepost: fakturaepost,
-          adresse: adresse, postnr: postnr, poststed: poststed,
+          adresse: adresse, postnr: postnr, poststed: poststed, prosjektnr: prosjektnr,
           melding: melding, lang: CURRENT_LANG, cfToken: cfToken, website: website,
         }),
       })
