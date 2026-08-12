@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.28 -->
+<!-- company v2.29 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -477,15 +477,21 @@
       var cityEl = document.getElementById('f-poststed');
       var statusEl = document.getElementById('f-postnr-status');
       if (!pnrEl || !cityEl) return;
-      var cache = {}, timer = null;
+      var cache = {}, timer = null, autoFilled = '';
       function apply(pnr, place) {
         if (String(pnrEl.value || '').replace(/\D/g, '') !== pnr) return;
         if (place) {
           cityEl.value = place;
+          autoFilled = place;
           if (statusEl) { statusEl.textContent = ''; }
-        } else if (statusEl) {
-          statusEl.textContent = t('err_postnr');
-          statusEl.style.color = '#c0392b';
+        } else {
+          // Tøm KUN et poststed vi selv fylte inn — ellers ville vi slettet det
+          // kunden skrev. Uten dette kunne «9999 HARSTAD» sendes inn.
+          if (cityEl.value === autoFilled) { cityEl.value = ''; autoFilled = ''; }
+          if (statusEl) {
+            statusEl.textContent = t('err_postnr');
+            statusEl.style.color = '#c0392b';
+          }
         }
       }
       pnrEl.addEventListener('input', function () {
