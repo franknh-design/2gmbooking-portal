@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.30 -->
+<!-- company v2.31 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -279,7 +279,8 @@
         contactHours: 'Normalt tilgjengelig hverdager kl. 07–15',
         err_firma: 'Fyll inn firmanavn.', err_orgnr: 'Org.nr må være 9 sifre.',
         err_kontakt: 'Fyll inn kontaktperson.', err_epost: 'Ugyldig e-postadresse.',
-        err_telefon: 'Ugyldig telefonnummer.', err_robot: 'Bekreft at du ikke er en robot.',
+        err_telefon: 'Ugyldig telefonnummer.', err_lokasjon: 'Velg minst én lokasjon.',
+        err_robot: 'Bekreft at du ikke er en robot.',
         err_verify: 'Robot-sjekken feilet — last siden på nytt og prøv igjen.',
         err_generic: 'Noe gikk galt. Prøv igjen om litt.', err_network: 'Nettverksfeil — prøv igjen.',
       },
@@ -321,7 +322,8 @@
         contactHours: 'Usually available weekdays 07:00–15:00',
         err_firma: 'Enter a company name.', err_orgnr: 'Org. no. must be 9 digits.',
         err_kontakt: 'Enter a contact person.', err_epost: 'Invalid email address.',
-        err_telefon: 'Invalid phone number.', err_robot: "Confirm that you're not a robot.",
+        err_telefon: 'Invalid phone number.', err_lokasjon: 'Select at least one location.',
+        err_robot: "Confirm that you're not a robot.",
         err_verify: 'Verification failed — reload the page and try again.',
         err_generic: 'Something went wrong. Please try again shortly.', err_network: 'Network error — please try again.',
       },
@@ -432,9 +434,10 @@
       locsField.hidden = false;
       locsEl.innerHTML = list.map(function (l) {
         var label = l.address || l.title; // vis adresse, fallback til navn
-        return '<label><input type="checkbox" value="' + l.slug + '" checked> ' + label + '</label>';
+        return '<label><input type="checkbox" value="' + l.slug + '"> ' + label + '</label>';
       }).join('');
-      // Programmatisk «checked» trigger ikke change — varsle galleriet manuelt.
+      // Ingen forhåndsavhuking — bestiller må aktivt velge lokasjon(er).
+      // Varsle galleriet så det synker med tom seleksjon etter re-render.
       locsEl.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
@@ -551,6 +554,8 @@
       if (!kontakt) return showErr(t('err_kontakt'));
       if (!isValidEmail(epost)) return showErr(t('err_epost'));
       if (!isValidPhone(telefon)) return showErr(t('err_telefon'));
+      // Lokasjon er påkrevd når feltet vises (admin kan ha skjult det helt).
+      if (!locsField.hidden && lokasjoner.length === 0) return showErr(t('err_lokasjon'));
       if (fakturametode === 'epost' && !isValidEmail(fakturaepost)) return showErr(t('err_fakturaepost'));
 
       var cfToken = '';
