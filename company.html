@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.32 -->
+<!-- company v2.33 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -617,10 +617,10 @@
   </script>
 
   <script>
-  // Per-lokasjon rigg-bilder: galleriet vises KUN for lokasjoner som er huket av
-  // i «Ønskede lokasjoner», og bygges om når avhukingene endres. Hvert bilde
-  // vises kun hvis det faktisk laster (graceful). Legg til bilder per slug i
-  // LOC_IMAGES når de finnes. Ingen avhuking med bilder → galleriet skjult.
+  // Per-lokasjon rigg-bilder: uten avhuking i «Ønskede lokasjoner» vises bildene
+  // for alle tilgjengelige lokasjoner; huker bestiller av, snevres galleriet inn
+  // til de valgte. Bygges om når avhukingene endres. Hvert bilde vises kun hvis
+  // det faktisk laster (graceful). Legg til bilder per slug i LOC_IMAGES.
   (function () {
     var LOC_IMAGES = {
       // Industriveien 4, 9308 Finnsnes (Rigg Botnhågen) — utvendig først, deretter rom-bilder, kart sist.
@@ -674,7 +674,11 @@
     }
     function computeGroups() {
       groups = [];
-      Array.prototype.slice.call(locs.querySelectorAll('input:checked')).forEach(function (c) {
+      // v2.33: boksene starter uavhuket — vis da bildene for ALLE tilgjengelige
+      // lokasjoner, og snevre inn til de valgte når bestiller huker av.
+      var checkedEls = locs.querySelectorAll('input:checked');
+      var source = checkedEls.length ? checkedEls : locs.querySelectorAll('input[type="checkbox"]');
+      Array.prototype.slice.call(source).forEach(function (c) {
         var imgs = LOC_IMAGES[c.value] || [];
         if (imgs.length) groups.push({ slug: c.value, label: labelForSlug(c.value), images: imgs });
       });
