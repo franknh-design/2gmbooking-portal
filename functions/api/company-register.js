@@ -135,6 +135,9 @@ export async function onRequestPost(context) {
     // faller vi tilbake til kjernefeltene så registreringen ALDRI feiler —
     // valget når Frank uansett via varsel-e-posten under.
     const invoiceFields = { Fakturametode: invoiceMethodLabel };
+    // Org.nr må med på raden — admin-godkjenningen kopierer den videre til
+    // Companies (OrgNr/EHF-adresse). Uten dette fantes org.nr kun i e-posten.
+    if (orgnr) invoiceFields.Orgnr = orgnr;
     if (fakturametode === "epost") invoiceFields.FakturaEpost = fakturaepost;
     // Adressefeltene følger samme mønster: skrives kun hvis SP-kolonnene finnes.
     // Mangler de, havner adressen uansett i varsel-e-posten til Frank.
@@ -145,8 +148,17 @@ export async function onRequestPost(context) {
     try {
       await createPendingCustomerToken(env, { ...baseFields, ...invoiceFields });
     } catch (e) {
-      console.error("[company-register] insert med fakturafelt feilet, prøver uten (mangler SP-kolonner?):", e);
-      await createPendingCustomerToken(env, baseFields);
+      console.error("[company-register] insert med fakturafelt feilet, prøver uten Orgnr (mangler SP-kolonnen?):", e);
+      // Mellomsteg: Orgnr-kolonnen er nyest — mangler den, skal ikke adresse/
+      // faktura-feltene ryke med i dragsuget.
+      const withoutOrgnr = { ...baseFields, ...invoiceFields };
+      delete withoutOrgnr.Orgnr;
+      try {
+        await createPendingCustomerToken(env, withoutOrgnr);
+      } catch (e2) {
+        console.error("[company-register] insert med fakturafelt feilet, prøver uten (mangler SP-kolonner?):", e2);
+        await createPendingCustomerToken(env, baseFields);
+      }
     }
 
     // --- Varsle Frank ---
