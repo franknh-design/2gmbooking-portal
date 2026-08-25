@@ -505,7 +505,10 @@ async function buildPriceBlock(env, { tokenRow, propertyName, guests }) {
 
 function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacityWarning, priceBlock, projectNo }) {
   const customer = tokenRow.fields.Firma || "";
-  const contact = tokenRow.fields.Kontaktperson || "";
+  // v3.19.12: hilsenen skal være «Hei Isak,», ikke «Hei Isak Hansen,» — samme
+  // regel som admin-appen (v22.33.7). Fullt navn beholdes som {contactFull}.
+  const contactFull = tokenRow.fields.Kontaktperson || "";
+  const contact = contactFull.trim().split(/\s+/)[0] || "";
   const token = tokenRow.fields.Token || "";
   const guestCount = guests.length;
   const checkIns = guests.map(g => g.checkIn).filter(Boolean).sort();
@@ -523,6 +526,7 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
   return {
     customer,
     contact,
+    contactFull,
     bookingRef,
     property: propertyName,
     guestCount: String(guestCount),
