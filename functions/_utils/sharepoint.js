@@ -87,19 +87,16 @@ export function propertyAddress(propertyName) {
 // opprettelse, og et påslått «stengt»-flagg på alle rader ville stengt hele
 // portalen i det sekundet kolonnen ble laget.
 //
-// Fallback under: gjelder KUN så lenge kolonnen ikke finnes i det hele tatt
-// (ingen rad har feltet). Da er Andslimoen stengt uansett, så riggen ikke blir
-// bestillbar før den er operativ. Så snart kolonnen finnes, er SharePoint
-// fasit — også hvis den er tom.
-const PORTAL_STATUS_FALLBACK = {
-  "Rigg Andslimoen": "Kommer",
-};
+// Ingen fallback i kode: kolonnen finnes i SharePoint (verifisert internnavn),
+// og SharePoint er eneste fasit. En hardkodet «Andslimoen er stengt»-fallback
+// stod her fram til v3.19.17, men den kunne ikke skilles fra en tom kolonne —
+// og hadde dermed låst riggen stengt i det Frank tømte feltet for å åpne den.
 
 // Returnerer { <slug>: "kommer"|"stengt"|… } — bare riggene som IKKE er
 // operative. Tomt objekt = alt åpent.
 export async function getPortalLocationStatus(env) {
   // Bevisst UTEN $select: Graph svarer 400 «Field 'PortalStatus' is not
-  // recognized» hvis kolonnen ikke finnes ennå, og da ville hver bestilling
+  // recognized» hvis kolonnen skulle bli slettet, og da ville hver bestilling
   // blitt avvist av fail-closed-sjekken i submit-booking. Properties har en
   // håndfull rader, så å hente alle felt koster ingenting.
   const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
@@ -107,22 +104,11 @@ export async function getPortalLocationStatus(env) {
   const titleToSlug = {};
   for (const [slug, title] of Object.entries(PROPERTY_MAP)) titleToSlug[title] = slug;
 
-  // Graph utelater tomme felt, så «kolonnen finnes» kan bare avgjøres ved at
-  // MINST én rad har en verdi.
-  const columnExists = items.some(it => it.fields && "PortalStatus" in it.fields);
-  const source = {};
-  if (columnExists) {
-    for (const it of items) {
-      const title = it.fields?.Title || "";
-      const val = String(it.fields?.PortalStatus || "").trim();
-      if (title && val) source[title] = val;
-    }
-  } else {
-    Object.assign(source, PORTAL_STATUS_FALLBACK);
-  }
-
   const out = {};
-  for (const [title, val] of Object.entries(source)) {
+  for (const it of items) {
+    const title = it.fields?.Title || "";
+    const val = String(it.fields?.PortalStatus || "").trim();
+    if (!title || !val) continue;
     const slug = titleToSlug[title];
     if (slug) out[slug] = val.toLowerCase();
   }
