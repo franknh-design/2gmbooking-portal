@@ -170,7 +170,7 @@
       sel.disabled = false;
       this._renderLocationNote(
         open.length < locations.length
-          ? (tx("booking.locSomeClosed") || "Lokasjoner merket «kommer snart» kan ikke bestilles ennå.")
+          ? (tx("booking.locSomeClosed") || "Lokasjoner som ikke er operative ennå kan ikke bestilles.")
           : ""
       );
 
