@@ -1,12 +1,14 @@
 /* =========================================================
    Kalender-komponent.
-   v2.3
+   v2.4
    - Henter ledighet pr. dato fra ekte API (window.Api.getAvailability)
    - Viser spinner mens data lastes
-   - Skjuler datoer som er passert (rendres som tomme celler)
    - Deaktiverer «forrige måned»-knappen når man står på inneværende måned
    - v2.3: Auto-utvider med neste måned når dagens måned har < 4 hele uker
      igjen, så kunden alltid ser minst 28 dager fremover.
+   - v2.4: Uker som er helt passert rendres ikke (var tomme celler), og
+     auto-utvidelsen er skrudd på igjen. Sammen holder de panel-høyden nede
+     og lar kunden se over månedsskiftet.
    ========================================================= */
 (function () {
   "use strict";
@@ -31,9 +33,14 @@
   }
 
   // Garantert antall dager kunden skal se fremover fra dagens dato.
-  // 0 = auto-utvidelse av (måned + neste måned) er av; kunden ser kun
-  // inneværende måned og navigerer selv med > når de trenger neste.
-  const MIN_DAYS_AHEAD = 0;
+  // 0 = auto-utvidelse av (måned + neste måned) er av.
+  // v3.19.14: tilbake til 28. Ble satt til 0 i v3.2.5 fordi to fulle måneder
+  // stablet under hverandre ble for høyt — men nå droppes radene for uker som
+  // alt er passert (se _renderMonthBlock), så den øverste blokka krymper
+  // gjennom måneden og neste måned fyller plassen som frigjøres. Uten dette
+  // så kunden bare 31.08 den siste dagen i august, mens et opphold nesten
+  // alltid går over månedsskiftet.
+  const MIN_DAYS_AHEAD = 28;
 
   const Calendar = {
     locationId: null,
@@ -275,11 +282,19 @@
       const totalCells = monBased + daysInMonth;
       const totalRows  = Math.ceil(totalCells / 7);
 
+      // v3.19.14: uker der SISTE dag alt er passert rendres ikke i det hele
+      // tatt. Passerte dager var tomme celler, så inneværende måned kunne
+      // ende med fem tomme rader over den ene dagen det var mulig å bestille.
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+
       for (let row = 0; row < totalRows; row++) {
         // v3.11.2: ISO-uke-nummer beregnes fra mandagen i denne raden, så
         // tallet stemmer overens med standard norsk/europeisk ukekalender.
         const mondayDayNum = row * 7 - monBased + 1;
         const mondayDate = new Date(year, month, mondayDayNum);
+        const rowLastDay = new Date(year, month, Math.min(mondayDayNum + 6, daysInMonth));
+        if (rowLastDay < todayMidnight) continue;
         const weekNum = isoWeek(mondayDate);
         const wkCell = document.createElement("div");
         wkCell.className = "cal-week-num";
