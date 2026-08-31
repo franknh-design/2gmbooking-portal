@@ -691,21 +691,28 @@
         if (total === 0 || available === 0) level = "red";
         else if (available / total < 0.30) level = "amber";
 
-        badge.classList.add(`lvl-${level}`);
-
         const suffix = this.isOpenEnded()
           ? tx("booking.openSuffix", { days: this.OPEN_ENDED_DAYS })
           : "";
 
-        if (level === "red") badge.textContent = tx("booking.full") + suffix;
-        else if (level === "amber") badge.textContent = tx("booking.fewLeft", { n: available }) + suffix;
-        else badge.textContent = tx("booking.nFree", { n: available }) + suffix;
+        let text;
+        if (level === "red") text = tx("booking.full") + suffix;
+        else if (level === "amber") text = tx("booking.fewLeft", { n: available }) + suffix;
+        else text = tx("booking.nFree", { n: available }) + suffix;
 
-        // v3.19.18: dagens tall er ikke det kunden trenger. Har de valgt en
-        // periode, overskriver vi med antall rom som er ledige HELE perioden —
-        // ellers kan det stå «1 ledig» ti dager på rad uten at ett rom dekker
-        // oppholdet, og gjesten måtte flyttet rom midt i.
-        this._refreshWholePeriodBadge(locId, fromEl.value);
+        // v3.19.18: dagens tall er ikke det kunden trenger når de har valgt en
+        // hel periode — det kan stå «1 ledig» ti dager på rad uten at ett rom
+        // dekker oppholdet. Er perioden komplett, lar vi «Henter…» stå til
+        // hele-perioden-svaret kommer, i stedet for å blinke det gale tallet
+        // i to sekunder. Dag-tallet er fallback hvis oppslaget feiler.
+        const hasFullPeriod = this.isOpenEnded()
+          || !!document.getElementById("f-to").value;
+        if (!hasFullPeriod) {
+          badge.classList.add(`lvl-${level}`);
+          badge.textContent = text;
+          return;
+        }
+        this._refreshWholePeriodBadge(locId, fromEl.value, { text, level });
       }).catch(err => {
         // eslint-disable-next-line no-console
         console.error("[BOOKING] availability-feil:", err);
@@ -718,15 +725,24 @@
      * (eller open-ended) er satt. Feiler stille: uten svar står dagens tall,
      * og serveren avviser uansett en ikke-leverbar bestilling.
      */
-    _refreshWholePeriodBadge(locId, fromIso) {
+    _refreshWholePeriodBadge(locId, fromIso, fallback) {
       const badge = document.getElementById("avail-badge");
       const open = this.isOpenEnded();
       const toIso = open ? null : (document.getElementById("f-to").value || null);
-      if (!open && !toIso) return;
-      if (!window.Api || typeof window.Api.getPeriodAvailability !== "function") return;
+      const showFallback = () => {
+        if (!fallback) return;
+        badge.classList.remove("lvl-green", "lvl-amber", "lvl-red");
+        badge.classList.add(`lvl-${fallback.level}`);
+        badge.textContent = fallback.text;
+      };
+      if (!open && !toIso) { showFallback(); return; }
+      if (!window.Api || typeof window.Api.getPeriodAvailability !== "function") {
+        showFallback();
+        return;
+      }
 
       window.Api.getPeriodAvailability(locId, fromIso, toIso).then(res => {
-        if (!res) return;
+        if (!res) { showFallback(); return; }
         // Valget kan ha endret seg mens vi ventet.
         if (this.getSelectedLocationId() !== locId) return;
         if (document.getElementById("f-from").value !== fromIso) return;
@@ -751,7 +767,7 @@
           badge.textContent = (tx("booking.nFreeWholePeriod", { n: n })
             || (n + " rom ledig hele perioden")) + suffix;
         }
-      }).catch(() => {});
+      }).catch(() => { showFallback(); });
     },
 
     /**
