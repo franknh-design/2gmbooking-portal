@@ -26,6 +26,7 @@ import {
   getPropertiesByIdMap,
   upsertPersonForBooking,
   getPortalLocationStatus,
+  checkWholePeriodFit,
 } from "../_utils/sharepoint.js";
 
 import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
@@ -200,6 +201,42 @@ export async function onRequestPost(context) {
       // Bedre å fail closed enn å skape uventede bookinger ved Graph-blink.
       // eslint-disable-next-line no-console
       console.error("Capacity check failed:", err);
+      return jsonResponse({
+        ok: false,
+        error: "capacity_check_failed",
+        message: "Kunne ikke verifisere ledighet. Prøv igjen om et øyeblikk.",
+      }, 503);
+    }
+
+    // 5b. v3.19.18: per-dag-sjekken over er ikke nok. Den kan gå gjennom selv
+    // om ingen ENKELT rom er ledig hele oppholdet — da måtte gjesten flyttet
+    // rom midt i perioden, og bookingen er ikke leverbar. Her krever vi at hver
+    // gjest kan få sitt eget rom som står ledig hele sin egen periode.
+    try {
+      const fit = await checkWholePeriodFit(
+        env,
+        propertyName,
+        guests.map(g => ({
+          checkIn: String(g.checkIn).slice(0, 10),
+          checkOut: g.checkOut ? String(g.checkOut).slice(0, 10) : null,
+        })),
+        tokenRow.fields.Firma || null,
+      );
+      if (!fit.ok) {
+        return jsonResponse({
+          ok: false,
+          error: "no_room_for_whole_period",
+          needed: fit.needed,
+          matched: fit.matched,
+          roomsPerGuest: fit.roomsPerSpan,
+          message: fit.matched === 0
+            ? "Ingen rom er ledige hele perioden. Prøv en kortere periode eller andre datoer."
+            : `Bare ${fit.matched} av ${fit.needed} rom kan holdes ledige hele perioden.`,
+        }, 409);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Whole-period check failed:", err);
       return jsonResponse({
         ok: false,
         error: "capacity_check_failed",

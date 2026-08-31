@@ -72,6 +72,41 @@
     return `${year}-${m}-${d}`;
   }
 
+  // v3.19.18: hvor mange rom er ledige HELE perioden. Per-dag-tallet fra
+  // /availability kan stå positivt hver dag uten at ett rom dekker oppholdet.
+  // Egen liten cache — badge-en spør på hvert dato-tastetrykk.
+  const periodCache = new Map();
+  async function getPeriodAvailability(propertyId, from, to) {
+    if (!propertyId || !from) return null;
+    const token = (window.Auth && window.Auth.token) || null;
+    if (!token) return null;
+    const key = `${propertyId}|${from}|${to || "open"}`;
+    if (periodCache.has(key)) return periodCache.get(key);
+
+    const promise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/period-availability`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, property: propertyId, from, to: to || null })
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data || data.ok !== true) {
+          periodCache.delete(key);
+          return null;
+        }
+        return { roomsFreeWholePeriod: Number(data.roomsFreeWholePeriod) || 0 };
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[API] period-availability feilet:", err);
+        periodCache.delete(key);
+        return null;
+      }
+    })();
+    periodCache.set(key, promise);
+    return promise;
+  }
+
   async function getAvailability(propertyId, year, month) {
     const key = cacheKey(propertyId, year, month);
 
@@ -134,6 +169,7 @@
 
   function clearAvailabilityCache() {
     availabilityCache.clear();
+    periodCache.clear();
   }
 
   // --------------------------------------------------------------------------
@@ -532,6 +568,7 @@
     validateToken,
     validatePin,
     getAvailability,
+    getPeriodAvailability,
     clearAvailabilityCache,
     submitBooking,
     getMyBookings,

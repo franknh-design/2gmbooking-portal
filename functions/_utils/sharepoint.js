@@ -13,7 +13,7 @@
 //     disse, men payload-en de jobber på er mye mindre nå pga $select.
 
 import { graphRequest } from "./graph.js";
-import { isPrivateOpen } from "./availability-math.js";
+import { isPrivateOpen, maxGuestRoomMatching } from "./availability-math.js";
 
 const SITE_ID = "2gmeiendom.sharepoint.com,ccff273d-0332-4541-bdaa-7ab2acb35882,b3801ad9-27fc-4b55-8fa4-c1113315c376";
 
@@ -1224,6 +1224,15 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     // v3.12.14: admin-debug — når options.details=true, returner rom-titler
     // for ledige, skitne (per dag-policy), og opptatte rom. Gjør at admin
     // kan verifisere hvilke rom portalen mener er ledige uten å lese kode.
+    // v3.19.18: rå rom-IDer pr dag, så en kaller kan finne rom som er ledige
+    // HELE en periode (snitt over dagene) — ikke bare dag for dag.
+    if (options && options.freeRoomIds === true) {
+      const free = [];
+      for (const id of countableRoomIds) {
+        if (!occupiedRoomIds.has(id)) free.push(id);
+      }
+      dayObj.freeRoomIds = free;
+    }
     if (options && options.details === true) {
       const detail = { free: [], dirty: [], booked: [] };
       const sortNumeric = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
@@ -1375,6 +1384,82 @@ export async function getCustomerOwnedFreeRooms(env, customerCompany) {
     return a.freeFrom.localeCompare(b.freeFrom);
   });
   return result;
+}
+
+// ============================================================================
+// Hele-perioden-kapasitet (v3.19.18)
+// ============================================================================
+//
+// Per-dag-tellingen svarer på «hvor mange rom er ledige den dagen». Den kan
+// være positiv hver enkelt dag uten at ETT rom er ledig hele oppholdet:
+// Botnhågen 31.08–10.09 hadde 1–5 ledige hver dag, men 805 var eneste ledige
+// 02.–03.09 og opptatt fra 04.09. Ingen gjest kunne bo der uten å flytte rom.
+//
+// Her regner vi derfor snittet av ledige rom over hver gjests egne dager, og
+// sjekker at gjestene kan få HVERT SITT rom (maks matching). Åpne perioder
+// vurderes 30 dager fram, samme horisont som per-dag-sjekken bruker.
+const OPEN_ENDED_HORIZON_DAYS = 30;
+
+function _spanDays(fromISO, toISO) {
+  const start = parseDateUTC(fromISO);
+  if (!start) return [];
+  let end = parseDateUTC(toISO);
+  if (!end) {
+    end = new Date(start.getTime() + OPEN_ENDED_HORIZON_DAYS * 86400000);
+  }
+  const out = [];
+  for (let t = start.getTime(); t <= end.getTime(); t += 86400000) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+/**
+ * spans: [{ checkIn, checkOut }] — én per gjest. checkOut kan være null.
+ * Returnerer { needed, matched, ok, roomsPerSpan: [antall], unplaced: [index] }.
+ */
+export async function checkWholePeriodFit(env, propertyName, spans, customerCompany) {
+  const dayLists = spans.map(sp => _spanDays(sp.checkIn, sp.checkOut));
+  const allDays = [...new Set(dayLists.flat())].sort();
+  if (!allDays.length) {
+    return { needed: spans.length, matched: spans.length, ok: true, roomsPerSpan: [], unplaced: [] };
+  }
+
+  const result = await calculateAvailability(
+    env,
+    propertyName,
+    allDays[0],
+    allDays[allDays.length - 1],
+    customerCompany,
+    { freeRoomIds: true },
+  );
+
+  const freeByDate = new Map();
+  for (const d of result.days) freeByDate.set(d.date, new Set(d.freeRoomIds || []));
+
+  // Snittet av ledige rom over gjestens egne dager. Mangler en dag i svaret
+  // (skal ikke skje), behandles den som «ingen ledige» — fail closed.
+  const perGuestFree = dayLists.map(days => {
+    let acc = null;
+    for (const iso of days) {
+      const set = freeByDate.get(iso) || new Set();
+      if (acc === null) { acc = new Set(set); continue; }
+      for (const id of [...acc]) if (!set.has(id)) acc.delete(id);
+    }
+    return acc ? [...acc] : [];
+  });
+
+  const { matched, assignment } = maxGuestRoomMatching(perGuestFree);
+  const placed = new Set([...assignment.values()]);
+  const unplaced = perGuestFree.map((_, i) => i).filter(i => !placed.has(i));
+
+  return {
+    needed: spans.length,
+    matched,
+    ok: matched >= spans.length,
+    roomsPerSpan: perGuestFree.map(list => list.length),
+    unplaced,
+  };
 }
 
 export async function checkCapacityConflict(env, propertyName, fromISO, toISO, roomCount, customerCompany) {

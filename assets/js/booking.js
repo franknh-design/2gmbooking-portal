@@ -700,11 +700,58 @@
         if (level === "red") badge.textContent = tx("booking.full") + suffix;
         else if (level === "amber") badge.textContent = tx("booking.fewLeft", { n: available }) + suffix;
         else badge.textContent = tx("booking.nFree", { n: available }) + suffix;
+
+        // v3.19.18: dagens tall er ikke det kunden trenger. Har de valgt en
+        // periode, overskriver vi med antall rom som er ledige HELE perioden —
+        // ellers kan det stå «1 ledig» ti dager på rad uten at ett rom dekker
+        // oppholdet, og gjesten måtte flyttet rom midt i.
+        this._refreshWholePeriodBadge(locId, fromEl.value);
       }).catch(err => {
         // eslint-disable-next-line no-console
         console.error("[BOOKING] availability-feil:", err);
         badge.textContent = tx("booking.unknown");
       });
+    },
+
+    /**
+     * Overskriver badge-teksten med hele-perioden-tallet når både fra og til
+     * (eller open-ended) er satt. Feiler stille: uten svar står dagens tall,
+     * og serveren avviser uansett en ikke-leverbar bestilling.
+     */
+    _refreshWholePeriodBadge(locId, fromIso) {
+      const badge = document.getElementById("avail-badge");
+      const open = this.isOpenEnded();
+      const toIso = open ? null : (document.getElementById("f-to").value || null);
+      if (!open && !toIso) return;
+      if (!window.Api || typeof window.Api.getPeriodAvailability !== "function") return;
+
+      window.Api.getPeriodAvailability(locId, fromIso, toIso).then(res => {
+        if (!res) return;
+        // Valget kan ha endret seg mens vi ventet.
+        if (this.getSelectedLocationId() !== locId) return;
+        if (document.getElementById("f-from").value !== fromIso) return;
+        const curOpen = this.isOpenEnded();
+        const curTo = curOpen ? null : (document.getElementById("f-to").value || null);
+        if (curOpen !== open || curTo !== toIso) return;
+
+        const n = res.roomsFreeWholePeriod;
+        const rooms = this._getRooms();
+        badge.classList.remove("lvl-green", "lvl-amber", "lvl-red");
+        const suffix = curOpen ? tx("booking.openSuffix", { days: this.OPEN_ENDED_DAYS }) : "";
+        if (n === 0) {
+          badge.classList.add("lvl-red");
+          badge.textContent = (tx("booking.noneWholePeriod")
+            || "Ingen rom ledig hele perioden") + suffix;
+        } else if (n < rooms) {
+          badge.classList.add("lvl-amber");
+          badge.textContent = (tx("booking.someWholePeriod", { n: n, needed: rooms })
+            || (n + " av " + rooms + " rom ledig hele perioden")) + suffix;
+        } else {
+          badge.classList.add(n <= 2 ? "lvl-amber" : "lvl-green");
+          badge.textContent = (tx("booking.nFreeWholePeriod", { n: n })
+            || (n + " rom ledig hele perioden")) + suffix;
+        }
+      }).catch(() => {});
     },
 
     /**
@@ -965,6 +1012,12 @@
             (`Bare ${worst.available} ledige, bestilling krever ${worst.needed}.`);
           this._showMsg(
             tx("booking.errCapacityExceeded") || ("Ikke nok ledige rom: " + detail),
+            "error"
+          );
+        } else if (res.error === "no_room_for_whole_period") {
+          this._showMsg(
+            res.message || tx("booking.errNoRoomWholePeriod")
+              || "Ingen rom er ledige hele perioden. Prøv andre datoer.",
             "error"
           );
         } else if (res.error === "location_closed" || res.error === "location_check_failed") {

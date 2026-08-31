@@ -69,6 +69,37 @@ export function computePrivateAvailability({ rooms, bookings, fromMs, toMs }) {
   return { days };
 }
 
+// Maks antall gjester som kan få HVERT SITT rom, gitt hvilke rom som er ledige
+// hele gjestens egen periode. Kuhns algoritme (augmenting paths) — eksakt, ikke
+// grådig: grådig ville sagt nei i tilfeller som faktisk går opp, f.eks. gjest A
+// {805}, gjest B {805, 708} → riktig svar er 2 (A→805, B→708).
+//
+// freeRoomIdsPerGuest: [[roomId, …], …] — én liste per gjest.
+// Returnerer { matched, assignment } der assignment er Map<roomId, gjesteindeks>.
+export function maxGuestRoomMatching(freeRoomIdsPerGuest) {
+  const lists = freeRoomIdsPerGuest || [];
+  const assignment = new Map();
+
+  function tryAssign(guest, seen) {
+    for (const room of lists[guest] || []) {
+      if (seen.has(room)) continue;
+      seen.add(room);
+      const holder = assignment.get(room);
+      if (holder === undefined || tryAssign(holder, seen)) {
+        assignment.set(room, guest);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  let matched = 0;
+  for (let g = 0; g < lists.length; g++) {
+    if (tryAssign(g, new Set())) matched++;
+  }
+  return { matched, assignment };
+}
+
 // «Åpen»-regelen for privat booking på én eiendom: PublicBookingEnabled må være
 // på OG en positiv nattsats satt (en prisløs rigg er stengt — fail closed).
 // Én sannhetskilde, brukt av getPrivateConfig (per rigg) og isAnyPrivateEnabled
