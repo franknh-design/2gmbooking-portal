@@ -25,6 +25,7 @@ import {
   getRoomsByIdMap,
   getPropertiesByIdMap,
   upsertPersonForBooking,
+  getPortalLocationStatus,
 } from "../_utils/sharepoint.js";
 
 import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
@@ -79,6 +80,31 @@ export async function onRequestPost(context) {
 
     if (!allowedProperties.includes(String(property).toLowerCase())) {
       return jsonResponse({ ok: false, error: "property_not_allowed" }, 403);
+    }
+
+    // v3.19.15: rigger merket «Kommer»/«Stengt» i Properties.PortalStatus vises
+    // i lokasjonslista men kan ikke bestilles. Frontend deaktiverer valget —
+    // dette er defense in depth mot direkte API-kall. Feiler CLOSED: kan vi
+    // ikke lese statusen, avviser vi heller enn å slippe gjennom en bestilling
+    // på en rigg som ikke er operativ.
+    try {
+      const portalStatus = await getPortalLocationStatus(env);
+      const locStatus = portalStatus[String(property).toLowerCase()];
+      if (locStatus) {
+        return jsonResponse({
+          ok: false,
+          error: "location_closed",
+          status: locStatus,
+          propertyName,
+        }, 409);
+      }
+    } catch (err) {
+      console.error("Portal status check failed:", err);
+      return jsonResponse({
+        ok: false,
+        error: "location_check_failed",
+        message: "Kunne ikke verifisere at lokasjonen er åpen. Prøv igjen om et øyeblikk.",
+      }, 503);
     }
 
     // 3. Maks antall rom per bestilling fra Customer_Tokens

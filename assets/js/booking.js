@@ -96,6 +96,41 @@
       }
     },
 
+    /**
+     * v3.19.15: status for en rigg som ikke er operativ ("kommer"/"stengt"),
+     * eller "" når den kan bestilles. Kommer fra Properties.PortalStatus via
+     * validate-token.
+     */
+    locationStatusOf(locId) {
+      const map = (this.customer && this.customer.locationStatus) || {};
+      return map[String(locId || "").toLowerCase()] || "";
+    },
+
+    _statusLabel(status) {
+      return status === "kommer"
+        ? (tx("booking.locComing")  || "kommer snart")
+        : (tx("booking.locClosed")  || "midlertidig stengt");
+    },
+
+    /**
+     * Merknad under lokasjonsvelgeren når kunden ikke har én operativ rigg.
+     * Settes inn dynamisk så markupen ikke må bære et element som nesten
+     * alltid er skjult.
+     */
+    _renderLocationNote(text) {
+      const sel = document.getElementById("f-location");
+      if (!sel) return;
+      let note = document.getElementById("f-location-note");
+      if (!text) { if (note) note.remove(); return; }
+      if (!note) {
+        note = document.createElement("p");
+        note.id = "f-location-note";
+        note.className = "hint";
+        sel.parentNode.appendChild(note);
+      }
+      note.textContent = text;
+    },
+
     _populateLocations() {
       const sel = document.getElementById("f-location");
       sel.innerHTML = "";
@@ -113,14 +148,38 @@
       for (const loc of locations) {
         const opt = document.createElement("option");
         opt.value = loc.id;
-        opt.textContent = loc.name;
+        // v3.19.15: riggen VISES selv når den ikke er operativ — kunden skal
+        // se at den finnes og er på vei — men den kan ikke velges.
+        const status = this.locationStatusOf(loc.id);
+        opt.textContent = status
+          ? `${loc.name} — ${this._statusLabel(status)}`
+          : loc.name;
+        opt.disabled = !!status;
         sel.appendChild(opt);
       }
-      // v3.8.7: sett foretrukket default (typisk Rigg 44, valgt i app.js).
-      if (this.preferredLocId) {
-        const match = locations.find(l => l.id === this.preferredLocId);
-        if (match) sel.value = this.preferredLocId;
+
+      const open = locations.filter(l => !this.locationStatusOf(l.id));
+      if (!open.length) {
+        // Ingen operativ rigg for denne kunden. La lista stå synlig, men
+        // steng valget så skjemaet ikke kan sendes.
+        sel.disabled = true;
+        this._renderLocationNote(tx("booking.locNoneOpen")
+          || "Ingen av lokasjonene dine er klare for bestilling ennå.");
+        return;
       }
+      sel.disabled = false;
+      this._renderLocationNote(
+        open.length < locations.length
+          ? (tx("booking.locSomeClosed") || "Lokasjoner merket «kommer snart» kan ikke bestilles ennå.")
+          : ""
+      );
+
+      // v3.8.7: sett foretrukket default (typisk Rigg 44, valgt i app.js).
+      // v3.19.15: aldri stå igjen med en ikke-operativ rigg som valgt verdi.
+      const preferred = (this.preferredLocId && open.some(l => l.id === this.preferredLocId))
+        ? this.preferredLocId
+        : open[0].id;
+      sel.value = preferred;
     },
 
     getSelectedLocationId() {
@@ -755,6 +814,16 @@
 
       if (!locId) return this._showMsg(tx("booking.errPickLoc"), "error");
 
+      // v3.19.15: riggen er synlig men ikke operativ. Serveren avviser også
+      // (409 location_closed) — dette sparer kunden for en runde.
+      const locStatus = this.locationStatusOf(locId);
+      if (locStatus) {
+        return this._showMsg(
+          tx("booking.errLocClosed") || "Denne lokasjonen kan ikke bestilles ennå.",
+          "error"
+        );
+      }
+
       if (guests.some((g) => !g.name)) {
         return this._showMsg(tx("booking.errAllNames"), "error");
       }
@@ -896,6 +965,11 @@
             (`Bare ${worst.available} ledige, bestilling krever ${worst.needed}.`);
           this._showMsg(
             tx("booking.errCapacityExceeded") || ("Ikke nok ledige rom: " + detail),
+            "error"
+          );
+        } else if (res.error === "location_closed" || res.error === "location_check_failed") {
+          this._showMsg(
+            tx("booking.errLocClosed") || "Denne lokasjonen kan ikke bestilles ennå.",
             "error"
           );
         } else if (res.error === "capacity_check_failed") {

@@ -89,7 +89,10 @@
           contactName: result.kontaktperson,
           locations: result.tillatte_lokasjoner || [],
           maxRooms: result.maks_rom || 1,
-          projectNo: result.prosjektnr || ''
+          projectNo: result.prosjektnr || '',
+          // v3.19.15: { slug: "kommer"|"stengt" } for rigger som ikke er
+          // operative. Tomt objekt = alt åpent.
+          locationStatus: result.lokasjon_status || {}
         };
         this._currentStamp = result.tokenStamp || null;
 

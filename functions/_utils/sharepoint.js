@@ -74,6 +74,62 @@ export function propertyAddress(propertyName) {
 }
 
 // ============================================================================
+// Portal-status per rigg (v3.19.15)
+// ============================================================================
+//
+// Properties-kolonnen `PortalStatus` (Choice, ingen default) styrer om en rigg
+// kan bestilles i bedriftsportalen:
+//   tom      → operativ, bestilles som før
+//   "Kommer" → riggen VISES i lokasjonslista, men er ikke valgbar
+//   "Stengt" → samme, med «midlertidig stengt» som merkelapp
+//
+// Kolonnen er bevisst «tom = åpen»: en Yes/No-kolonne får default No ved
+// opprettelse, og et påslått «stengt»-flagg på alle rader ville stengt hele
+// portalen i det sekundet kolonnen ble laget.
+//
+// Fallback under: gjelder KUN så lenge kolonnen ikke finnes i det hele tatt
+// (ingen rad har feltet). Da er Andslimoen stengt uansett, så riggen ikke blir
+// bestillbar før den er operativ. Så snart kolonnen finnes, er SharePoint
+// fasit — også hvis den er tom.
+const PORTAL_STATUS_FALLBACK = {
+  "Rigg Andslimoen": "Kommer",
+};
+
+// Returnerer { <slug>: "kommer"|"stengt"|… } — bare riggene som IKKE er
+// operative. Tomt objekt = alt åpent.
+export async function getPortalLocationStatus(env) {
+  // Bevisst UTEN $select: Graph svarer 400 «Field 'PortalStatus' is not
+  // recognized» hvis kolonnen ikke finnes ennå, og da ville hver bestilling
+  // blitt avvist av fail-closed-sjekken i submit-booking. Properties har en
+  // håndfull rader, så å hente alle felt koster ingenting.
+  const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
+
+  const titleToSlug = {};
+  for (const [slug, title] of Object.entries(PROPERTY_MAP)) titleToSlug[title] = slug;
+
+  // Graph utelater tomme felt, så «kolonnen finnes» kan bare avgjøres ved at
+  // MINST én rad har en verdi.
+  const columnExists = items.some(it => it.fields && "PortalStatus" in it.fields);
+  const source = {};
+  if (columnExists) {
+    for (const it of items) {
+      const title = it.fields?.Title || "";
+      const val = String(it.fields?.PortalStatus || "").trim();
+      if (title && val) source[title] = val;
+    }
+  } else {
+    Object.assign(source, PORTAL_STATUS_FALLBACK);
+  }
+
+  const out = {};
+  for (const [title, val] of Object.entries(source)) {
+    const slug = titleToSlug[title];
+    if (slug) out[slug] = val.toLowerCase();
+  }
+  return out;
+}
+
+// ============================================================================
 // Felles paginering
 // ============================================================================
 

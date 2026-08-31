@@ -1,7 +1,7 @@
 // functions/api/validate-token.js
 // v1.0 - Token validation endpoint for booking portal
 
-import { findToken, logTokenUsage, maskPhone, computeTokenStamp } from "../_utils/sharepoint.js";
+import { findToken, logTokenUsage, maskPhone, computeTokenStamp, getPortalLocationStatus } from "../_utils/sharepoint.js";
 
 /**
  * POST /api/validate-token
@@ -47,6 +47,16 @@ export async function onRequestPost(context) {
     // vellykket validering hvis feltet er satt.
     const language = String(fields.Sprak || "").toLowerCase();
 
+    // v3.19.15: hvilke rigger som ikke er operative ennå («Kommer»/«Stengt»).
+    // Feiler myk til tomt objekt — en Graph-blink skal ikke blokkere innlogging.
+    // Selve bestillingen sjekkes uansett server-side i submit-booking.
+    let lokasjonStatus = {};
+    try {
+      lokasjonStatus = await getPortalLocationStatus(env);
+    } catch (err) {
+      console.error("getPortalLocationStatus failed:", err);
+    }
+
     return jsonResponse({
       valid: true,
       firma: fields.Firma,
@@ -59,6 +69,7 @@ export async function onRequestPost(context) {
       // kunden kan overstyre per bestilling.
       prosjektnr: String(fields.Prosjektnr || "").trim(),
       language: language === "nb" || language === "en" ? language : "",
+      lokasjon_status: lokasjonStatus,
       // v1.1: token-stempel = hash av Pin+Aktiv+Token+Lokasjoner.
       // Klienten lagrer dette i sesjonen og logger ut hvis det endrer
       // seg mellom kall — gjør at PIN-rotering, token-rotering og andre

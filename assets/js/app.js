@@ -20,7 +20,7 @@
       const locations = window.MockData.getLocationsForCustomer(customer);
       // v3.8.7: foretrukket default er "Rigg 44" hvis kunden har tilgang —
       // ellers falle tilbake til første lokasjon i lista.
-      const initialLocId = pickDefaultLocationId(locations);
+      const initialLocId = pickDefaultLocationId(locations, customer);
 
       // App.js holder kun "klikk-stadiet"; selve verdiene leses fra Booking.
       // pickStage = "from"  → neste klikk setter fra-dato (og tømmer til)
@@ -371,10 +371,15 @@
   // v3.8.7: velg default-lokasjon — foretrekker "Rigg 44" hvis kunden har
   // tilgang, ellers første lokasjon i lista. Match er case-insensitive og
   // tolererer ekstra mellomrom (f.eks. "rigg  44").
-  function pickDefaultLocationId(locations) {
+  function pickDefaultLocationId(locations, customer) {
     if (!locations || !locations.length) return null;
-    const preferred = locations.find(l => /^\s*rigg\s*44\s*$/i.test(l.name || ""));
-    return (preferred || locations[0]).id;
+    // v3.19.15: hopp over rigger som ikke er operative («Kommer»/«Stengt»),
+    // ellers ville portalen åpnet på en lokasjon kunden ikke kan bestille.
+    const status = (customer && customer.locationStatus) || {};
+    const open = locations.filter(l => !status[String(l.id).toLowerCase()]);
+    const pool = open.length ? open : locations;
+    const preferred = pool.find(l => /^\s*rigg\s*44\s*$/i.test(l.name || ""));
+    return (preferred || pool[0]).id;
   }
 
   // v3.8.3: format gjest-info som "Company (Person)", eller bare ett av
