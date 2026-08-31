@@ -9,7 +9,8 @@
 //     property: "rigg24",
 //     propertyName: "Rigg 24",
 //     days: [
-//       { date: "2026-05-01", available: 7, occupied: 1, totalActive: 8 },
+//       { date: "2026-05-01", available: 7, occupied: 1, totalActive: 8,
+//         unassignedPending: 0 },   // bestillinger som avventer romtildeling
 //       ...
 //     ]
 //   }

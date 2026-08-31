@@ -1112,6 +1112,7 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
     checkIn:  parseDateUTC(b.fields.Check_In),
     checkOut: parseDateUTC(b.fields.Check_Out),
     roomId:   String(b.fields.RoomLookupId || ""),
+    ref:      String(b.fields.Title || ""),
   })).filter(b => b.checkIn !== null);
 
   const days = [];
@@ -1144,7 +1145,19 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
         if (countableRoomIds.has(rid)) occupiedRoomIds.add(rid);
       }
     }
-    const occupiedToday = occupiedRoomIds.size;
+    // v3.19.13: portal-bestillinger ligger uten RoomLookupId fra de kommer inn
+    // til admin tildeler rom manuelt («AVVENTER ROMTILDELING»). Uten dette ble
+    // de ikke talt i det hele tatt, og kalenderen viste ett rom mer ledig enn
+    // det faktisk var — samme rom kunne bestilles av neste kunde i vinduet
+    // mellom bestilling og romtildeling. Hver slik rad er etterspørsel etter
+    // ett rom, samme konservative tellemåte som privat-siden bruker
+    // (availability-math.js).
+    let unassignedDemand = 0;
+    for (const b of bookingPeriods) {
+      if (b.roomId) continue;
+      if (isDateInRangeInclusive(D, b.checkIn, b.checkOut)) unassignedDemand++;
+    }
+    const occupiedToday = Math.min(activeRoomsToday, occupiedRoomIds.size + unassignedDemand);
 
     const available = Math.max(0, activeRoomsToday - occupiedToday);
 
@@ -1153,8 +1166,12 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       available,
       occupied: occupiedToday,
       totalActive: activeRoomsToday,
+      unassignedPending: unassignedDemand,
     };
     if (showFreeRooms && available > 0) {
+      // NB: dette er KANDIDAT-rom — rom uten booking på seg. Ligger det
+      // bestillinger som avventer romtildeling, er lista lengre enn
+      // `available`, siden vi ikke kan vite hvilket rom de får.
       const freeRooms = [];
       for (const id of countableRoomIds) {
         if (!occupiedRoomIds.has(id)) freeRooms.push(roomTitleById[id] || id);
@@ -1187,6 +1204,11 @@ export async function calculateAvailability(env, propertyName, fromISO, toISO, c
       detail.free.sort(sortNumeric);
       detail.dirty.sort(sortNumeric);
       detail.booked.sort(sortNumeric);
+      // Bestillinger som dekker dagen men ennå ikke har fått rom. free.length
+      // minus disse = `available`.
+      detail.unassigned = bookingPeriods
+        .filter(b => !b.roomId && isDateInRangeInclusive(D, b.checkIn, b.checkOut))
+        .map(b => b.ref || "(uten ref)");
       dayObj.detail = detail;
     }
     days.push(dayObj);
