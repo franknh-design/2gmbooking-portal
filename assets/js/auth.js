@@ -92,7 +92,9 @@
           projectNo: result.prosjektnr || '',
           // v3.19.15: { slug: "kommer"|"stengt" } for rigger som ikke er
           // operative. Tomt objekt = alt åpent.
-          locationStatus: result.lokasjon_status || {}
+          locationStatus: result.lokasjon_status || {},
+          // v3.19.21: full postadresse pr rigg fra Properties.Adress.
+          locationAddress: result.lokasjon_adresse || {}
         };
         this._currentStamp = result.tokenStamp || null;
 

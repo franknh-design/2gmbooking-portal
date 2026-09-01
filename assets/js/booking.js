@@ -106,6 +106,21 @@
       return map[String(locId || "").toLowerCase()] || "";
     },
 
+    /**
+     * v3.19.21: kunden kjenner ikke «Rigg Botnhågen» — de kjenner adressen.
+     * Full postadresse fra SharePoint (Properties.Adress) når vi har den,
+     * ellers navnet fra MockData-lista.
+     */
+    locationLabelOf(locId, fallbackName) {
+      const map = (this.customer && this.customer.locationAddress) || {};
+      const addr = String(map[String(locId || "").toLowerCase()] || "").trim();
+      if (addr) return addr;
+      if (fallbackName) return fallbackName;
+      const loc = window.MockData && window.MockData.getLocation
+        ? window.MockData.getLocation(locId) : null;
+      return (loc && loc.name) || String(locId || "");
+    },
+
     _statusLabel(status) {
       return status === "kommer"
         ? (tx("booking.locComing")  || "kommer snart")
@@ -151,9 +166,10 @@
         // v3.19.15: riggen VISES selv når den ikke er operativ — kunden skal
         // se at den finnes og er på vei — men den kan ikke velges.
         const status = this.locationStatusOf(loc.id);
+        const label = this.locationLabelOf(loc.id, loc.name);
         opt.textContent = status
-          ? `${loc.name} — ${this._statusLabel(status)}`
-          : loc.name;
+          ? `${label} — ${this._statusLabel(status)}`
+          : label;
         opt.disabled = !!status;
         sel.appendChild(opt);
       }

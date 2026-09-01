@@ -54,15 +54,16 @@ const PROPERTY_MAP = {
   strandveien112: "Strandveien 112",
 };
 
-// Adresser per bygg. Vises i portalens "Mine bookinger" så kunder vet hvor
-// de skal kjøre. Hardkodet siden adressene er statiske; fyll inn de tomme
-// strengene etter hvert som de blir bekreftet og push på nytt.
+// Adresser per bygg — kun FALLBACK. Fasit er Properties.Adress i SharePoint;
+// verdiene under er speilet derfra (v3.19.21) og brukes hvis en rad mangler
+// adressen. Gatelinje uten postnr/sted holder ikke — kunden skal kunne kjøre
+// dit på det som står her.
 const PROPERTY_ADDRESSES = {
-  "Rigg 24":         "Aspeveien 2",
-  "Rigg 44":         "Strandveien 108",
-  "Rigg Botnhågen":  "Industriveien 4",
-  "Rigg Andslimoen": "",
-  "Strandveien 112": "",
+  "Rigg 24":         "Aspeveien 2, 9300 Finnsnes",
+  "Rigg 44":         "Strandveien 108, 9300 Finnsnes",
+  "Rigg Botnhågen":  "Industriveien 4, 9308 Finnsnes",
+  "Rigg Andslimoen": "Industriveien 22, 9325 Bardufoss",
+  "Strandveien 112": "Strandveien 112, 9300 Finnsnes",
 };
 
 export function propertyIdToName(id) {

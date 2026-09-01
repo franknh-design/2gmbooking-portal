@@ -88,7 +88,12 @@
       const loc = window.MockData && window.MockData.getLocation
         ? window.MockData.getLocation(this.locationId)
         : null;
-      el.textContent = loc && loc.name ? ` — ${loc.name}` : "";
+      // v3.19.21: samme etikett som lokasjonsvelgeren — full postadresse fra
+      // SharePoint når vi har den, ellers navnet fra MockData-lista.
+      const label = (window.Booking && typeof window.Booking.locationLabelOf === "function")
+        ? window.Booking.locationLabelOf(this.locationId, loc && loc.name)
+        : (loc && loc.name);
+      el.textContent = label ? ` — ${label}` : "";
     },
 
     setRange(fromIso, toIso) {
