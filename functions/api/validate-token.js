@@ -1,7 +1,7 @@
 // functions/api/validate-token.js
 // v1.0 - Token validation endpoint for booking portal
 
-import { findToken, logTokenUsage, maskPhone, computeTokenStamp, getPortalLocationStatus } from "../_utils/sharepoint.js";
+import { findToken, logTokenUsage, maskPhone, computeTokenStamp, getPortalLocationMeta } from "../_utils/sharepoint.js";
 
 /**
  * POST /api/validate-token
@@ -50,11 +50,18 @@ export async function onRequestPost(context) {
     // v3.19.15: hvilke rigger som ikke er operative ennå («Kommer»/«Stengt»).
     // Feiler myk til tomt objekt — en Graph-blink skal ikke blokkere innlogging.
     // Selve bestillingen sjekkes uansett server-side i submit-booking.
+    // v3.19.21: samme oppslag gir også postadressen pr rigg, så portalen kan
+    // vise «Industriveien 4, 9308 Finnsnes» i stedet for bare gatenavnet.
     let lokasjonStatus = {};
+    let lokasjonAdresse = {};
     try {
-      lokasjonStatus = await getPortalLocationStatus(env);
+      const meta = await getPortalLocationMeta(env);
+      for (const [slug, m] of Object.entries(meta)) {
+        if (m.status) lokasjonStatus[slug] = m.status;
+        if (m.address) lokasjonAdresse[slug] = m.address;
+      }
     } catch (err) {
-      console.error("getPortalLocationStatus failed:", err);
+      console.error("getPortalLocationMeta failed:", err);
     }
 
     return jsonResponse({
@@ -70,6 +77,7 @@ export async function onRequestPost(context) {
       prosjektnr: String(fields.Prosjektnr || "").trim(),
       language: language === "nb" || language === "en" ? language : "",
       lokasjon_status: lokasjonStatus,
+      lokasjon_adresse: lokasjonAdresse,
       // v1.1: token-stempel = hash av Pin+Aktiv+Token+Lokasjoner.
       // Klienten lagrer dette i sesjonen og logger ut hvis det endrer
       // seg mellom kall — gjør at PIN-rotering, token-rotering og andre

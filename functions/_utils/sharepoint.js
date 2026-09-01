@@ -92,13 +92,17 @@ export function propertyAddress(propertyName) {
 // stod her fram til v3.19.17, men den kunne ikke skilles fra en tom kolonne —
 // og hadde dermed låst riggen stengt i det Frank tømte feltet for å åpne den.
 
-// Returnerer { <slug>: "kommer"|"stengt"|… } — bare riggene som IKKE er
-// operative. Tomt objekt = alt åpent.
-export async function getPortalLocationStatus(env) {
-  // Bevisst UTEN $select: Graph svarer 400 «Field 'PortalStatus' is not
-  // recognized» hvis kolonnen skulle bli slettet, og da ville hver bestilling
-  // blitt avvist av fail-closed-sjekken i submit-booking. Properties har en
-  // håndfull rader, så å hente alle felt koster ingenting.
+// Rigg-metadata portalen trenger pr slug: portal-status og postadresse.
+// Ett Properties-oppslag dekker begge — de kalles alltid i samme flyt.
+//
+// Adressen kommer fra Properties.Adress (internnavnet er «Adress», ikke
+// «Address» — SharePoint beholdt navnet fra opprettelsen). Portalen viste
+// tidligere en hardkodet gatelinje uten postnr/sted; nå følger den
+// SharePoint, så adressen vedlikeholdes ett sted.
+export async function getPortalLocationMeta(env) {
+  // Bevisst UTEN $select: Graph svarer 400 «Field is not recognized» hvis en
+  // kolonne skulle bli slettet, og da ville hver bestilling blitt avvist av
+  // fail-closed-sjekken i submit-booking. Properties har en håndfull rader.
   const items = await fetchAllItems(env, LIST_IDS.PROPERTIES);
 
   const titleToSlug = {};
@@ -106,11 +110,25 @@ export async function getPortalLocationStatus(env) {
 
   const out = {};
   for (const it of items) {
-    const title = it.fields?.Title || "";
-    const val = String(it.fields?.PortalStatus || "").trim();
-    if (!title || !val) continue;
+    const f = it.fields || {};
+    const title = f.Title || "";
     const slug = titleToSlug[title];
-    if (slug) out[slug] = val.toLowerCase();
+    if (!slug) continue;
+    out[slug] = {
+      status: String(f.PortalStatus || "").trim().toLowerCase(),
+      address: String(f.Adress || f.Adresse || f.Address || "").trim(),
+    };
+  }
+  return out;
+}
+
+// Returnerer { <slug>: "kommer"|"stengt"|… } — bare riggene som IKKE er
+// operative. Tomt objekt = alt åpent.
+export async function getPortalLocationStatus(env) {
+  const meta = await getPortalLocationMeta(env);
+  const out = {};
+  for (const [slug, m] of Object.entries(meta)) {
+    if (m.status) out[slug] = m.status;
   }
   return out;
 }
