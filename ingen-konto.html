@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!-- ingen-konto v1.0 — landingsside for «Se mine bookinger» når firmaet mangler portalkonto -->
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1B4F72" />
+  <meta name="color-scheme" content="light" />
+  <meta name="robots" content="noindex" />
+  <title>2GM Eiendom — portalkonto mangler</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <style>
+    .entry-wrap { max-width: 640px; margin: 0 auto; padding: 32px 16px 48px; }
+    .entry-card { background: var(--card-bg, #fff); border-radius: 14px; padding: 30px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
+    .entry-ic { font-size: 34px; }
+    .entry-title { font-size: 24px; margin: 8px 0 10px; color: #1B4F72; }
+    .entry-text { color: #445; font-size: 16px; line-height: 1.55; margin: 0 0 14px; }
+    .contact-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+    @media (max-width: 480px) { .contact-actions { grid-template-columns: 1fr; } }
+    .contact-actions a { display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 16px; border-radius: 10px; font-weight: 700; font-size: 15px; text-decoration: none; }
+    .contact-actions .primary { background: #1B4F72; color: #fff; }
+    .contact-actions .secondary { border: 1px solid #1B4F72; color: #1B4F72; background: #fff; }
+    .entry-who { margin-top: 22px; padding-top: 14px; border-top: .5px solid #e3e7ec; text-align: center; font-size: 14px; color: #667; }
+    .entry-who b { color: #1B4F72; }
+    .entry-hours { display: block; margin-top: 4px; font-size: 13px; color: #889; }
+    /* Topp-banner — samme som / og /company */
+    .site-header { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: #fff; border-bottom: 1px solid #e4e8ec; }
+    .site-header .brand-logo { height: 22px; width: auto; display: block; }
+    .site-header .lang { display: flex; gap: 4px; }
+    .site-header .lang button { border: 1px solid #e4e8ec; background: #fff; color: #5f6b78;
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+    .site-header .lang button.active { background: #1B4F72; color: #fff; border-color: #1B4F72; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <img class="brand-logo" src="assets/img/2gm-logo.png" alt="2GM Eiendom">
+    <div class="lang" id="lang-toggle">
+      <button type="button" data-lang="nb">NO</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <div class="entry-wrap">
+    <div class="entry-card">
+      <div class="entry-ic">🔒</div>
+      <h1 class="entry-title" data-i18n="title">Firmaet ditt mangler portalkonto</h1>
+      <p class="entry-text" data-i18n="p1">Firmaet ditt har ikke fått en konto i bestillingsportalen vår ennå, så det er ingen bookinger å vise her.</p>
+      <p class="entry-text" data-i18n="p2">Ta kontakt med meg, så oppretter jeg portalkonto for dere. Med den kan dere se bookinger og dørkoder, bestille rom og forlenge opphold — alt på ett sted.</p>
+      <p class="entry-text" data-i18n="p3">Bookingen du har fått bekreftelse på, gjelder uansett. Dørkodene sendes på SMS til gjestene.</p>
+
+      <div class="contact-actions">
+        <a class="primary" id="mail-link" href="mailto:frank@2gm.no?subject=Portalkonto">✉️ <span data-i18n="mail">Send e-post</span></a>
+        <a class="secondary" href="tel:+4799101041">📞 +47 99 10 10 41</a>
+      </div>
+
+      <p class="entry-who"><b>Frank Haugan</b> · 2GM Eiendom AS · frank@2gm.no<span class="entry-hours" data-i18n="hours">Normalt tilgjengelig hverdager kl. 07–15</span></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var T = {
+      nb: {
+        title: 'Firmaet ditt mangler portalkonto',
+        p1: 'Firmaet ditt har ikke fått en konto i bestillingsportalen vår ennå, så det er ingen bookinger å vise her.',
+        p2: 'Ta kontakt med meg, så oppretter jeg portalkonto for dere. Med den kan dere se bookinger og dørkoder, bestille rom og forlenge opphold — alt på ett sted.',
+        p3: 'Bookingen du har fått bekreftelse på, gjelder uansett. Dørkodene sendes på SMS til gjestene.',
+        mail: 'Send e-post', subject: 'Portalkonto',
+        hours: 'Normalt tilgjengelig hverdager kl. 07–15', docTitle: '2GM Eiendom — portalkonto mangler',
+      },
+      en: {
+        title: 'Your company does not have a portal account',
+        p1: 'Your company does not have an account in our booking portal yet, so there are no bookings to show here.',
+        p2: 'Get in touch with me and I will set up a portal account for you. With it you can see bookings and door codes, book rooms and extend stays — all in one place.',
+        p3: 'The booking you received a confirmation for is still valid. Door codes are sent to the guests by SMS.',
+        mail: 'Send email', subject: 'Portal account',
+        hours: 'Usually available weekdays 07:00–15:00', docTitle: '2GM Eiendom — no portal account',
+      },
+    };
+    // Språk: ?lang= fra e-postlenken vinner, så lagret valg, så nettleseren.
+    function pickLang() {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'nb' || q === 'en') return q;
+      try { var s = localStorage.getItem('entry_lang'); if (s === 'nb' || s === 'en') return s; } catch (e) {}
+      var n = String(navigator.language || '').toLowerCase();
+      return (n.indexOf('nb') === 0 || n.indexOf('no') === 0 || n.indexOf('nn') === 0) ? 'nb' : 'en';
+    }
+    function applyLang(l) {
+      var lang = (l === 'en') ? 'en' : 'nb';
+      var d = T[lang];
+      document.documentElement.lang = lang;
+      document.title = d.docTitle;
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n'); if (d[k] != null) el.textContent = d[k];
+      });
+      document.getElementById('mail-link').href = 'mailto:frank@2gm.no?subject=' + encodeURIComponent(d.subject);
+      document.querySelectorAll('#lang-toggle button').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+      });
+      try { localStorage.setItem('entry_lang', lang); } catch (e) {}
+    }
+    document.getElementById('lang-toggle').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (b) applyLang(b.getAttribute('data-lang'));
+    });
+    applyLang(pickLang());
+  })();
+  </script>
+</body>
+</html>
