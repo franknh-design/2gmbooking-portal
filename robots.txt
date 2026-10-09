@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /*?token=
+Disallow: /debug
+Disallow: /reset-pin
+Disallow: /ingen-konto
+
+Sitemap: https://www.2gm.no/sitemap.xml
