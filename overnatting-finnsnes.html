@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- overnatting-finnsnes v1.1 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
+<!-- overnatting-finnsnes v1.2 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -19,6 +19,7 @@
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
+  "inLanguage": "nb",
   "mainEntity": [
     {
       "@type": "Question",
@@ -95,7 +96,13 @@
 <body>
   <header class="site-header">
     <a href="/"><img class="brand-logo" src="/assets/img/2gm-logo.png" alt="2GM Eiendom" width="148" height="22"></a>
-    <nav><a class="login" href="/#allerede-kunde">Kundeinnlogging</a></nav>
+    <nav>
+      <a class="login" href="/#allerede-kunde" data-i18n="nav.login">Kundeinnlogging</a>
+      <div class="lang" id="lang-toggle">
+        <button type="button" data-lang="nb">NO</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </nav>
   </header>
   <div class="contact-bar">
     <a href="tel:+4799101041">📞 +47 99 10 10 41</a>
@@ -105,58 +112,58 @@
   <section class="hero">
     <img src="/assets/img/company/riggbotnhagen/outside.jpg" alt="" width="1600" height="2133" style="object-position:center 60%">
     <div class="hero-inner">
-      <p class="eyebrow">Overnatting · boplass · losji · Finnsnes, Senja</p>
-      <h1>Overnatting og boplass på Finnsnes</h1>
-      <p class="lead">Trenger du et sted å bo på Finnsnes i forbindelse med jobb? Vi har to rigger med til sammen 68 enkeltrom med eget bad, felleskjøkken og Wi-Fi – for én person eller hele arbeidslaget.</p>
+      <p class="eyebrow" data-i18n="eyebrow">Overnatting · boplass · losji · Finnsnes, Senja</p>
+      <h1 data-i18n="h1">Overnatting og boplass på Finnsnes</h1>
+      <p class="lead" data-i18n="lead">Trenger du et sted å bo på Finnsnes i forbindelse med jobb? Vi har to rigger med til sammen 68 enkeltrom med eget bad, felleskjøkken og Wi-Fi – for én person eller hele arbeidslaget.</p>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/company">Registrer firma</a>
-        <a class="btn btn-ghost" href="tel:+4799101041">Ring +47 99 10 10 41</a>
+        <a class="btn btn-primary" href="/company" data-i18n="cta.register">Registrer firma</a>
+        <a class="btn btn-ghost" href="tel:+4799101041" data-i18n="cta.call">Ring +47 99 10 10 41</a>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="rig-grid two">
-      <a class="rig-card" href="/rigg-botnhagen"><img src="/assets/img/company/riggbotnhagen/outside.jpg" alt="Rigg Botnhågen sett utenfra" width="1600" height="2133" loading="lazy" style="object-position:center 60%"><div class="body"><h3>Rigg Botnhågen</h3><div class="addr">Industriveien 4, 9308 Finnsnes</div><ul class="facts"><li>44 enkeltrom med eget bad og minikjøleskap</li><li>Felleskjøkken i hver etasje</li><li>Vaskerom med vaskemaskiner og tørketromler</li><li>Wi-Fi i hele riggen</li></ul><div class="price">450 kr <small>per natt</small></div><span class="more">Les mer →</span></div></a><a class="rig-card" href="/rigg-24"><img src="/assets/img/company/rigg24/utvendig.jpg" alt="Rigg 24 sett utenfra" width="1600" height="1200" loading="lazy"><div class="body"><h3>Rigg 24</h3><div class="addr">Aspeveien 2, 9300 Finnsnes</div><ul class="facts"><li>24 enkeltrom med eget bad</li><li>Felleskjøkken for hele riggen</li><li>Låst hovedinngang med egen kode</li><li>Wi-Fi i hele riggen</li></ul><div class="price">350 kr <small>per natt</small></div><span class="more">Les mer →</span></div></a>
+      <a class="rig-card" href="/rigg-botnhagen"><img src="/assets/img/company/riggbotnhagen/outside.jpg" alt="Rigg Botnhågen sett utenfra" width="1600" height="2133" loading="lazy" style="object-position:center 60%"><div class="body"><h3>Rigg Botnhågen</h3><div class="addr">Industriveien 4, 9308 Finnsnes</div><ul class="facts"><li data-i18n="r0f0">44 enkeltrom med eget bad og minikjøleskap</li><li data-i18n="r0f1">Felleskjøkken i hver etasje</li><li data-i18n="r0f2">Vaskerom med vaskemaskiner og tørketromler</li><li data-i18n="r0f3">Wi-Fi i hele riggen</li></ul><div class="price">450 kr <small data-i18n="per.night">per natt</small></div><span class="more" data-i18n="more">Les mer →</span></div></a><a class="rig-card" href="/rigg-24"><img src="/assets/img/company/rigg24/utvendig.jpg" alt="Rigg 24 sett utenfra" width="1600" height="1200" loading="lazy"><div class="body"><h3>Rigg 24</h3><div class="addr">Aspeveien 2, 9300 Finnsnes</div><ul class="facts"><li data-i18n="r1f0">24 enkeltrom med eget bad</li><li data-i18n="r1f1">Felleskjøkken for hele riggen</li><li data-i18n="r1f2">Låst hovedinngang med egen kode</li><li data-i18n="r1f3">Wi-Fi i hele riggen</li></ul><div class="price">350 kr <small data-i18n="per.night">per natt</small></div><span class="more" data-i18n="more">Les mer →</span></div></a>
     </div>
-    <h2 style="margin-top:36px">Slik bor dere på Rigg Botnhågen</h2>
-    <div class="photo-row"><figure><img src="/assets/img/company/riggbotnhagen/rom.jpg" alt="Enkeltrom med seng, skrivebord og vindu" loading="lazy"><figcaption>Enkeltrom</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/bad.jpg" alt="Eget bad med dusj og toalett" loading="lazy"><figcaption>Eget bad</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/kjokken.jpg" alt="Felleskjøkken med lang benk og spisebord" loading="lazy"><figcaption>Felleskjøkken</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/vaskerom.jpg" alt="Vaskerom med vaskemaskiner og tørketromler" loading="lazy"><figcaption>Vaskerom</figcaption></figure></div>
-    <p class="note"><a href="/rigg-botnhagen">Se mer om Rigg Botnhågen →</a></p>
+    <h2 style="margin-top:36px" data-i18n="gT">Slik bor dere på Rigg Botnhågen</h2>
+    <div class="photo-row"><figure><img src="/assets/img/company/riggbotnhagen/rom.jpg" alt="Enkeltrom med seng, skrivebord og vindu" loading="lazy"><figcaption data-i18n="g0">Enkeltrom</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/bad.jpg" alt="Eget bad med dusj og toalett" loading="lazy"><figcaption data-i18n="g1">Eget bad</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/kjokken.jpg" alt="Felleskjøkken med lang benk og spisebord" loading="lazy"><figcaption data-i18n="g2">Felleskjøkken</figcaption></figure><figure><img src="/assets/img/company/riggbotnhagen/vaskerom.jpg" alt="Vaskerom med vaskemaskiner og tørketromler" loading="lazy"><figcaption data-i18n="g3">Vaskerom</figcaption></figure></div>
+    <p class="note"><a href="/rigg-botnhagen" data-i18n="gM">Se mer om Rigg Botnhågen →</a></p>
   </section>
 
   <section class="band">
     <div class="section prose">
-      <h2>Rom til leie for arbeidere på Finnsnes</h2>
-      <p><a href="/rigg-botnhagen">Rigg Botnhågen</a> i Industriveien 4 har 44 enkeltrom med eget bad og minikjøleskap, felleskjøkken i hver etasje og eget vaskerom. <a href="/rigg-24">Rigg 24</a> i Aspeveien 2 har 24 enkeltrom med eget bad, felleskjøkken og låst hovedinngang med egen kode.</p><p>Begge riggene har Wi-Fi, seng med sengetøy og digital dørlås på alle rom. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p>
-      <h2>Losji og innkvartering for hele laget</h2>
-      <p>Vi leier ut til firma som trenger boplass på Senja til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p><p>Hver gjest får sin egen dørkode på SMS før ankomst, så det er ingen nøkler å hente eller levere. Bekreftelsen kommer på e-post, på norsk eller engelsk.</p>
-      <h2>Korte og lange opphold</h2>
-      <p>Dere kan leie rom for noen netter eller for flere måneder. Prisen er 450 kr per natt på Rigg Botnhågen og 350 kr per natt på Rigg 24, pluss 750 kr i utvask ved utreise. Innsjekk er fra kl. 15:00 og utsjekk innen kl. 12:00.</p>
-      <h2>Trygt å bo</h2>
-      <p>Brannvarslingsanleggene er koblet direkte til brannvesenet, og alle fellesområder har kameraovervåking.</p>
+      <h2 data-i18n="b0h">Rom til leie for arbeidere på Finnsnes</h2>
+      <div data-i18n="b0t"><p><a href="/rigg-botnhagen">Rigg Botnhågen</a> i Industriveien 4 har 44 enkeltrom med eget bad og minikjøleskap, felleskjøkken i hver etasje og eget vaskerom. <a href="/rigg-24">Rigg 24</a> i Aspeveien 2 har 24 enkeltrom med eget bad, felleskjøkken og låst hovedinngang med egen kode.</p><p>Begge riggene har Wi-Fi, seng med sengetøy og digital dørlås på alle rom. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p></div>
+      <h2 data-i18n="b1h">Losji og innkvartering for hele laget</h2>
+      <div data-i18n="b1t"><p>Vi leier ut til firma som trenger boplass på Senja til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p><p>Hver gjest får sin egen dørkode på SMS før ankomst, så det er ingen nøkler å hente eller levere. Bekreftelsen kommer på e-post, på norsk eller engelsk.</p></div>
+      <h2 data-i18n="b2h">Korte og lange opphold</h2>
+      <div data-i18n="b2t"><p>Dere kan leie rom for noen netter eller for flere måneder. Prisen er 450 kr per natt på Rigg Botnhågen og 350 kr per natt på Rigg 24, pluss 750 kr i utvask ved utreise. Innsjekk er fra kl. 15:00 og utsjekk innen kl. 12:00.</p></div>
+      <h2 data-i18n="b3h">Trygt å bo</h2>
+      <div data-i18n="b3t"><p>Brannvarslingsanleggene er koblet direkte til brannvesenet, og alle fellesområder har kameraovervåking.</p></div>
     </div>
   </section>
 
   <section class="section">
     <div class="prose faq">
-      <h2 style="margin-top:0">Spørsmål og svar om overnatting på Finnsnes</h2>
-      <details><summary>Hva koster overnatting på Finnsnes hos 2GM?</summary><p>450 kr per natt på Rigg Botnhågen og 350 kr per natt på Rigg 24, pluss 750 kr i utvask ved utreise.</p></details>
-      <details><summary>Har rommene eget bad?</summary><p>Ja. Alle 68 rommene på begge riggene er enkeltrom med eget bad.</p></details>
-      <details><summary>Kan vi lage mat selv?</summary><p>Ja. Rigg Botnhågen har felleskjøkken i hver etasje, og Rigg 24 har felleskjøkken for hele riggen.</p></details>
-      <details><summary>Kan vi vaske klær?</summary><p>Rigg Botnhågen har eget vaskerom med vaskemaskiner, tørketromler og tørkeskap.</p></details>
-      <details><summary>Hvordan bestiller vi rom?</summary><p>Registrer firmaet på www.2gm.no/company, så får dere egen bestillingsportal. Dere kan også ringe Frank Haugan på +47 99 10 10 41.</p></details>
-      <details><summary>Hvor ligger riggene?</summary><p>Rigg Botnhågen ligger i Industriveien 4, 9308 Finnsnes, og Rigg 24 i Aspeveien 2, 9300 Finnsnes – begge i Senja kommune.</p></details>
+      <h2 style="margin-top:0" data-i18n="faqT">Spørsmål og svar om overnatting på Finnsnes</h2>
+      <details><summary data-i18n="q0">Hva koster overnatting på Finnsnes hos 2GM?</summary><p data-i18n="a0">450 kr per natt på Rigg Botnhågen og 350 kr per natt på Rigg 24, pluss 750 kr i utvask ved utreise.</p></details>
+      <details><summary data-i18n="q1">Har rommene eget bad?</summary><p data-i18n="a1">Ja. Alle 68 rommene på begge riggene er enkeltrom med eget bad.</p></details>
+      <details><summary data-i18n="q2">Kan vi lage mat selv?</summary><p data-i18n="a2">Ja. Rigg Botnhågen har felleskjøkken i hver etasje, og Rigg 24 har felleskjøkken for hele riggen.</p></details>
+      <details><summary data-i18n="q3">Kan vi vaske klær?</summary><p data-i18n="a3">Rigg Botnhågen har eget vaskerom med vaskemaskiner, tørketromler og tørkeskap.</p></details>
+      <details><summary data-i18n="q4">Hvordan bestiller vi rom?</summary><p data-i18n="a4">Registrer firmaet på www.2gm.no/company, så får dere egen bestillingsportal. Dere kan også ringe Frank Haugan på +47 99 10 10 41.</p></details>
+      <details><summary data-i18n="q5">Hvor ligger riggene?</summary><p data-i18n="a5">Rigg Botnhågen ligger i Industriveien 4, 9308 Finnsnes, og Rigg 24 i Aspeveien 2, 9300 Finnsnes – begge i Senja kommune.</p></details>
     </div>
-    <p class="note">Jobber dere i Målselv? Vi har også en rigg på Bardufoss. <a href="/overnatting-bardufoss">Se overnatting på Bardufoss →</a></p>
+    <p class="note"><span data-i18n="oT">Jobber dere i Målselv? Vi har også en rigg på Bardufoss.</span> <a href="/overnatting-bardufoss" data-i18n="oL">Se overnatting på Bardufoss →</a></p>
 
     <div class="cta" style="margin-top:28px">
       <div>
-        <h2>Trenger laget ditt rom på Finnsnes?</h2>
-        <p>Registrer firmaet og bestill i egen portal – eller ring oss, så ordner vi det.</p>
+        <h2 data-i18n="ctaT">Trenger laget ditt rom på Finnsnes?</h2>
+        <p data-i18n="cta.text">Registrer firmaet og bestill i egen portal – eller ring oss, så ordner vi det.</p>
       </div>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/company">Registrer firma</a>
-        <a class="btn btn-ghost" href="tel:+4799101041">Ring +47 99 10 10 41</a>
+        <a class="btn btn-primary" href="/company" data-i18n="cta.register">Registrer firma</a>
+        <a class="btn btn-ghost" href="tel:+4799101041" data-i18n="cta.call">Ring +47 99 10 10 41</a>
       </div>
     </div>
   </section>
@@ -164,9 +171,60 @@
   <footer class="site-footer">
     <div class="inner">
       <div><b>2GM Eiendom AS</b><br>Org.nr. 922 263 418<br>Strandveien 112, 9300 Finnsnes</div>
-      <div><b>Frank Haugan</b><br><a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><br>Normalt tilgjengelig hverdager kl. 07–15</div>
-      <div><b>Våre rigger</b><br><a href="/rigg-botnhagen">Rigg Botnhågen</a> · <a href="/rigg-24">Rigg 24</a> · <a href="/rigg-andslimoen">Rigg Andslimoen</a><br><a href="/overnatting-finnsnes">Overnatting Finnsnes</a> · <a href="/overnatting-bardufoss">Overnatting Bardufoss</a></div>
+      <div><b>Frank Haugan</b><br><a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><br><span data-i18n="foot.hours">Normalt tilgjengelig hverdager kl. 07–15</span></div>
+      <div><b data-i18n="foot.rigs">Våre rigger</b><br><a href="/rigg-botnhagen">Rigg Botnhågen</a> · <a href="/rigg-24">Rigg 24</a> · <a href="/rigg-andslimoen">Rigg Andslimoen</a><br><a href="/overnatting-finnsnes" data-i18n="foot.placeF">Overnatting Finnsnes</a> · <a href="/overnatting-bardufoss" data-i18n="foot.placeB">Overnatting Bardufoss</a></div>
     </div>
   </footer>
+
+  <script>
+    window.SITE_TITLE = {"nb": "Overnatting og boplass på Finnsnes for arbeidere | 2GM Eiendom", "en": "Worker accommodation in Finnsnes | 2GM Eiendom"};
+    window.SITE_EN = {
+  "foot.placeF": "Accommodation Finnsnes",
+  "foot.placeB": "Accommodation Bardufoss",
+  "more": "Read more →",
+  "r0f0": "44 single rooms with private bathroom and mini fridge",
+  "r0f1": "A shared kitchen on each floor",
+  "r0f2": "Laundry room with washing machines and dryers",
+  "r0f3": "Wi-Fi throughout the rig",
+  "r1f0": "24 single rooms with private bathroom",
+  "r1f1": "Shared kitchen for the whole rig",
+  "r1f2": "Locked main entrance with its own code",
+  "r1f3": "Wi-Fi throughout the rig",
+  "b0h": "Rooms for workers in Finnsnes",
+  "b0t": "<p><a href=\"/rigg-botnhagen\">Rigg Botnhågen</a> at Industriveien 4 has 44 single rooms with private bathrooms and mini fridges, a shared kitchen on each floor and its own laundry room. <a href=\"/rigg-24\">Rigg 24</a> at Aspeveien 2 has 24 single rooms with private bathrooms, a shared kitchen and a locked main entrance with its own code.</p><p>Both rigs have Wi-Fi, a bed with bed linen and a digital door lock in every room. Rooms are cleaned every week, with fresh towels every week and fresh bed linen every other week.</p>",
+  "b1h": "Accommodation for the whole crew",
+  "b1t": "<p>We rent to companies that need housing on Senja for their own staff, hired workers or subcontractors. Your company gets its own booking portal where you can see available rooms, book for the whole crew and add a project number for the invoice.</p><p>Each guest gets their own door code by SMS before arrival, so there are no keys to collect or return. The confirmation comes by email, in English or Norwegian.</p>",
+  "b2h": "Short and long stays",
+  "b2t": "<p>You can rent rooms for a few nights or for several months. The price is NOK 450 per night at Rigg Botnhågen and NOK 350 per night at Rigg 24, plus a NOK 750 cleaning fee at check-out. Check-in is from 15:00 and check-out before 12:00.</p>",
+  "b3h": "Safe to stay",
+  "b3t": "<p>The fire alarm systems are connected directly to the fire service, and all shared areas have camera surveillance.</p>",
+  "q0": "How much does accommodation in Finnsnes cost with 2GM?",
+  "a0": "NOK 450 per night at Rigg Botnhågen and NOK 350 per night at Rigg 24, plus a NOK 750 cleaning fee at check-out.",
+  "q1": "Do the rooms have a private bathroom?",
+  "a1": "Yes. All 68 rooms at both rigs are single rooms with a private bathroom.",
+  "q2": "Can we cook our own meals?",
+  "a2": "Yes. Rigg Botnhågen has a shared kitchen on each floor, and Rigg 24 has a shared kitchen for the whole rig.",
+  "q3": "Can we do laundry?",
+  "a3": "Rigg Botnhågen has its own laundry room with washing machines, tumble dryers and a drying cabinet.",
+  "q4": "How do we book rooms?",
+  "a4": "Register your company at www.2gm.no/company and you will get your own booking portal. You can also call Frank Haugan on +47 99 10 10 41.",
+  "q5": "Where are the rigs?",
+  "a5": "Rigg Botnhågen is at Industriveien 4, 9308 Finnsnes, and Rigg 24 at Aspeveien 2, 9300 Finnsnes – both in Senja municipality.",
+  "g0": "Single room",
+  "g1": "Private bathroom",
+  "g2": "Shared kitchen",
+  "g3": "Laundry room",
+  "gT": "What it looks like at Rigg Botnhågen",
+  "gM": "See more about Rigg Botnhågen →",
+  "eyebrow": "Accommodation · crew housing · Finnsnes, Senja",
+  "h1": "Accommodation and crew housing in Finnsnes",
+  "lead": "Need a place to stay in Finnsnes for work? We have two rigs with a total of 68 single rooms with private bathrooms, shared kitchens and Wi-Fi – for one person or the whole crew.",
+  "faqT": "Questions and answers about accommodation in Finnsnes",
+  "oT": "Working in Målselv? We also have a rig in Bardufoss.",
+  "oL": "See accommodation in Bardufoss →",
+  "ctaT": "Does your crew need rooms in Finnsnes?"
+};
+  </script>
+  <script src="/assets/js/site.js"></script>
 </body>
 </html>

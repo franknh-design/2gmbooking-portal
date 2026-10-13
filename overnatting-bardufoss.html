@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- overnatting-bardufoss v1.1 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
+<!-- overnatting-bardufoss v1.2 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -19,6 +19,7 @@
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
+  "inLanguage": "nb",
   "mainEntity": [
     {
       "@type": "Question",
@@ -95,7 +96,13 @@
 <body>
   <header class="site-header">
     <a href="/"><img class="brand-logo" src="/assets/img/2gm-logo.png" alt="2GM Eiendom" width="148" height="22"></a>
-    <nav><a class="login" href="/#allerede-kunde">Kundeinnlogging</a></nav>
+    <nav>
+      <a class="login" href="/#allerede-kunde" data-i18n="nav.login">Kundeinnlogging</a>
+      <div class="lang" id="lang-toggle">
+        <button type="button" data-lang="nb">NO</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </nav>
   </header>
   <div class="contact-bar">
     <a href="tel:+4799101041">📞 +47 99 10 10 41</a>
@@ -105,55 +112,55 @@
   <section class="hero">
     <img src="/assets/img/company/andslimoen/utvendig.jpg" alt="" width="1600" height="1066">
     <div class="hero-inner">
-      <p class="eyebrow">Overnatting · boplass · losji · Bardufoss, Målselv</p>
-      <h1>Overnatting og boplass på Bardufoss</h1>
-      <p class="lead">Trenger du et sted å bo på Bardufoss i forbindelse med jobb? Rigg Andslimoen i Industriveien 22 har 52 enkeltrom med eget bad, felleskjøkken og Wi-Fi – for én person eller hele arbeidslaget.</p>
+      <p class="eyebrow" data-i18n="eyebrow">Overnatting · boplass · losji · Bardufoss, Målselv</p>
+      <h1 data-i18n="h1">Overnatting og boplass på Bardufoss</h1>
+      <p class="lead" data-i18n="lead">Trenger du et sted å bo på Bardufoss i forbindelse med jobb? Rigg Andslimoen i Industriveien 22 har 52 enkeltrom med eget bad, felleskjøkken og Wi-Fi – for én person eller hele arbeidslaget.</p>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/company">Registrer firma</a>
-        <a class="btn btn-ghost" href="tel:+4799101041">Ring +47 99 10 10 41</a>
+        <a class="btn btn-primary" href="/company" data-i18n="cta.register">Registrer firma</a>
+        <a class="btn btn-ghost" href="tel:+4799101041" data-i18n="cta.call">Ring +47 99 10 10 41</a>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="rig-grid one">
-      <a class="rig-card" href="/rigg-andslimoen"><img src="/assets/img/company/andslimoen/utvendig.jpg" alt="Rigg Andslimoen sett utenfra" width="1600" height="1066" loading="lazy"><div class="body"><h3>Rigg Andslimoen</h3><div class="addr">Industriveien 22, 9325 Bardufoss</div><ul class="facts"><li>52 enkeltrom med eget bad</li><li>Felleskjøkken i hver etasje, med egen kode</li><li>Låst hovedinngang med egen kode</li><li>Wi-Fi i hele riggen</li></ul><div class="price">550 kr <small>per natt</small></div><span class="more">Les mer →</span></div></a>
+      <a class="rig-card" href="/rigg-andslimoen"><img src="/assets/img/company/andslimoen/utvendig.jpg" alt="Rigg Andslimoen sett utenfra" width="1600" height="1066" loading="lazy"><div class="body"><h3>Rigg Andslimoen</h3><div class="addr">Industriveien 22, 9325 Bardufoss</div><ul class="facts"><li data-i18n="r0f0">52 enkeltrom med eget bad</li><li data-i18n="r0f1">Felleskjøkken i hver etasje, med egen kode</li><li data-i18n="r0f2">Låst hovedinngang med egen kode</li><li data-i18n="r0f3">Wi-Fi i hele riggen</li></ul><div class="price">550 kr <small data-i18n="per.night">per natt</small></div><span class="more" data-i18n="more">Les mer →</span></div></a>
     </div>
   </section>
 
   <section class="band">
     <div class="section prose">
-      <h2>Rom til leie for arbeidere på Bardufoss</h2>
-      <p>Rigg Andslimoen er bygget for folk som jobber i Målselv og trenger et praktisk sted å bo. Alle rommene er enkeltrom med eget bad, seng med sengetøy og digital dørlås. Hver etasje har sitt eget felleskjøkken med egen kode, så etasjene holdes adskilt.</p><p>Det er Wi-Fi i hele riggen, og hovedinngangen er låst med egen kode. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p>
-      <h2>Losji og innkvartering for hele laget</h2>
-      <p>Vi leier ut til firma som trenger boplass til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p><p>Hver gjest får sin egen dørkode på SMS før ankomst, så det er ingen nøkler å hente eller levere. Bekreftelsen kommer på e-post, på norsk eller engelsk.</p>
-      <h2>Korte og lange opphold</h2>
-      <p>Dere kan leie rom for noen netter eller for flere måneder. Prisen er 550 kr per rom per natt, pluss 750 kr i utvask ved utreise. Innsjekk er fra kl. 15:00 og utsjekk innen kl. 12:00.</p>
-      <h2>Trygt å bo</h2>
-      <p>Brannvarslingsanlegget er koblet direkte til brannvesenet, og alle fellesområder har kameraovervåking.</p>
+      <h2 data-i18n="b0h">Rom til leie for arbeidere på Bardufoss</h2>
+      <div data-i18n="b0t"><p>Rigg Andslimoen er bygget for folk som jobber i Målselv og trenger et praktisk sted å bo. Alle rommene er enkeltrom med eget bad, seng med sengetøy og digital dørlås. Hver etasje har sitt eget felleskjøkken med egen kode, så etasjene holdes adskilt.</p><p>Det er Wi-Fi i hele riggen, og hovedinngangen er låst med egen kode. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p></div>
+      <h2 data-i18n="b1h">Losji og innkvartering for hele laget</h2>
+      <div data-i18n="b1t"><p>Vi leier ut til firma som trenger boplass til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p><p>Hver gjest får sin egen dørkode på SMS før ankomst, så det er ingen nøkler å hente eller levere. Bekreftelsen kommer på e-post, på norsk eller engelsk.</p></div>
+      <h2 data-i18n="b2h">Korte og lange opphold</h2>
+      <div data-i18n="b2t"><p>Dere kan leie rom for noen netter eller for flere måneder. Prisen er 550 kr per rom per natt, pluss 750 kr i utvask ved utreise. Innsjekk er fra kl. 15:00 og utsjekk innen kl. 12:00.</p></div>
+      <h2 data-i18n="b3h">Trygt å bo</h2>
+      <div data-i18n="b3t"><p>Brannvarslingsanlegget er koblet direkte til brannvesenet, og alle fellesområder har kameraovervåking.</p></div>
     </div>
   </section>
 
   <section class="section">
     <div class="prose faq">
-      <h2 style="margin-top:0">Spørsmål og svar om overnatting på Bardufoss</h2>
-      <details><summary>Hva koster overnatting på Bardufoss hos 2GM?</summary><p>550 kr per rom per natt, pluss 750 kr i utvask ved utreise.</p></details>
-      <details><summary>Har rommene eget bad?</summary><p>Ja. Alle de 52 rommene på Rigg Andslimoen er enkeltrom med eget bad.</p></details>
-      <details><summary>Kan vi lage mat selv?</summary><p>Ja. Hver etasje har sitt eget felleskjøkken, med egen kode.</p></details>
-      <details><summary>Hvordan får vi tilgang til rommet?</summary><p>Hver gjest får sin egen dørkode på SMS før ankomst. Det er ingen nøkler å hente.</p></details>
-      <details><summary>Hvordan bestiller vi rom?</summary><p>Registrer firmaet på www.2gm.no/company, så får dere egen bestillingsportal. Dere kan også ringe Frank Haugan på +47 99 10 10 41.</p></details>
-      <details><summary>Hvor ligger riggen?</summary><p>Rigg Andslimoen ligger i Industriveien 22, 9325 Bardufoss, i Målselv kommune.</p></details>
+      <h2 style="margin-top:0" data-i18n="faqT">Spørsmål og svar om overnatting på Bardufoss</h2>
+      <details><summary data-i18n="q0">Hva koster overnatting på Bardufoss hos 2GM?</summary><p data-i18n="a0">550 kr per rom per natt, pluss 750 kr i utvask ved utreise.</p></details>
+      <details><summary data-i18n="q1">Har rommene eget bad?</summary><p data-i18n="a1">Ja. Alle de 52 rommene på Rigg Andslimoen er enkeltrom med eget bad.</p></details>
+      <details><summary data-i18n="q2">Kan vi lage mat selv?</summary><p data-i18n="a2">Ja. Hver etasje har sitt eget felleskjøkken, med egen kode.</p></details>
+      <details><summary data-i18n="q3">Hvordan får vi tilgang til rommet?</summary><p data-i18n="a3">Hver gjest får sin egen dørkode på SMS før ankomst. Det er ingen nøkler å hente.</p></details>
+      <details><summary data-i18n="q4">Hvordan bestiller vi rom?</summary><p data-i18n="a4">Registrer firmaet på www.2gm.no/company, så får dere egen bestillingsportal. Dere kan også ringe Frank Haugan på +47 99 10 10 41.</p></details>
+      <details><summary data-i18n="q5">Hvor ligger riggen?</summary><p data-i18n="a5">Rigg Andslimoen ligger i Industriveien 22, 9325 Bardufoss, i Målselv kommune.</p></details>
     </div>
-    <p class="note">Jobber dere på Senja? Vi har også to rigger på Finnsnes. <a href="/overnatting-finnsnes">Se overnatting på Finnsnes →</a></p>
+    <p class="note"><span data-i18n="oT">Jobber dere på Senja? Vi har også to rigger på Finnsnes.</span> <a href="/overnatting-finnsnes" data-i18n="oL">Se overnatting på Finnsnes →</a></p>
 
     <div class="cta" style="margin-top:28px">
       <div>
-        <h2>Trenger laget ditt rom på Bardufoss?</h2>
-        <p>Registrer firmaet og bestill i egen portal – eller ring oss, så ordner vi det.</p>
+        <h2 data-i18n="ctaT">Trenger laget ditt rom på Bardufoss?</h2>
+        <p data-i18n="cta.text">Registrer firmaet og bestill i egen portal – eller ring oss, så ordner vi det.</p>
       </div>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/company">Registrer firma</a>
-        <a class="btn btn-ghost" href="tel:+4799101041">Ring +47 99 10 10 41</a>
+        <a class="btn btn-primary" href="/company" data-i18n="cta.register">Registrer firma</a>
+        <a class="btn btn-ghost" href="tel:+4799101041" data-i18n="cta.call">Ring +47 99 10 10 41</a>
       </div>
     </div>
   </section>
@@ -161,9 +168,50 @@
   <footer class="site-footer">
     <div class="inner">
       <div><b>2GM Eiendom AS</b><br>Org.nr. 922 263 418<br>Strandveien 112, 9300 Finnsnes</div>
-      <div><b>Frank Haugan</b><br><a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><br>Normalt tilgjengelig hverdager kl. 07–15</div>
-      <div><b>Våre rigger</b><br><a href="/rigg-botnhagen">Rigg Botnhågen</a> · <a href="/rigg-24">Rigg 24</a> · <a href="/rigg-andslimoen">Rigg Andslimoen</a><br><a href="/overnatting-finnsnes">Overnatting Finnsnes</a> · <a href="/overnatting-bardufoss">Overnatting Bardufoss</a></div>
+      <div><b>Frank Haugan</b><br><a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><br><span data-i18n="foot.hours">Normalt tilgjengelig hverdager kl. 07–15</span></div>
+      <div><b data-i18n="foot.rigs">Våre rigger</b><br><a href="/rigg-botnhagen">Rigg Botnhågen</a> · <a href="/rigg-24">Rigg 24</a> · <a href="/rigg-andslimoen">Rigg Andslimoen</a><br><a href="/overnatting-finnsnes" data-i18n="foot.placeF">Overnatting Finnsnes</a> · <a href="/overnatting-bardufoss" data-i18n="foot.placeB">Overnatting Bardufoss</a></div>
     </div>
   </footer>
+
+  <script>
+    window.SITE_TITLE = {"nb": "Overnatting og boplass på Bardufoss for arbeidere | 2GM Eiendom", "en": "Worker accommodation in Bardufoss | 2GM Eiendom"};
+    window.SITE_EN = {
+  "foot.placeF": "Accommodation Finnsnes",
+  "foot.placeB": "Accommodation Bardufoss",
+  "more": "Read more →",
+  "r0f0": "52 single rooms with private bathroom",
+  "r0f1": "A shared kitchen on each floor, with its own code",
+  "r0f2": "Locked main entrance with its own code",
+  "r0f3": "Wi-Fi throughout the rig",
+  "b0h": "Rooms for workers in Bardufoss",
+  "b0t": "<p>Rigg Andslimoen is built for people working in Målselv who need a practical place to stay. Every room is a single room with a private bathroom, a bed with bed linen and a digital door lock. Each floor has its own shared kitchen with its own code, keeping the floors separate.</p><p>There is Wi-Fi throughout the rig, and the main entrance is locked with its own code. Rooms are cleaned every week, with fresh towels every week and fresh bed linen every other week.</p>",
+  "b1h": "Accommodation for the whole crew",
+  "b1t": "<p>We rent to companies that need housing for their own staff, hired workers or subcontractors. Your company gets its own booking portal where you can see available rooms, book for the whole crew and add a project number for the invoice.</p><p>Each guest gets their own door code by SMS before arrival, so there are no keys to collect or return. The confirmation comes by email, in English or Norwegian.</p>",
+  "b2h": "Short and long stays",
+  "b2t": "<p>You can rent rooms for a few nights or for several months. The price is NOK 550 per room per night, plus a NOK 750 cleaning fee at check-out. Check-in is from 15:00 and check-out before 12:00.</p>",
+  "b3h": "Safe to stay",
+  "b3t": "<p>The fire alarm system is connected directly to the fire service, and all shared areas have camera surveillance.</p>",
+  "q0": "How much does accommodation in Bardufoss cost with 2GM?",
+  "a0": "NOK 550 per room per night, plus a NOK 750 cleaning fee at check-out.",
+  "q1": "Do the rooms have a private bathroom?",
+  "a1": "Yes. All 52 rooms at Rigg Andslimoen are single rooms with a private bathroom.",
+  "q2": "Can we cook our own meals?",
+  "a2": "Yes. Each floor has its own shared kitchen, with its own code.",
+  "q3": "How do we get into the room?",
+  "a3": "Each guest gets their own door code by SMS before arrival. There are no keys to collect.",
+  "q4": "How do we book rooms?",
+  "a4": "Register your company at www.2gm.no/company and you will get your own booking portal. You can also call Frank Haugan on +47 99 10 10 41.",
+  "q5": "Where is the rig?",
+  "a5": "Rigg Andslimoen is at Industriveien 22, 9325 Bardufoss, in Målselv municipality.",
+  "eyebrow": "Accommodation · crew housing · Bardufoss, Målselv",
+  "h1": "Accommodation and crew housing in Bardufoss",
+  "lead": "Need a place to stay in Bardufoss for work? Rigg Andslimoen at Industriveien 22 has 52 single rooms with private bathrooms, shared kitchens and Wi-Fi – for one person or the whole crew.",
+  "faqT": "Questions and answers about accommodation in Bardufoss",
+  "oT": "Working on Senja? We also have two rigs in Finnsnes.",
+  "oL": "See accommodation in Finnsnes →",
+  "ctaT": "Does your crew need rooms in Bardufoss?"
+};
+  </script>
+  <script src="/assets/js/site.js"></script>
 </body>
 </html>
