@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- company v2.33 -->
+<!-- company v2.34 — nytt utseende i samme stil som stedssidene (site.css), logikk uendret -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,27 @@
   <meta name="color-scheme" content="light" />
   <title>2GM Eiendom – Registrer firma</title>
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/site.css" />
   <style>
+    /* v2.34: toppbilde + to kolonner (skjema | galleri og «inkludert»), som stedssidene. */
+    .reg-hero .hero-inner { padding: 56px 20px 92px; }
+    .reg-hero h1 { font-size: clamp(30px, 5vw, 44px); }
+    .reg-steps { list-style: none; margin: 20px 0 0; padding: 0; display: flex; gap: 10px; flex-wrap: wrap; counter-reset: rs; }
+    .reg-steps li { counter-increment: rs; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px; padding: 7px 14px 7px 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .reg-steps li::before { content: counter(rs); width: 24px; height: 24px; border-radius: 50%; background: #E9781A; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+    .reg-layout { max-width: 1080px; margin: -56px auto 0; padding: 0 20px 56px; position: relative; z-index: 2;
+      display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .reg-layout { grid-template-columns: 1fr; } }
+    .reg-card-title { font-size: 22px; color: #1B4F72; margin: 0 0 14px; }
+    .reg-side { display: grid; gap: 18px; }
+    .reg-side-card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
+    .reg-side .reg-rigs { margin: 0; background: #fff; border: 0; border-radius: 14px; padding: 18px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06); }
+    .reg-side .co-gallery { margin: 0; }
+    .reg-side-links { font-size: 14px; color: #5A6772; margin: 0; padding: 0 4px; line-height: 1.6; }
+    .reg-side-links a { color: #1B4F72; font-weight: 600; }
     .reg-wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
     /* To felt ved siden av hverandre på PC; stables på mobil. */
     .row2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
@@ -86,7 +106,7 @@
 </head>
 <body>
   <header class="site-header">
-    <img class="brand-logo" src="assets/img/2gm-logo.png" alt="2GM Eiendom">
+    <a href="/"><img class="brand-logo" src="assets/img/2gm-logo.png" alt="2GM Eiendom"></a>
     <div class="lang" id="lang-toggle">
       <button type="button" data-lang="nb">NO</button>
       <button type="button" data-lang="en">EN</button>
@@ -97,47 +117,28 @@
     <a href="mailto:frank@2gm.no">✉️ frank@2gm.no</a>
   </div>
 
-  <div class="reg-wrap">
+  <section class="hero reg-hero">
+    <img src="assets/img/company/riggbotnhagen/outside.jpg" alt="" width="1600" height="2133" style="object-position:center 60%">
+    <div class="hero-inner">
+      <p class="eyebrow" data-i18n="eyebrow">For bedrifter · Finnsnes og Bardufoss</p>
+      <h1 data-i18n="title">Registrer firma</h1>
+      <p class="lead" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen. Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
+      <ol class="reg-steps">
+        <li data-i18n="step1">Fyll ut skjemaet</li>
+        <li data-i18n="step2">Vi godkjenner firmaet</li>
+        <li data-i18n="step3">Dere bestiller rom i egen portal</li>
+      </ol>
+    </div>
+  </section>
+
+  <div class="reg-layout">
     <div class="reg-card">
 
       <!-- Skjema -->
       <div id="reg-form-view">
-        <h1 class="reg-title" data-i18n="title">Registrer firma</h1>
-        <p class="reg-sub" data-i18n="sub">Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen.
-          Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.</p>
-
+        <h2 class="reg-card-title" data-i18n="formTitle">Firmaopplysninger</h2>
         <!-- Vises kun når privat booking er avslått (avledet av /api/private-enabled). -->
         <p class="reg-only-co" id="reg-only-co" data-i18n="onlyCompanies" hidden>Vi tar for tiden kun imot bedriftskunder. Rom bookes via firmakonto i portalen — eller direkte med Frank på telefon eller e-post (se øverst på siden).</p>
-
-        <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
-        <div class="co-gallery" id="co-gallery" hidden>
-          <div class="co-gallery-head" id="co-gallery-head" hidden>
-            <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
-            <span class="co-gallery-label" id="co-gallery-label"></span>
-            <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
-          </div>
-          <div class="co-gallery-stage">
-            <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
-            <iframe class="co-gallery-map" id="co-gallery-map" title="Kart" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:none"></iframe>
-          </div>
-          <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
-        </div>
-
-        <div class="reg-rigs">
-          <p class="reg-rigs-lead" data-i18n="rigsLead">Om riggene – dette er inkludert:</p>
-          <ul class="reg-rigs-list">
-            <li data-i18n="rig_bath">Eget bad med dusj og toalett på hvert rom</li>
-            <li data-i18n="rig_fridge" id="rig-fridge">Minikjøleskap på rommet</li>
-            <li data-i18n="rig_wifi">WiFi</li>
-            <li data-i18n="rig_lock">Digital dørlås med personlig PIN-kode til rommet</li>
-            <li data-i18n="rig_linen">Håndklær og sengetøy inkludert</li>
-            <li data-i18n="rig_common">Felles storkjøkken og vaskerom</li>
-            <li data-i18n="rig_clean">Rommet rengjøres én gang i uken</li>
-            <li data-i18n="rig_change">Nye håndklær hver uke, sengetøy annenhver uke</li>
-            <li data-i18n="rig_camera">Kameraovervåking i fellesområdene</li>
-            <li data-i18n="rig_fire">Brannvarslingssystem tilkoblet 110-sentralen</li>
-          </ul>
-        </div>
 
         <form id="reg-form" class="reg-form-anchor" novalidate>
           <div class="row2">
@@ -224,10 +225,52 @@
         <a class="reg-back" href="/" data-i18n="back">← Til innlogging</a>
       </div>
 
-      <p class="reg-contact"><span data-i18n="contactLead">Spørsmål? Ta kontakt:</span> <a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><span class="reg-hours" data-i18n="contactHours">Normalt tilgjengelig kl. 07–15</span></p>
+            <p class="reg-contact"><span data-i18n="contactLead">Spørsmål? Ta kontakt:</span> <a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a><span class="reg-hours" data-i18n="contactHours">Normalt tilgjengelig kl. 07–15</span></p>
 
     </div>
+
+    <aside class="reg-side">
+      <!-- Rigg-bilder (gjenbruk /private-galleriet). Vises kun for bilder som faktisk laster. -->
+      <div class="reg-side-card">
+        <div class="co-gallery" id="co-gallery" hidden>
+          <div class="co-gallery-head" id="co-gallery-head" hidden>
+            <button type="button" class="co-gallery-nav" id="co-gallery-prev" aria-label="Forrige lokasjon">‹</button>
+            <span class="co-gallery-label" id="co-gallery-label"></span>
+            <button type="button" class="co-gallery-nav" id="co-gallery-next" aria-label="Neste lokasjon">›</button>
+          </div>
+          <div class="co-gallery-stage">
+            <img class="co-gallery-main" id="co-gallery-main" alt="Rom hos 2GM Eiendom" />
+            <iframe class="co-gallery-map" id="co-gallery-map" title="Kart" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="display:none"></iframe>
+          </div>
+          <div class="co-gallery-thumbs" id="co-gallery-thumbs"></div>
+        </div>
+      </div>
+        <div class="reg-rigs">
+          <p class="reg-rigs-lead" data-i18n="rigsLead">Om riggene – dette er inkludert:</p>
+          <ul class="reg-rigs-list">
+            <li data-i18n="rig_bath">Eget bad med dusj og toalett på hvert rom</li>
+            <li data-i18n="rig_fridge" id="rig-fridge">Minikjøleskap på rommet</li>
+            <li data-i18n="rig_wifi">WiFi</li>
+            <li data-i18n="rig_lock">Digital dørlås med personlig PIN-kode til rommet</li>
+            <li data-i18n="rig_linen">Håndklær og sengetøy inkludert</li>
+            <li data-i18n="rig_common">Felleskjøkken (vaskerom på Rigg Botnhågen)</li>
+            <li data-i18n="rig_clean">Rommet rengjøres én gang i uken</li>
+            <li data-i18n="rig_change">Nye håndklær hver uke, sengetøy annenhver uke</li>
+            <li data-i18n="rig_camera">Kameraovervåking i fellesområdene</li>
+            <li data-i18n="rig_fire">Brannvarslingssystem tilkoblet 110-sentralen</li>
+          </ul>
+        </div>
+      <p class="reg-side-links"><span data-i18n="seeRigs">Les mer om riggene:</span> <a href="/rigg-botnhagen">Rigg Botnhågen</a> · <a href="/rigg-24">Rigg 24</a> · <a href="/rigg-andslimoen">Rigg Andslimoen</a></p>
+    </aside>
   </div>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <div><b>2GM Eiendom AS</b><br>Org.nr. 922 263 418<br>Strandveien 112, 9300 Finnsnes</div>
+      <div><b>Frank Haugan</b><br><a href="tel:+4799101041">+47 99 10 10 41</a> · <a href="mailto:frank@2gm.no">frank@2gm.no</a></div>
+      <div><b>2GM</b><br><a href="/overnatting-finnsnes">Overnatting Finnsnes</a> · <a href="/overnatting-bardufoss">Overnatting Bardufoss</a></div>
+    </div>
+  </footer>
 
   <!-- v3.19.6: flytende «hopp til skjema»-knapp. Galleri + rigg-info dytter
        skjemaet under folden, så brukere trodde siden bare var informasjon.
@@ -244,6 +287,9 @@
     var T = window.REG_I18N = {
       nb: {
         title: 'Registrer firma',
+        eyebrow: 'For bedrifter · Finnsnes og Bardufoss', formTitle: 'Firmaopplysninger',
+        step1: 'Fyll ut skjemaet', step2: 'Vi godkjenner firmaet', step3: 'Dere bestiller rom i egen portal',
+        seeRigs: 'Les mer om riggene:',
         sub: 'Fyll ut skjemaet, så oppretter vi en bedriftskonto i bestillingsportalen. Du får tilgang på e-post/SMS så snart vi har godkjent firmaet.',
         l_firma: 'Firmanavn', l_orgnr: 'Org.nr', ph_orgnr: '9 sifre',
         l_kontakt: 'Kontaktperson', l_epost: 'E-post', l_telefon: 'Telefon',
@@ -257,7 +303,7 @@
         rig_wifi: 'WiFi',
         rig_lock: 'Digital dørlås med personlig PIN-kode til rommet',
         rig_linen: 'Håndklær og sengetøy inkludert',
-        rig_common: 'Felles storkjøkken og vaskerom',
+        rig_common: 'Felleskjøkken (vaskerom på Rigg Botnhågen)',
         rig_clean: 'Rommet rengjøres én gang i uken',
         rig_change: 'Nye håndklær hver uke, sengetøy annenhver uke',
         rig_camera: 'Kameraovervåking i fellesområdene',
@@ -287,6 +333,9 @@
       },
       en: {
         title: 'Register company',
+        eyebrow: 'For companies · Finnsnes and Bardufoss', formTitle: 'Company details',
+        step1: 'Fill in the form', step2: 'We approve your company', step3: 'You book rooms in your own portal',
+        seeRigs: 'Read more about the rigs:',
         sub: "Fill in the form and we'll create a business account in the booking portal. You'll get access by email/SMS once we've approved your company.",
         l_firma: 'Company name', l_orgnr: 'Org. no.', ph_orgnr: '9 digits',
         l_kontakt: 'Contact person', l_epost: 'Email', l_telefon: 'Phone',
@@ -300,7 +349,7 @@
         rig_wifi: 'WiFi',
         rig_lock: 'Digital door lock with a personal PIN code for your room',
         rig_linen: 'Towels and bedding included',
-        rig_common: 'Shared large kitchen and laundry room',
+        rig_common: 'Shared kitchen (laundry room at Rigg Botnhågen)',
         rig_clean: 'Room cleaned once a week',
         rig_change: 'Fresh towels weekly, bedding every other week',
         rig_camera: 'CCTV surveillance in the common areas',
