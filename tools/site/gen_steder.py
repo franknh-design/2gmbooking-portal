@@ -267,6 +267,7 @@ def page(s):
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1B4F72" />
   <title>{e(s["title"][0])}</title>
