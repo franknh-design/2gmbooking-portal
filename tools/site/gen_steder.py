@@ -59,6 +59,12 @@ STEDER = [
     ),
     dict(
         slug="overnatting-finnsnes", sted="Finnsnes", kommune="Senja", rigs=["botn", "r24"],
+        gallery=("Slik bor dere på Rigg Botnhågen", "/rigg-botnhagen", [
+            ("riggbotnhagen/rom.jpg", "Enkeltrom med seng, skrivebord og vindu", "Enkeltrom"),
+            ("riggbotnhagen/bad.jpg", "Eget bad med dusj og toalett", "Eget bad"),
+            ("riggbotnhagen/kjokken.jpg", "Felleskjøkken med lang benk og spisebord", "Felleskjøkken"),
+            ("riggbotnhagen/vaskerom.jpg", "Vaskerom med vaskemaskiner og tørketromler", "Vaskerom"),
+        ]),
         other=("Bardufoss", "/overnatting-bardufoss", "Jobber dere i Målselv? Vi har også en rigg på Bardufoss."),
         title="Overnatting og boplass på Finnsnes for arbeidere | 2GM Eiendom",
         desc="Overnatting og boplass på Finnsnes: 68 enkeltrom med eget bad i to rigger – Rigg Botnhågen og Rigg 24. Losji for arbeidslag og innleide på Senja, korte og lange opphold. Fra 350 kr per natt.",
@@ -124,12 +130,19 @@ def page(s):
         {"@type": "ListItem", "position": 2, "name": s["h1"], "item": url}]}
     body = "\n".join(f"      <h2>{e(h)}</h2>\n      {t}" for h, t in s["body"])
     faq = "\n".join(f"      <details><summary>{e(q)}</summary><p>{e(a)}</p></details>" for q, a in s["faq"])
-    grid_style = ' style="grid-template-columns:repeat(2,1fr)"' if len(rigs) == 2 else ' style="grid-template-columns:minmax(0,420px)"'
+    grid_cls = " two" if len(rigs) == 2 else " one"  # klasser, ikke inline-stil — inline overstyrte mobil-oppsettet
     o_name, o_url, o_txt = s["other"]
+    gal = ""
+    if s.get("gallery"):
+        g_title, g_url, g_imgs = s["gallery"]
+        figs = "".join(f'<figure><img src="{IMG}/{src}" alt="{e(alt)}" loading="lazy"><figcaption>{e(cap)}</figcaption></figure>'
+                       for src, alt, cap in g_imgs)
+        gal = (f'\n    <h2 style="margin-top:36px">{e(g_title)}</h2>\n    <div class="photo-row">{figs}</div>'
+               f'\n    <p class="note"><a href="{g_url}">Se mer om {e(g_title.split(" på ", 1)[1])} →</a></p>')
     hero = rigs[0]
     hero_pos = f' style="object-position:{hero["pos"]}"' if hero["pos"] else ""
     return f'''<!DOCTYPE html>
-<!-- {s["slug"]} v1.0 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
+<!-- {s["slug"]} v1.1 — stedsside for www.2gm.no, generert av tools/site/gen_steder.py (ikke rediger for hånd) -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -169,9 +182,9 @@ def page(s):
   </section>
 
   <section class="section">
-    <div class="rig-grid"{grid_style}>
+    <div class="rig-grid{grid_cls}">
       {"".join(card(r) for r in rigs)}
-    </div>
+    </div>{gal}
   </section>
 
   <section class="band">

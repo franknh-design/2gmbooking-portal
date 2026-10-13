@@ -144,3 +144,15 @@ h1, h2, h3 { line-height: 1.2; margin: 0; }
 .place-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 .place-links a { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); color: #fff; text-decoration: none;
   padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 15px; }
+
+/* Innebilde-galleri på stedssidene — v1.2 */
+.photo-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+@media (max-width: 760px) { .photo-row { grid-template-columns: 1fr 1fr; } }
+.photo-row figure { margin: 0; }
+.photo-row img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
+.photo-row figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+/* Antall riggkort på stedssidene — v1.3 (inline grid-stil overstyrte mobil) */
+.rig-grid.two { grid-template-columns: repeat(2, 1fr); }
+.rig-grid.one { grid-template-columns: minmax(0, 420px); }
+@media (max-width: 760px) { .rig-grid.two, .rig-grid.one { grid-template-columns: 1fr; } }
