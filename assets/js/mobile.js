@@ -183,10 +183,9 @@
       sub.textContent = [locTxt, rangeEl ? rangeEl.textContent : "", nightsEl ? nightsEl.textContent : ""]
         .filter(Boolean).join(" · ");
     }
-    // Refresh guest label and value
-    const gLbl = document.getElementById("mGuestLabel");
-    if (gLbl) gLbl.textContent = tx("mobile.guestLabel", { n: 1 });
-    syncFirstGuestName();
+    // v3.19.32: hele gjestelista inn i sheet'et (navn + mobil + e-post per rom).
+    mountGuestsInSheet();
+    mirrorFormMessage();
 
     ov.hidden = false;
     document.body.style.overflow = "hidden";
@@ -198,6 +197,44 @@
     ov.classList.remove("open");
     document.body.style.overflow = "";
     setTimeout(() => { ov.hidden = true; }, 220);
+  }
+
+  // ---------- v3.19.32: GJESTELISTE I SHEET + FEILMELDINGER ----------
+  // Flytter #guests-list inn i sheet'et på mobil og tilbake når skjermen blir
+  // bred igjen (ellers mangler desktop-skjemaet gjesteradene).
+  let _guestsHome = null;
+  function mountGuestsInSheet() {
+    const list = document.getElementById("guests-list");
+    const host = document.getElementById("mGuestsHost");
+    if (!list || !host || list.parentNode === host) return;
+    if (!_guestsHome) _guestsHome = { parent: list.parentNode, next: list.nextSibling };
+    host.appendChild(list);
+  }
+  function unmountGuestsFromSheet() {
+    const list = document.getElementById("guests-list");
+    if (!list || !_guestsHome || list.parentNode === _guestsHome.parent) return;
+    _guestsHome.parent.insertBefore(list, _guestsHome.next);
+  }
+  window.matchMedia("(max-width: 767px)").addEventListener("change", (e) => {
+    if (!e.matches) unmountGuestsFromSheet();
+  });
+  // Valideringsfeil og kvittering skrives til #form-message i det skjulte
+  // desktop-skjemaet. Speil den inn i sheet'et så brukeren faktisk ser den.
+  function mirrorFormMessage() {
+    const src = document.getElementById("form-message");
+    const dst = document.getElementById("m-form-message");
+    if (!src || !dst || dst.dataset.wired === "1") return;
+    const copy = () => {
+      dst.innerHTML = src.innerHTML;
+      dst.className = src.className;
+      dst.hidden = src.hidden;
+      if (!src.hidden && isMobile()) {
+        try { dst.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+      }
+    };
+    new MutationObserver(copy).observe(src, { attributes: true, childList: true, subtree: true, characterData: true });
+    copy();
+    dst.dataset.wired = "1";
   }
 
   // ---------- SUBMIT FROM SHEET ----------

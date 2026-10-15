@@ -2981,6 +2981,10 @@ input[type="date"]:disabled {
   }
 
   /* "+ Avvikende datoer" expand-host — viser opprinnelig guests-list */
+  /* v3.19.32: hele gjestelista vises alltid i sheet'et på mobil */
+  #mGuestsHost { margin: 4px 0 14px; }
+  #mGuestsHost #guests-list { display: block; }
+  #m-form-message { margin: 0 0 12px; }
   #mDeviatingHost { display: none; }
   #mDeviatingHost.open { display: block; margin: 8px 0 14px; }
   #mDeviatingHost #guests-list { display: block; }
@@ -3072,3 +3076,6 @@ input[type="date"]:disabled {
 }
 .overbooking-dlg-send:hover { background: #1f2937; }
 
+
+/* v3.19.32: hint når mobil/e-post er fylt ut fra et tidligere opphold */
+.guest-autofill-hint { font-size: 13px; color: #2f6b2f; margin-top: 2px; }

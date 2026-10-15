@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v3.19.31 -->
+<!-- v3.19.32 -->
 <html lang="nb">
 <head>
   <meta charset="UTF-8" />
@@ -330,7 +330,7 @@
     </div>
 
     <footer class="footer">
-      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.19.31</small>
+      <small><span data-i18n="footer.copy">© 2GM Eiendom AS · Bestillingsportal</span> v3.19.32</small>
     </footer>
 
     <!-- v3.10.0: Mobil sticky-bunn-bar (datoer + Fortsett) -->
@@ -366,16 +366,18 @@
           </span>
         </label>
 
-        <label class="m-field-label" id="mGuestLabel" for="m-guest-name">Rom 1 · gjest</label>
-        <input type="text" id="m-guest-name" placeholder="Navn på gjest" data-i18n-placeholder="mobile.guestPlaceholder" autocomplete="off" />
-
-        <button type="button" id="m-deviating-link" class="m-link-btn" data-i18n="booking.deviatingDates">+ Avvikende datoer</button>
-        <!-- Container der vi flytter inn guests-list når "Avvikende datoer"
-             åpnes — så bruker kan sette per-rom-datoer uten å forlate sheet'et. -->
-        <div id="mDeviatingHost"></div>
+        <!-- v3.19.32: hele gjestelista (navn + mobil + e-post per rom) flyttes hit
+             på mobil. Før fantes bare et navnefelt, så mobilnummer — påkrevd siden
+             v3.14.0 — kunne ikke fylles inn, og bestilling fra mobil stoppet uten
+             synlig melding. -->
+        <label class="m-field-label" id="mGuestLabel" data-i18n="mobile.guestsLabel">Gjester</label>
+        <div id="mGuestsHost"></div>
 
         <!-- Live pris-estimat (mobil) — speiler #price-summary -->
         <div class="price-summary" id="m-price-summary" hidden></div>
+
+        <!-- v3.19.32: speiler #form-message (feil/kvittering) — desktop-skjemaet er skjult på mobil -->
+        <p id="m-form-message" class="form-message" hidden></p>
 
         <button type="button" id="m-submit" class="m-submit-btn" data-i18n="booking.submit">Send bestilling</button>
       </div>

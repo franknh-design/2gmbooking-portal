@@ -239,6 +239,25 @@
    * my-bookings-polling — bare når sendcode-modalen faktisk åpnes.
    * Returnerer { ok, phones: { "2GM-AB12CD": "+4799887766", ... } }.
    */
+  // v3.19.32: tidligere gjester for innlogget firma (navn + mobil + e-post fra
+  // siste opphold) — til autoutfylling i bestillingsskjemaet.
+  async function getCompanyGuests(token) {
+    if (!token || typeof token !== "string") return { ok: false, guests: [] };
+    try {
+      const response = await fetch(`${API_BASE}/company-guests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ ok: false, guests: [] }));
+      if (!response.ok) return { ok: false, guests: [] };
+      return { ok: data.ok !== false, guests: Array.isArray(data.guests) ? data.guests : [] };
+    } catch (_err) {
+      return { ok: false, guests: [] };
+    }
+  }
+
   async function getBookingPhones(token) {
     if (!token || typeof token !== "string") {
       return { ok: false, error: "missing_token", phones: {} };
@@ -573,6 +592,7 @@
     submitBooking,
     getMyBookings,
     getBookingPhones,
+    getCompanyGuests,
     getCustomerFreeRooms,
     requestExtension,
     requestEnd,

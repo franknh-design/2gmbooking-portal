@@ -12,6 +12,32 @@
 
   function tx(key, vars) { return window.I18n ? window.I18n.t(key, vars) : key; }
 
+  // v3.19.32: tidligere gjester for firmaet — forslag i navnefeltet + autoutfylling
+  // av mobil/e-post når et kjent navn velges. Hentes én gang per sidevisning.
+  let _guestsPromise = null;
+  const _guestsByName = new Map();
+  function _normName(v) { return String(v || "").replace(/\s+/g, " ").trim().toLowerCase(); }
+  function _loadCompanyGuests() {
+    if (_guestsPromise) return _guestsPromise;
+    const token = (window.Auth && window.Auth.token) || null;
+    if (!token || !window.Api || !window.Api.getCompanyGuests) return Promise.resolve([]);
+    _guestsPromise = window.Api.getCompanyGuests(token).then((res) => {
+      const guests = (res && res.guests) || [];
+      let dl = document.getElementById("company-guest-list");
+      if (!dl) { dl = document.createElement("datalist"); dl.id = "company-guest-list"; document.body.appendChild(dl); }
+      dl.innerHTML = "";
+      guests.forEach((g) => {
+        if (!g || !g.name) return;
+        _guestsByName.set(_normName(g.name), g);
+        const opt = document.createElement("option");
+        opt.value = g.name;
+        dl.appendChild(opt);
+      });
+      return guests;
+    }).catch(() => []);
+    return _guestsPromise;
+  }
+
   const Booking = {
     customer: null,
     onLocationChange: null,
@@ -27,6 +53,7 @@
       this._wireUp();
       this._prefillProjectNo();
       this._renderGuests(this._getRooms());
+      _loadCompanyGuests();
       this._setMinDates();
       this._applyOpenEndedState();
       this._refreshAvailabilityBadge();
@@ -427,6 +454,29 @@
       emailEl.addEventListener("blur", validateEmail);
 
       inputs.append(nameEl, phoneWrap, emailEl);
+
+      // v3.19.32: forslag fra tidligere opphold. Kun tomme felt fylles, så det
+      // bestilleren selv har skrevet aldri overskrives.
+      nameEl.setAttribute("list", "company-guest-list");
+      nameEl.autocomplete = "off";
+      const hint = document.createElement("div");
+      hint.className = "guest-autofill-hint";
+      hint.hidden = true;
+      inputs.append(hint);
+      const tryAutofill = () => {
+        const g = _guestsByName.get(_normName(nameEl.value));
+        if (!g) { hint.hidden = true; return; }
+        let filled = false;
+        const phoneEmpty = !/\d/.test(phoneEl.value || "");
+        if (phoneEmpty && g.phone) { phoneEl.value = g.phone; phoneEl.dispatchEvent(new Event("input", { bubbles: true })); filled = true; }
+        if (!emailEl.value.trim() && g.email) { emailEl.value = g.email; emailEl.dispatchEvent(new Event("input", { bubbles: true })); filled = true; }
+        if (filled) {
+          hint.textContent = tx("booking.guestAutofilled", { date: g.lastStay ? g.lastStay.split("-").reverse().join(".") : "" });
+          hint.hidden = false;
+        }
+      };
+      nameEl.addEventListener("change", tryAutofill);
+      nameEl.addEventListener("input", () => { if (_guestsByName.has(_normName(nameEl.value))) tryAutofill(); });
 
       const toggle = document.createElement("button");
       toggle.type = "button";
