@@ -33,6 +33,16 @@
         opt.value = g.name;
         dl.appendChild(opt);
       });
+      // v3.19.33: tidligere Prosjektnr/referanser som forslag i #f-project.
+      const refs = (res && res.references) || [];
+      const proj = document.getElementById("f-project");
+      if (proj && refs.length) {
+        let rl = document.getElementById("company-ref-list");
+        if (!rl) { rl = document.createElement("datalist"); rl.id = "company-ref-list"; document.body.appendChild(rl); }
+        rl.innerHTML = "";
+        refs.forEach((r) => { const o = document.createElement("option"); o.value = r; rl.appendChild(o); });
+        proj.setAttribute("list", "company-ref-list");
+      }
       return guests;
     }).catch(() => []);
     return _guestsPromise;

@@ -252,7 +252,11 @@
       });
       const data = await response.json().catch(() => ({ ok: false, guests: [] }));
       if (!response.ok) return { ok: false, guests: [] };
-      return { ok: data.ok !== false, guests: Array.isArray(data.guests) ? data.guests : [] };
+      return {
+        ok: data.ok !== false,
+        guests: Array.isArray(data.guests) ? data.guests : [],
+        references: Array.isArray(data.references) ? data.references : [],
+      };
     } catch (_err) {
       return { ok: false, guests: [] };
     }

@@ -202,18 +202,24 @@
   // ---------- v3.19.32: GJESTELISTE I SHEET + FEILMELDINGER ----------
   // Flytter #guests-list inn i sheet'et på mobil og tilbake når skjermen blir
   // bred igjen (ellers mangler desktop-skjemaet gjesteradene).
-  let _guestsHome = null;
+  // v3.19.33: også Prosjektnr/referanse-feltet flyttes inn — før fantes det
+  // ikke på mobil i det hele tatt.
+  const _homes = {};
+  function _mount(el, hostId) {
+    const host = document.getElementById(hostId);
+    if (!el || !host || el.parentNode === host) return;
+    if (!_homes[hostId]) _homes[hostId] = { el, parent: el.parentNode, next: el.nextSibling };
+    host.appendChild(el);
+  }
   function mountGuestsInSheet() {
-    const list = document.getElementById("guests-list");
-    const host = document.getElementById("mGuestsHost");
-    if (!list || !host || list.parentNode === host) return;
-    if (!_guestsHome) _guestsHome = { parent: list.parentNode, next: list.nextSibling };
-    host.appendChild(list);
+    _mount(document.getElementById("guests-list"), "mGuestsHost");
+    const proj = document.getElementById("f-project");
+    _mount(proj && proj.closest(".field"), "mProjectHost");
   }
   function unmountGuestsFromSheet() {
-    const list = document.getElementById("guests-list");
-    if (!list || !_guestsHome || list.parentNode === _guestsHome.parent) return;
-    _guestsHome.parent.insertBefore(list, _guestsHome.next);
+    Object.values(_homes).forEach((h) => {
+      if (h.el.parentNode !== h.parent) h.parent.insertBefore(h.el, h.next);
+    });
   }
   window.matchMedia("(max-width: 767px)").addEventListener("change", (e) => {
     if (!e.matches) unmountGuestsFromSheet();

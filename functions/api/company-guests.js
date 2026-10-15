@@ -5,7 +5,7 @@
 //
 // POST /api/company-guests
 // Body: { token: "..." }
-// Returnerer: { ok: true, guests: [{ name, phone, email, lastStay }] }
+// Returnerer: { ok: true, guests: [{ name, phone, email, lastStay }], references: ["P-1042", …] }
 //   sortert nyeste opphold først. Bare bookinger der Company/Billing_Company
 //   matcher tokenets Firma (samme regel som Mine bookinger) — et firma ser
 //   aldri andre firmaers gjester. Kansellerte bookinger tas ikke med.
@@ -21,6 +21,7 @@ import {
 } from "../_utils/sharepoint.js";
 
 const MAX_GUESTS = 500;
+const MAX_REFS = 100;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -34,7 +35,7 @@ export async function onRequestPost(context) {
     if (!tokenRow) return json({ ok: false, error: "invalid_token" }, 401);
 
     const company = String(tokenRow.fields.Firma || "").trim();
-    if (!company) return json({ ok: true, guests: [] });
+    if (!company) return json({ ok: true, guests: [], references: [] });
 
     const items = await getAllBookingsForCompany(env, company);
 
@@ -56,6 +57,14 @@ export async function onRequestPost(context) {
       if (!g.email && f.Email) g.email = String(f.Email).trim();
     }
 
+    // v1.1: firmaets tidligere Prosjektnr/referanser, nyeste først, unike.
+    const refs = new Map();
+    for (const it of items) {
+      const r = String((it.fields || {}).Prosjektnr || "").replace(/\s+/g, " ").trim();
+      if (r && !refs.has(r.toLowerCase())) refs.set(r.toLowerCase(), r);
+    }
+    const references = [...refs.values()].slice(0, MAX_REFS);
+
     const guests = [...byName.values()].slice(0, MAX_GUESTS);
     if (guests.some(g => !g.phone)) {
       const persons = await getPersonsLookup(env);
@@ -64,7 +73,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    return json({ ok: true, guests });
+    return json({ ok: true, guests, references });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("company-guests error:", err);
