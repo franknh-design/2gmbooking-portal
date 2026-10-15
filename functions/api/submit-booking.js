@@ -269,6 +269,9 @@ export async function onRequestPost(context) {
         checkIn: g.checkIn,
         checkOut: g.checkOut || null,
         projectNo: projectNo || null,
+        // v3.19.34: hvem i firmaet som la inn bestillingen. Admin sender
+        // bekreftelsen hit — før gikk den til firmaets første portal-kontakt.
+        ordererEmail: (tokenRow.fields.Epost || "").trim() || null,
         notes: noteParts.join(" · "),
       };
     });

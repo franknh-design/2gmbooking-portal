@@ -879,6 +879,8 @@ export async function createBookingRow(env, fields) {
     // v3.19.7: kundens prosjektnr/ref fra bestillingsskjemaet. Samme kolonne som
     // admin fyller manuelt, og den følger videre inn i fakturagrunnlaget.
     Prosjektnr: fields.projectNo || null,
+    // v3.19.34: portal-kontoen som bestilte (Customer_Tokens.Epost).
+    Bestiller_Epost: fields.ordererEmail || null,
     Status: "Upcoming",
     Pending_Confirmation: true,
     // v3.14.5: Source merker bookingen som portal-skapt. Admin-appens
@@ -894,12 +896,25 @@ export async function createBookingRow(env, fields) {
     }
   }
 
-  const result = await graphRequest(env, path, {
-    method: "POST",
-    body: JSON.stringify({ fields: sharepointFields }),
-  });
-
-  return result;
+  try {
+    return await graphRequest(env, path, {
+      method: "POST",
+      body: JSON.stringify({ fields: sharepointFields }),
+    });
+  } catch (err) {
+    // v3.19.34: Bestiller_Epost er en ny kolonne. Finnes den ikke (ennå) i
+    // SharePoint, avviser Graph hele raden — lagre heller uten feltet enn å
+    // miste bestillingen. Enhver 400 prøves én gang til uten feltet; skyldtes
+    // feilen noe annet, feiler retry-en likt og kastes videre.
+    if (sharepointFields.Bestiller_Epost && /failed: 400|Bestiller_Epost/.test(String(err && err.message))) {
+      delete sharepointFields.Bestiller_Epost;
+      return await graphRequest(env, path, {
+        method: "POST",
+        body: JSON.stringify({ fields: sharepointFields }),
+      });
+    }
+    throw err;
+  }
 }
 
 export async function createBookingRows(env, rows) {
