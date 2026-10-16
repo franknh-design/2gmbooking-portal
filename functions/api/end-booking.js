@@ -16,6 +16,7 @@
 
 import { findToken, getBookingsForCompany, updateBookingFields } from "../_utils/sharepoint.js";
 import { sendEmail } from "../_utils/email.js";
+import { sendPush } from "../_utils/push.js";
 
 const NOTIFY_EMAIL = "frank@2gm.no";
 
@@ -152,11 +153,18 @@ async function sendEndRequest(env, data) {
     `2GM Booking Portal`,
   ];
 
-  return sendEmail(env, {
+  const pushP = sendPush(env, {
+    title: "Ønsker avslutning: " + customer,
+    message: `${guest} · ${property}\nUtflytting ${current} → ${requestedCheckOut}\n${bookingRef}`,
+    tags: ["calendar"],
+  });
+  const res = await sendEmail(env, {
     to: NOTIFY_EMAIL,
     subject,
     text: lines.join("\n"),
   });
+  await pushP;
+  return res;
 }
 
 function jsonResponse(data, status = 200) {

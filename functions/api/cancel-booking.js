@@ -12,6 +12,7 @@
 
 import { findToken, getBookingsForCompany, updateBookingFields } from "../_utils/sharepoint.js";
 import { sendEmail } from "../_utils/email.js";
+import { sendPush } from "../_utils/push.js";
 
 const NOTIFY_EMAIL = "frank@2gm.no";
 
@@ -155,7 +156,14 @@ async function sendCancelEmails(env, { bookingRef, tokenRow, booking }) {
     `--`,
     `2GM Booking Portal`,
   ].join("\n");
-  await sendEmail(env, { to: NOTIFY_EMAIL, subject: adminSubject, text: adminText });
+  await Promise.all([
+    sendEmail(env, { to: NOTIFY_EMAIL, subject: adminSubject, text: adminText }),
+    sendPush(env, {
+      title: "Kansellert av kunde: " + customer,
+      message: `${guest} · ${property} · innsjekk ${checkIn}\n${bookingRef}`,
+      tags: ["x"],
+    }),
+  ]);
 }
 
 function escapeHtml(s) {

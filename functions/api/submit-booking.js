@@ -31,6 +31,7 @@ import {
 
 import { getDailyRate, getCheckoutFee } from "../_utils/rates.js";
 import { sendEmail } from "../_utils/email.js";
+import { sendPush } from "../_utils/push.js";
 import { getEmailTemplate, renderTemplate } from "../_utils/templates.js";
 
 // Hvor varselet om ny booking går
@@ -422,11 +423,22 @@ async function sendBookingNotification(env, data) {
     `2GM Booking Portal`,
   );
 
-  return sendEmail(env, {
+  const pushP = sendPush(env, {
+    title: (capacityWarning ? "⚠️ Kapasitetskonflikt: " : "Ny bestilling: ") + customer,
+    message: `${guests.length} rom · ${propertyName} · ${bookingRef}\n`
+      + guests.slice(0, 6).map(g => `${g.name} (${g.checkIn}${g.checkOut ? " → " + g.checkOut : " →"})`).join("\n")
+      + (guests.length > 6 ? `\n+ ${guests.length - 6} til` : "")
+      + `\nBestilt av ${contact}`,
+    tags: capacityWarning ? ["warning"] : ["bed"],
+    priority: capacityWarning ? 4 : 3,
+  });
+  const res = await sendEmail(env, {
     to: NOTIFY_EMAIL,
     subject,
     text: lines.join("\n"),
   });
+  await pushP;
+  return res;
 }
 
 // ----------------------------------------------------------------------------

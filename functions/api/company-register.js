@@ -25,6 +25,7 @@ import {
   propertyIdToName,
 } from "../_utils/sharepoint.js";
 import { sendEmail } from "../_utils/email.js";
+import { sendPush } from "../_utils/push.js";
 
 const NOTIFY_EMAIL = "frank@2gm.no";
 const MAX_FIELD_LEN = 200;
@@ -212,6 +213,15 @@ async function sendOwnerNotification(env, data) {
     "--",
     "2GM Booking Portal",
   );
+  const pushP = sendPush(env, {
+    title: "Nytt firma vil ha tilgang: " + firma,
+    message: `${kontaktperson} · ${telefon}\n${epost}`
+      + (requestedNames.length ? `\nØnsker: ${requestedNames.join(", ")}` : "")
+      + `\nGodkjenn i Booking Admin → Firmaer`,
+    tags: ["office"],
+    priority: 4,
+  });
+  await pushP;
   return sendEmail(env, {
     to: NOTIFY_EMAIL,
     subject: `[2GM] Ny firma-registrering — ${firma}`,
