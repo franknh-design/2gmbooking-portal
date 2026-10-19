@@ -88,14 +88,21 @@ export async function onRequestPost(context) {
     const noteLine = `[Avslutning forespurt ${todayISO}: ny utflytting ${reqISO}]`;
     const existingNotes = (f.Notes || "").trim();
     const newNotes = existingNotes ? `${existingNotes}\n${noteLine}` : noteLine;
+    // v3.19.40: ønsket dato også i Requested_CheckOut (som extend-booking) —
+    // admin viser da «Avslutning forespurt» + «Innvilg avslutning» i stedet for
+    // bare en notatlinje. Fallback uten feltet hvis PATCH-en avvises.
+    const baseFields = { Pending_Confirmation: true, Notes: newNotes };
     try {
-      await updateBookingFields(env, match.id, {
-        Pending_Confirmation: true,
-        Notes: newNotes,
-      });
+      await updateBookingFields(env, match.id, { ...baseFields, Requested_CheckOut: `${reqISO}T00:00:00Z` });
     } catch (patchErr) {
       // eslint-disable-next-line no-console
-      console.warn("[end-booking] PATCH failed, falling back to email-only:", patchErr?.message || patchErr);
+      console.warn("[end-booking] PATCH med Requested_CheckOut feilet, prøver uten:", patchErr?.message || patchErr);
+      try {
+        await updateBookingFields(env, match.id, baseFields);
+      } catch (retryErr) {
+        // eslint-disable-next-line no-console
+        console.warn("[end-booking] PATCH failed, falling back to email-only:", retryErr?.message || retryErr);
+      }
     }
 
     const emailResult = await sendEndRequest(env, {
