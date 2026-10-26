@@ -1165,6 +1165,12 @@
     if (dlg) {
       dlg.close ? dlg.close() : dlg.removeAttribute("open");
     }
+    // v3.19.41: forkorting lagres direkte (ingen godkjenning) — vis ny dato og oppdater lista.
+    if (res.applied) {
+      window.alert(tx("end.applied", { date: formatIso(res.newCheckOut) || res.newCheckOut }));
+      if (typeof mybookingsRef.refresh === "function") mybookingsRef.refresh(false);
+      return;
+    }
     window.alert(tx("end.success"));
   }
 

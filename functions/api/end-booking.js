@@ -84,6 +84,42 @@ export async function onRequestPost(context) {
       [f.Person_Name, f.Property_Name].filter(Boolean).join(" – ") ||
       `id:${match.id}`;
 
+    // v3.19.41: forkorting gjelder umiddelbart — Frank vil ikke godkjenne at en
+    // kunde avslutter tidligere, bare få beskjed. Gjelder når ny dato ligger etter
+    // innsjekk og før nåværende utsjekk (eller oppholdet er åpent). Alt annet
+    // (dato = innsjekk, eller ikke tidligere enn i dag) går som før via godkjenning.
+    const curOutISO = f.Check_Out ? String(f.Check_Out).slice(0, 10) : "";
+    const ciISO = f.Check_In ? String(f.Check_In).slice(0, 10) : "";
+    const isShorten = (!ciISO || reqISO > ciISO) && (!curOutISO || reqISO < curOutISO);
+    if (isShorten) {
+      const appliedNote = `[Utflytting endret av kunde ${todayISO}: ${curOutISO || "åpen"} → ${reqISO}]`;
+      const existing = (f.Notes || "").trim();
+      const applied = {
+        Check_Out: `${reqISO}T12:00:00Z`,
+        Requested_CheckOut: null,
+        Notes: existing ? `${existing}\n${appliedNote}` : appliedNote,
+      };
+      // Opprinnelig dato fanges én gang, som når admin innvilger (Forlenget-merket
+      // vises bare når ny dato er SENERE, så dette gir ikke feil merke).
+      if (!f.Original_CheckOut && f.Check_Out) applied.Original_CheckOut = f.Check_Out;
+      try {
+        await updateBookingFields(env, match.id, applied);
+      } catch (patchErr) {
+        // eslint-disable-next-line no-console
+        console.warn("[end-booking] direkte forkorting feilet, prøver uten valgfrie felt:", patchErr?.message || patchErr);
+        const { Original_CheckOut, Requested_CheckOut, ...minimal } = applied;
+        await updateBookingFields(env, match.id, minimal);
+      }
+      await sendEndNotice(env, {
+        bookingRef: refForDisplay,
+        tokenRow,
+        booking: f,
+        previousCheckOut: curOutISO,
+        newCheckOut: reqISO,
+      });
+      return jsonResponse({ ok: true, applied: true, newCheckOut: reqISO });
+    }
+
     // PATCH: marker som Pending_Confirmation, append notat med ønsket dato.
     const noteLine = `[Avslutning forespurt ${todayISO}: ny utflytting ${reqISO}]`;
     const existingNotes = (f.Notes || "").trim();
@@ -172,6 +208,46 @@ async function sendEndRequest(env, data) {
   });
   await pushP;
   return res;
+}
+
+// v3.19.41: ren beskjed til Frank når kunden har forkortet selv — ingenting å godkjenne.
+async function sendEndNotice(env, data) {
+  const { bookingRef, tokenRow, booking, previousCheckOut, newCheckOut } = data;
+  const customer = tokenRow.fields.Firma || "Ukjent kunde";
+  const contact  = tokenRow.fields.Kontaktperson || "(ukjent)";
+  const guest    = booking.Person_Name || "(ukjent gjest)";
+  const property = booking.Property_Name || "(ukjent lokasjon)";
+  const prev     = previousCheckOut || "åpen";
+
+  const lines = [
+    `Kunden har forkortet oppholdet i portalen. Ny utflytting er lagret — ingenting å godkjenne.`,
+    ``,
+    `Referanse:        ${bookingRef}`,
+    `Kunde:            ${customer}`,
+    `Kontakt:          ${contact}`,
+    `Lokasjon:         ${property}`,
+    `Gjest:            ${guest}`,
+    `Utflytting:       ${prev} → ${newCheckOut}`,
+    ``,
+    `--`,
+    `2GM Booking Portal`,
+  ];
+  try {
+    const pushP = sendPush(env, {
+      title: "Forkortet: " + customer,
+      message: `${guest} · ${property}\nUtflytting ${prev} → ${newCheckOut}\n${bookingRef}`,
+      tags: ["calendar"],
+    });
+    await sendEmail(env, {
+      to: NOTIFY_EMAIL,
+      subject: `[2GM] Opphold forkortet — ${bookingRef} (${customer})`,
+      text: lines.join("\n"),
+    });
+    await pushP;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn("[end-booking] varsel feilet:", e?.message || e);
+  }
 }
 
 function jsonResponse(data, status = 200) {
