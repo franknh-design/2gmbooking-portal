@@ -70,11 +70,11 @@
       setRooms(v);
     });
     plus.addEventListener("click", () => {
-      const v = Math.min(20, (parseInt(f.value, 10) || 1) + 1);
+      const v = Math.min(50, (parseInt(f.value, 10) || 1) + 1);
       setRooms(v);
     });
     m.addEventListener("input", () => {
-      const v = Math.max(1, Math.min(20, parseInt(m.value, 10) || 1));
+      const v = Math.max(1, Math.min(50, parseInt(m.value, 10) || 1));
       setRooms(v);
     });
     f.addEventListener("input", () => { m.value = f.value; });
@@ -85,7 +85,8 @@
     const f = document.getElementById("f-rooms");
     const m = document.getElementById("m-rooms");
     if (f) { f.value = v; f.dispatchEvent(new Event("input", { bubbles: true })); f.dispatchEvent(new Event("change", { bubbles: true })); }
-    if (m) m.value = v;
+    // v3.19.43: booking.js kan kappe antallet (firmaets maks rom) — vis det.
+    if (m) m.value = f ? f.value : v;
   }
 
   // ---------- OPEN-ENDED SYNC ----------

@@ -42,10 +42,24 @@ const MAX_GUESTS_PER_BOOKING = 50;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  // v3.19.43: avvisninger etter at kunden er identifisert pushes til Frank,
+  // så vi ser hva som gikk galt uten å måtte spørre kunden.
+  let tokenRow = null;
+  let pushedGuests = [];
+  let pushedProperty = "";
+  const reject = (data, status) => {
+    if (tokenRow) {
+      const p = notifyRejected(env, tokenRow, data, pushedGuests, pushedProperty);
+      if (typeof context.waitUntil === "function") context.waitUntil(p);
+    }
+    return jsonResponse(data, status);
+  };
 
   try {
     const body = await request.json();
     const { token, property, guests } = body || {};
+    pushedGuests = Array.isArray(guests) ? guests : [];
+    pushedProperty = String(property || "");
     // v3.19.7: valgfritt prosjektnr/referanse fra kunden. Trimmes og kappes så
     // en manipulert request ikke kan skrive vilkårlig store verdier til SP.
     const projectNo = (typeof body?.projectNo === "string")
@@ -60,11 +74,11 @@ export async function onRequestPost(context) {
       return jsonResponse({ ok: false, error: "no_guests" }, 400);
     }
     if (guests.length > MAX_GUESTS_PER_BOOKING) {
-      return jsonResponse({ ok: false, error: "too_many_guests" }, 400);
+      return jsonResponse({ ok: false, error: "too_many_guests", max: MAX_GUESTS_PER_BOOKING }, 400);
     }
 
     // 1. Validér token og hent kunde-info
-    const tokenRow = await findToken(env, token);
+    tokenRow = await findToken(env, token);
     if (!tokenRow) {
       return jsonResponse({ ok: false, error: "invalid_token" }, 401);
     }
@@ -72,7 +86,7 @@ export async function onRequestPost(context) {
     // 2. Validér at kunden har tilgang til den valgte property
     const propertyName = propertyIdToName(property);
     if (!propertyName) {
-      return jsonResponse({ ok: false, error: "invalid_property" }, 400);
+      return reject({ ok: false, error: "invalid_property" }, 400);
     }
 
     const allowedProperties = (tokenRow.fields.TillatteLokasjoner || "")
@@ -81,7 +95,7 @@ export async function onRequestPost(context) {
       .filter(Boolean);
 
     if (!allowedProperties.includes(String(property).toLowerCase())) {
-      return jsonResponse({ ok: false, error: "property_not_allowed" }, 403);
+      return reject({ ok: false, error: "property_not_allowed" }, 403);
     }
 
     // v3.19.15: rigger merket «Kommer»/«Stengt» i Properties.PortalStatus vises
@@ -93,7 +107,7 @@ export async function onRequestPost(context) {
       const portalStatus = await getPortalLocationStatus(env);
       const locStatus = portalStatus[String(property).toLowerCase()];
       if (locStatus) {
-        return jsonResponse({
+        return reject({
           ok: false,
           error: "location_closed",
           status: locStatus,
@@ -102,45 +116,40 @@ export async function onRequestPost(context) {
       }
     } catch (err) {
       console.error("Portal status check failed:", err);
-      return jsonResponse({
+      return reject({
         ok: false,
         error: "location_check_failed",
         message: "Kunne ikke verifisere at lokasjonen er åpen. Prøv igjen om et øyeblikk.",
       }, 503);
     }
 
-    // 3. Maks antall rom per bestilling fra Customer_Tokens
-    const maxRooms = tokenRow.fields.MaksRomPerBestilling || 999;
-    if (guests.length > maxRooms) {
-      return jsonResponse({
-        ok: false,
-        error: "exceeds_max_rooms",
-        maxRooms,
-      }, 400);
-    }
+    // 3. v3.19.43: ingen sperre per firma lenger (Customer_Tokens.
+    // MaksRomPerBestilling ignoreres) — Frank: «det trenger aldri å være noen
+    // sperre for noen». Bare MAX_GUESTS_PER_BOOKING over gjelder.
 
     // 4. Validér gjeste-data
-    for (const g of guests) {
+    for (const [gi, g] of guests.entries()) {
+      const guestIndex = gi + 1;
       if (!g.name || typeof g.name !== "string") {
-        return jsonResponse({ ok: false, error: "guest_missing_name" }, 400);
+        return reject({ ok: false, error: "guest_missing_name", guestIndex, guestName: String(g.name || "") }, 400);
       }
       // v3.14.0: telefon er obligatorisk og må være norsk format
       // (8 sifre med ledende 2-9, evt. +47/0047-prefiks). Defense in depth —
       // frontend validerer allerede, men vi stoler ikke på det.
       if (!g.phone || typeof g.phone !== "string" || !_isValidNoPhone(g.phone)) {
-        return jsonResponse({ ok: false, error: "guest_invalid_phone" }, 400);
+        return reject({ ok: false, error: "guest_invalid_phone", guestIndex, guestName: String(g.name || "") }, 400);
       }
       // E-post er valgfritt; tom/missing/null = OK. Settes — må passere regex'en.
       // Server-side gjentakelse av frontend-regelen (defense in depth).
       if (g.email != null && g.email !== "" && !_isValidEmail(g.email)) {
-        return jsonResponse({ ok: false, error: "guest_invalid_email" }, 400);
+        return reject({ ok: false, error: "guest_invalid_email", guestIndex, guestName: String(g.name || "") }, 400);
       }
       if (!g.checkIn || isNaN(new Date(g.checkIn).getTime())) {
-        return jsonResponse({ ok: false, error: "guest_invalid_checkin" }, 400);
+        return reject({ ok: false, error: "guest_invalid_checkin", guestIndex, guestName: String(g.name || "") }, 400);
       }
       // checkOut kan være null/tom (open-ended), men hvis satt må den være gyldig
       if (g.checkOut && isNaN(new Date(g.checkOut).getTime())) {
-        return jsonResponse({ ok: false, error: "guest_invalid_checkout" }, 400);
+        return reject({ ok: false, error: "guest_invalid_checkout", guestIndex, guestName: String(g.name || "") }, 400);
       }
     }
 
@@ -187,7 +196,7 @@ export async function onRequestPost(context) {
         // mest informativ sammendrag.
         conflicts.sort((a, b) => a.available - b.available);
         const worst = conflicts[0];
-        return jsonResponse({
+        return reject({
           ok: false,
           error: "capacity_exceeded",
           conflicts,
@@ -202,7 +211,7 @@ export async function onRequestPost(context) {
       // Bedre å fail closed enn å skape uventede bookinger ved Graph-blink.
       // eslint-disable-next-line no-console
       console.error("Capacity check failed:", err);
-      return jsonResponse({
+      return reject({
         ok: false,
         error: "capacity_check_failed",
         message: "Kunne ikke verifisere ledighet. Prøv igjen om et øyeblikk.",
@@ -224,7 +233,7 @@ export async function onRequestPost(context) {
         tokenRow.fields.Firma || null,
       );
       if (!fit.ok) {
-        return jsonResponse({
+        return reject({
           ok: false,
           error: "no_room_for_whole_period",
           needed: fit.needed,
@@ -238,7 +247,7 @@ export async function onRequestPost(context) {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("Whole-period check failed:", err);
-      return jsonResponse({
+      return reject({
         ok: false,
         error: "capacity_check_failed",
         message: "Kunne ikke verifisere ledighet. Prøv igjen om et øyeblikk.",
@@ -283,7 +292,7 @@ export async function onRequestPost(context) {
     if (result.succeeded.length === 0) {
       // eslint-disable-next-line no-console
       console.error("All booking rows failed:", result.failed);
-      return jsonResponse({ ok: false, error: "save_failed" }, 500);
+      return reject({ ok: false, error: "save_failed" }, 500);
     }
 
     // 8b. Persons-upsert per gjest (best-effort, fire-and-forget). Hver gjest
@@ -345,7 +354,7 @@ export async function onRequestPost(context) {
     // (gjenbruker logTokenUsage fra token-validering)
     // Bruksteller-økning her er valgfritt - vi har allerede økt ved validate-token
 
-    return jsonResponse({
+    return reject({
       ok: true,
       bookingRef,
       rowsCreated: result.succeeded.length,
@@ -356,7 +365,7 @@ export async function onRequestPost(context) {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("submit-booking error:", err);
-    return jsonResponse({ ok: false, error: "internal_error" }, 500);
+    return reject({ ok: false, error: "internal_error", detail: String(err && err.message || err).slice(0, 200) }, 500);
   }
 }
 
@@ -628,6 +637,30 @@ function buildTemplateVars({ tokenRow, bookingRef, propertyName, guests, capacit
 // ----------------------------------------------------------------------------
 // HTTP-helpers
 // ----------------------------------------------------------------------------
+
+// v3.19.43: push når en identifisert kunde får bestillingen avvist.
+async function notifyRejected(env, tokenRow, data, guests, property) {
+  const f = (tokenRow && tokenRow.fields) || {};
+  const who = f.Firma || "Ukjent firma";
+  const contact = f.Kontaktperson || f.Epost || "";
+  const lines = [
+    `Feil: ${data.error}` + (data.message ? ` — ${data.message}` : ""),
+    `${guests.length} rom · ${property || "?"}` + (contact ? ` · ${contact}` : ""),
+  ];
+  if (data.guestIndex) lines.push(`Gjelder rom ${data.guestIndex}: ${data.guestName || "(uten navn)"}`);
+  if (data.detail) lines.push(data.detail);
+  guests.slice(0, 6).forEach(g => {
+    if (g && typeof g === "object") {
+      lines.push(`${g.name || "?"} · ${g.phone || "uten tlf"} · ${g.checkIn || "?"}${g.checkOut ? " → " + g.checkOut : " →"}`);
+    }
+  });
+  await sendPush(env, {
+    title: `Bestilling avvist: ${who}`,
+    message: lines.join("\n"),
+    tags: ["no_entry"],
+    priority: 4,
+  });
+}
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {

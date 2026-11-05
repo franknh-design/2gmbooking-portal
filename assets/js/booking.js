@@ -327,9 +327,11 @@
       this._renderGuests(next);
     },
 
+    // v3.19.43: ingen sperre per firma — taket er serverens sikkerhetsgrense
+    // (MAX_GUESTS_PER_BOOKING = 50 i submit-booking.js).
     _clampRooms(n) {
       if (isNaN(n)) n = 1;
-      return Math.max(1, Math.min(20, n));
+      return Math.max(1, Math.min(50, n));
     },
 
     _getRooms() {
@@ -1119,8 +1121,29 @@
             tx("booking.errCapacityCheckFailed") || "Kunne ikke verifisere ledighet akkurat nå. Prøv igjen om et øyeblikk.",
             "error"
           );
+        } else if (res.error === "too_many_guests") {
+          this._showMsg(tx("booking.errTooMany", { max: res.max || 50 }), "error");
+        } else if (res.error && res.error.indexOf("guest_") === 0) {
+          // v3.19.43: serveren sier hvilken gjest og hva som er galt.
+          const n = res.guestIndex || "?";
+          const name = res.guestName || "";
+          if (res.guestIndex) this._focusGuestField(res.guestIndex, res.error === "guest_invalid_email" ? "email" : (res.error === "guest_invalid_phone" ? "phone" : "name"));
+          const key = {
+            guest_missing_name: "booking.errSrvName",
+            guest_invalid_phone: "booking.errPhoneInvalid",
+            guest_invalid_email: "booking.errEmailInvalid",
+            guest_invalid_checkin: "booking.errSrvCheckIn",
+            guest_invalid_checkout: "booking.errSrvCheckOut",
+          }[res.error];
+          this._showMsg(key ? tx(key, { n, name }) : tx("booking.errGeneric"), "error");
+        } else if (res.error === "property_not_allowed" || res.error === "invalid_property") {
+          this._showMsg(tx("booking.errNotAllowed"), "error");
+        } else if (res.error === "invalid_token" || res.error === "missing_token") {
+          this._showMsg(tx("booking.errSession"), "error");
+        } else if (res.error === "save_failed" || res.error === "internal_error") {
+          this._showMsg(tx("booking.errSaveFailed"), "error");
         } else {
-          this._showMsg(tx("booking.errGeneric"), "error");
+          this._showMsg(tx("booking.errGeneric") + (res.error ? ` (${res.error})` : ""), "error");
         }
       }
     },
