@@ -11,10 +11,14 @@
 // kan ikke brukes til å spamme. Svaret inneholder bare tall, ingen navn/PIN-er.
 //
 // ?force=1 hopper over klokkesjekken (for manuell test etter kl 12).
+// v3.19.45: varselet går også på SMS til Frank (via Flask /notify/text).
 
 import { getSmartLockCheckinsForDate } from "../_utils/sharepoint.js";
 import { listPins } from "../_utils/tuya.js";
 import { sendPush } from "../_utils/push.js";
+
+const ALERT_SMS_TO = "+4799101041";
+const NOTIFY_PROXY_BASE = "https://locks.haugan.online";
 
 const PHASE = { 1: "Planlagt", 2: "Aktiv", 3: "Utløpt", 4: "Slettet", 5: "Slettes" };
 
@@ -64,7 +68,7 @@ async function run(context) {
   // Én push per booking per dag.
   const fresh = [];
   for (const p of problems) {
-    const key = `pinchk:${now.date}:${p.b.id}`;
+    const key = `pinchk2:${now.date}:${p.b.id}`;
     if (env.RESET_PIN_KV) {
       if (await env.RESET_PIN_KV.get(key)) continue;
       await env.RESET_PIN_KV.put(key, "1", { expirationTtl: 2 * 86400 });
@@ -83,9 +87,28 @@ async function run(context) {
       tags: ["warning", "key"],
       priority: 4,
     });
+    const sms = "2GM: dørkode ikke aktiv kl " + now.time + "
+"
+      + fresh.map(({ b, why }) => `Rom ${b.room} ${b.person || "?"}: PIN ${b.doorCode} ${why}`).join("
+");
+    await sendAlertSms(env, sms);
   }
 
   return json({ ok: true, osloTime: now.time, checked: checkins.length, problems: problems.length, pushed: fresh.length });
+}
+
+// Kaster aldri — SMS er et tillegg til pushen.
+async function sendAlertSms(env, body) {
+  try {
+    const res = await fetch(`${env.NOTIFY_PROXY_BASE || NOTIFY_PROXY_BASE}/notify/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Notify-Secret": env.NOTIFY_SHARED_SECRET || "" },
+      body: JSON.stringify({ to: ALERT_SMS_TO, body: body.slice(0, 600) }),
+    });
+    if (!res.ok) console.error("[PIN-CHECK] SMS svarte", res.status, await res.text().catch(() => ""));
+  } catch (err) {
+    console.error("[PIN-CHECK] SMS feilet:", err);
+  }
 }
 
 export async function onRequestGet(context) {
