@@ -1,12 +1,12 @@
 # v3.19.44 — Kl 14 norsk tid: push til Frank hvis en innflytters dørkode ikke
-# er aktiv på låsen. Kjører 12:05 og 13:05 UTC (= 14:05 sommer / 14:05 vinter);
+# er aktiv på låsen. Kjører 12:01 og 13:01 UTC (= 14:01 både sommer og vinter);
 # endepunktet hopper over kjøringen som faller før 14:00 og varsler hver
 # booking bare én gang per dag.
 name: PIN activation check
 
 on:
   schedule:
-    - cron: "5 12,13 * * *"
+    - cron: "1 12,13 * * *"
   workflow_dispatch:
 
 jobs:

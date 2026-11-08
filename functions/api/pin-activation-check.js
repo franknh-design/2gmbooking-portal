@@ -5,8 +5,8 @@
 // seg, så Tuya-skyen sto med den som «Planlagt» og den kom aldri ned til låsen.
 // Gjesten sto da uten virkende kode. Nå får Frank push (ntfy, emne 2gm).
 //
-// Kalles av GitHub Actions (.github/workflows/pin-activation-check.yml) 12:05
-// og 13:05 UTC — den som treffer etter 14:00 norsk tid gjør jobben, den andre
+// Kalles av GitHub Actions (.github/workflows/pin-activation-check.yml) 12:01
+// og 13:01 UTC — den som treffer etter 14:00 norsk tid gjør jobben, den andre
 // hopper over. Hver booking varsles maks én gang per dag (KV), så endepunktet
 // kan ikke brukes til å spamme. Svaret inneholder bare tall, ingen navn/PIN-er.
 //
