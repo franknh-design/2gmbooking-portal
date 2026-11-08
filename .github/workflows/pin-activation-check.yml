@@ -1,0 +1,19 @@
+# v3.19.44 — Kl 14 norsk tid: push til Frank hvis en innflytters dørkode ikke
+# er aktiv på låsen. Kjører 12:05 og 13:05 UTC (= 14:05 sommer / 14:05 vinter);
+# endepunktet hopper over kjøringen som faller før 14:00 og varsler hver
+# booking bare én gang per dag.
+name: PIN activation check
+
+on:
+  schedule:
+    - cron: "5 12,13 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Kall sjekk-endepunktet
+        run: |
+          curl -sS --fail-with-body --max-time 120 https://2gmbooking-portal.pages.dev/api/pin-activation-check

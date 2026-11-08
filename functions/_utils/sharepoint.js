@@ -1814,3 +1814,39 @@ export async function findCustomerTokenByEmail(env, email) {
   const items = await fetchAllItems(env, LIST_IDS.TOKENS, { select: SELECT_TOKEN });
   return items.find(it => String((it.fields || {}).Epost || "").trim().toLowerCase() === needle) || null;
 }
+
+// v3.19.44: Dagens innsjekker på smartlås-rom med dørkode — grunnlaget for
+// kl 14-sjekken (api/pin-activation-check). Henter alt og filtrerer i JS,
+// samme grunn som getBookingsForProperty (filter har droppet rader før).
+// osloDate = 'YYYY-MM-DD'; Check_In sammenlignes som Oslo-dato.
+export async function getSmartLockCheckinsForDate(env, osloDate) {
+  const [bookings, rooms] = await Promise.all([
+    fetchAllItems(env, LIST_IDS.BOOKINGS, { select: "Title,Person_Name,Company,Check_In,Status,RoomLookupId,Door_Code,Tuya_Password_ID" }),
+    fetchAllItems(env, LIST_IDS.ROOMS, { select: "Title,Tuya_Device_ID" }),
+  ]);
+  const roomById = {};
+  for (const r of rooms) roomById[String(r.id)] = r.fields || {};
+  const toOsloDate = iso => new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Oslo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(iso));
+  const out = [];
+  for (const it of bookings) {
+    const f = it.fields || {};
+    if (f.Status !== "Active" && f.Status !== "Upcoming") continue;
+    if (!f.Check_In || !f.Door_Code || !f.RoomLookupId) continue;
+    const room = roomById[String(f.RoomLookupId)];
+    if (!room || !room.Tuya_Device_ID) continue;
+    if (toOsloDate(f.Check_In) !== osloDate) continue;
+    out.push({
+      id: String(it.id),
+      ref: f.Title || "",
+      person: f.Person_Name || "",
+      company: f.Company || "",
+      doorCode: String(f.Door_Code).trim(),
+      tuyaPasswordId: f.Tuya_Password_ID ? String(f.Tuya_Password_ID) : "",
+      room: room.Title || "",
+      deviceId: room.Tuya_Device_ID,
+    });
+  }
+  return out;
+}

@@ -69,3 +69,15 @@ function startOfTodayOsloMs() {
   const offsetHours = osloHour - 12;
   return Date.UTC(Number(y), Number(m) - 1, Number(d)) - offsetHours * 3600 * 1000;
 }
+
+// v3.19.44: Midlertidige PIN-er på en lås (Tuya phase 1=planlagt, 2=aktiv).
+// Kaster ved feil — kalleren skal kunne si «fikk ikke svar fra låsen».
+export async function listPins(deviceId) {
+  const url = `${TUYA_PROXY_BASE}/tuya/list_pins?device_id=${encodeURIComponent(deviceId)}`;
+  const res = await fetch(url);
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || body.success !== true) {
+    throw new Error((body && body.error) || `HTTP ${res.status}`);
+  }
+  return Array.isArray(body.result) ? body.result : [];
+}
