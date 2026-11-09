@@ -87,10 +87,8 @@ async function run(context) {
       tags: ["warning", "key"],
       priority: 4,
     });
-    const sms = "2GM: dørkode ikke aktiv kl " + now.time + "
-"
-      + fresh.map(({ b, why }) => `Rom ${b.room} ${b.person || "?"}: PIN ${b.doorCode} ${why}`).join("
-");
+    const sms = "2GM: dørkode ikke aktiv kl " + now.time + "\n"
+      + fresh.map(({ b, why }) => `Rom ${b.room} ${b.person || "?"}: PIN ${b.doorCode} ${why}`).join("\n");
     await sendAlertSms(env, sms);
   }
 

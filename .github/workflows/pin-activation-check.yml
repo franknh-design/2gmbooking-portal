@@ -4,9 +4,10 @@
 # booking bare én gang per dag.
 name: PIN activation check
 
+# 09.11.2026: fast kjøring slått av — samme sjekk går nå på VPS-en kl 12:01
+# (systemd pin-activation-check.timer, ~/dev/tuya-booking/pin_activation_check.py),
+# ellers fikk Frank to SMS-er. Kan fortsatt kjøres manuelt fra GitHub.
 on:
-  schedule:
-    - cron: "1 12,13 * * *"
   workflow_dispatch:
 
 jobs:
