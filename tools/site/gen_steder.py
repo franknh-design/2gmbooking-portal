@@ -33,6 +33,7 @@ RIGS = {
     "andsl": dict(name="Rigg Andslimoen", url="/rigg-andslimoen", addr="Industriveien 22, 9325 Bardufoss", price=550,
                   img=f"{IMG}/andslimoen/utvendig.jpg", w=1600, h=1066, pos=None,
                   facts=[("52 enkeltrom med eget bad", "52 single rooms with private bathroom"),
+                         ("MagSafe- og USB-lading på alle rom", "MagSafe and USB charging in every room"),
                          ("Felleskjøkken i hver etasje, med egen kode", "A shared kitchen on each floor, with its own code"),
                          ("Låst hovedinngang med egen kode", "Locked main entrance with its own code"),
                          ("Wi-Fi i hele riggen", "Wi-Fi throughout the rig")]),
@@ -53,9 +54,9 @@ STEDER = [
               "Need a place to stay in Bardufoss for work? Rigg Andslimoen at Industriveien 22 has 52 single rooms with private bathrooms, shared kitchens and Wi-Fi – for one person or the whole crew."),
         body=[
             (("Rom til leie for arbeidere på Bardufoss", "Rooms for workers in Bardufoss"),
-             ("<p>Rigg Andslimoen er bygget for folk som jobber i Målselv og trenger et praktisk sted å bo. Alle rommene er enkeltrom med eget bad, seng med sengetøy og digital dørlås. Hver etasje har sitt eget felleskjøkken med egen kode, så etasjene holdes adskilt.</p>"
+             ("<p>Rigg Andslimoen er bygget for folk som jobber i Målselv og trenger et praktisk sted å bo. Alle rommene er enkeltrom med eget bad, seng med sengetøy, MagSafe- og USB-lading og digital dørlås. Hver etasje har sitt eget felleskjøkken med egen kode, så etasjene holdes adskilt.</p>"
               "<p>Det er Wi-Fi i hele riggen, og hovedinngangen er låst med egen kode. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p>",
-              "<p>Rigg Andslimoen is built for people working in Målselv who need a practical place to stay. Every room is a single room with a private bathroom, a bed with bed linen and a digital door lock. Each floor has its own shared kitchen with its own code, keeping the floors separate.</p>"
+              "<p>Rigg Andslimoen is built for people working in Målselv who need a practical place to stay. Every room is a single room with a private bathroom, a bed with bed linen, MagSafe and USB charging and a digital door lock. Each floor has its own shared kitchen with its own code, keeping the floors separate.</p>"
               "<p>There is Wi-Fi throughout the rig, and the main entrance is locked with its own code. Rooms are cleaned every week, with fresh towels every week and fresh bed linen every other week.</p>")),
             (("Losji og innkvartering for hele laget", "Accommodation for the whole crew"),
              ("<p>Vi leier ut til firma som trenger boplass til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p>"
