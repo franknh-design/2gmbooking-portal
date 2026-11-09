@@ -26,7 +26,7 @@ RIGS = {
                         ("Wi-Fi i hele riggen", "Wi-Fi throughout the rig")]),
     "r24": dict(name="Rigg 24", url="/rigg-24", addr="Aspeveien 2, 9300 Finnsnes", price=350,
                 img=f"{IMG}/rigg24/utvendig.jpg", w=1600, h=1200, pos=None,
-                facts=[("24 enkeltrom med eget bad", "24 single rooms with private bathroom"),
+                facts=[("24 enkeltrom med eget bad og minikjøleskap", "24 single rooms with private bathroom and mini fridge"),
                        ("Felleskjøkken for hele riggen", "Shared kitchen for the whole rig"),
                        ("Låst hovedinngang med egen kode", "Locked main entrance with its own code"),
                        ("Wi-Fi i hele riggen", "Wi-Fi throughout the rig")]),
@@ -107,10 +107,10 @@ STEDER = [
         body=[
             (("Rom til leie for arbeidere på Finnsnes", "Rooms for workers in Finnsnes"),
              ("<p><a href=\"/rigg-botnhagen\">Rigg Botnhågen</a> i Industriveien 4 har 44 enkeltrom med eget bad og minikjøleskap, felleskjøkken i hver etasje og eget vaskerom. "
-              "<a href=\"/rigg-24\">Rigg 24</a> i Aspeveien 2 har 24 enkeltrom med eget bad, felleskjøkken og låst hovedinngang med egen kode.</p>"
+              "<a href=\"/rigg-24\">Rigg 24</a> i Aspeveien 2 har 24 enkeltrom med eget bad og minikjøleskap, felleskjøkken og låst hovedinngang med egen kode.</p>"
               "<p>Begge riggene har Wi-Fi, seng med sengetøy og digital dørlås på alle rom. Rommene vaskes hver uke, med nye håndklær hver uke og nytt sengetøy annenhver uke.</p>",
               "<p><a href=\"/rigg-botnhagen\">Rigg Botnhågen</a> at Industriveien 4 has 44 single rooms with private bathrooms and mini fridges, a shared kitchen on each floor and its own laundry room. "
-              "<a href=\"/rigg-24\">Rigg 24</a> at Aspeveien 2 has 24 single rooms with private bathrooms, a shared kitchen and a locked main entrance with its own code.</p>"
+              "<a href=\"/rigg-24\">Rigg 24</a> at Aspeveien 2 has 24 single rooms with private bathrooms and mini fridges, a shared kitchen and a locked main entrance with its own code.</p>"
               "<p>Both rigs have Wi-Fi, a bed with bed linen and a digital door lock in every room. Rooms are cleaned every week, with fresh towels every week and fresh bed linen every other week.</p>")),
             (("Losji og innkvartering for hele laget", "Accommodation for the whole crew"),
              ("<p>Vi leier ut til firma som trenger boplass på Senja til egne ansatte, innleide eller underentreprenører. Firmaet får sin egen bestillingsportal der dere ser ledige rom, bestiller for hele laget og legger inn prosjektnummer for fakturaen.</p>"
